@@ -80,16 +80,19 @@ Exit criteria:
 
 Goal: make retrieval cue-based while staying local and deterministic.
 
+Status: Implemented for facts and episodes. Summaries remain future work because summary retrieval is not implemented yet.
+
 Deliverables:
 
-- Reranking based on context match, entity match, recency, salience, confidence, source type, and retrieval history where available.
-- Use of `MemoryQuery.entities`; `MemoryQuery.tags` is already supported for fact retrieval.
+- [x] Reranking based on context match, entity match, recency, salience, confidence, source type, and retrieval history where available.
+- [x] Use of `MemoryQuery.entities`; `MemoryQuery.tags` is already supported for fact retrieval.
 - Retrieval warnings for empty, suppressed, or conflicting memory results.
-- Tests for rank order and provenance summary.
+- [x] Tests for rank order and ranking explanations.
+- Tests for provenance summary derived from stored support links.
 
 Exit criteria:
 
-- Retrieval order is explainable and tested.
+- [x] Retrieval order is explainable and tested.
 - Queries for the same topic/person return stable, relevant bundles.
 
 ## Phase 5 — Minimal Consolidation

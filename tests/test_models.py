@@ -208,6 +208,14 @@ def test_serialization_round_trips_for_domain_models():
         facts=[fact],
         episodes=[episode],
         warnings=["low confidence nearby memory omitted"],
+        ranking_explanations=[
+            {
+                "rank": 1,
+                "memory_kind": "fact",
+                "memory_id": fact.fact_id,
+                "score": 0.9,
+            }
+        ],
         provenance_summary="fact fact_001 is supported by ep_001",
     )
 

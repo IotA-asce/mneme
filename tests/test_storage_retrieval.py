@@ -5,7 +5,7 @@ from pathlib import Path
 
 from android_brain_memory.models import Episode, Fact, MemoryQuery, MemoryStatus, SourceType
 from android_brain_memory.retrieval import retrieve_memory
-from android_brain_memory.storage import MemoryStore
+from android_brain_memory.storage import MemoryStore, MetaMemoryRecord
 
 
 MIGRATIONS = Path(__file__).resolve().parents[1] / "storage" / "migrations"
@@ -316,4 +316,117 @@ def test_structured_fact_retrieval_filters_status_by_default_and_explicit_status
     assert conflicted_bundle.warnings == [
         "returned non-active fact status(es) due to explicit status filter: conflicted"
     ]
+    store.close()
+
+
+def test_reranking_orders_episodes_deterministically_and_explains_factors(tmp_path):
+    store = open_migrated_store(tmp_path)
+    user_episode = Episode(
+        episode_id="ep_user_robot_memory",
+        start_ts=10,
+        end_ts=20,
+        summary="Robot memory calibration with the user.",
+        context={"topic": "robot memory", "place": "bench"},
+        salience=0.6,
+        confidence=0.9,
+        participants=["user"],
+        objects=["robot"],
+    )
+    recent_episode = Episode(
+        episode_id="ep_recent_robot_memory",
+        start_ts=30,
+        end_ts=40,
+        summary="Robot memory calibration without an entity cue.",
+        context={"topic": "robot memory", "place": "bench"},
+        salience=0.2,
+        confidence=0.6,
+        participants=["observer"],
+        objects=["robot"],
+    )
+    store.store_episode(user_episode)
+    store.store_episode(recent_episode)
+
+    first_bundle = retrieve_memory(
+        store,
+        MemoryQuery(query_text="robot memory", entities=["user"], include_facts=False, max_results=2),
+    )
+    second_bundle = retrieve_memory(
+        store,
+        MemoryQuery(query_text="robot memory", entities=["user"], include_facts=False, max_results=2),
+    )
+
+    assert [episode.episode_id for episode in first_bundle.episodes] == [
+        "ep_user_robot_memory",
+        "ep_recent_robot_memory",
+    ]
+    assert [episode.episode_id for episode in second_bundle.episodes] == [
+        "ep_user_robot_memory",
+        "ep_recent_robot_memory",
+    ]
+    first_explanation = first_bundle.ranking_explanations[0]
+    second_explanation = first_bundle.ranking_explanations[1]
+    assert first_explanation["memory_kind"] == "episode"
+    assert first_explanation["memory_id"] == "ep_user_robot_memory"
+    assert first_explanation["rank"] == 1
+    assert first_explanation["factors"]["context_match"] == 1.0
+    assert first_explanation["factors"]["entity_match"] == 1.0
+    assert first_explanation["factors"]["recency"] == 0.0
+    assert second_explanation["factors"]["recency"] == 1.0
+    assert first_explanation["score"] > second_explanation["score"]
+    assert "entity_match" in first_explanation["components"]
+    assert first_explanation["matched_entities"] == ["user"]
+    store.close()
+
+
+def test_retrieval_history_bonus_reranks_similar_facts_and_is_explained(tmp_path):
+    store = open_migrated_store(tmp_path)
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_plain_memory_tool",
+            subject="user",
+            predicate="uses_memory_tool",
+            object_value={"value": "memory notebook"},
+            confidence=0.8,
+            source_type=SourceType.USER_CONFIRMED,
+        )
+    )
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_history_memory_tool",
+            subject="user",
+            predicate="uses_memory_tool",
+            object_value={"value": "memory notebook"},
+            confidence=0.8,
+            source_type=SourceType.USER_CONFIRMED,
+        )
+    )
+    store.write_meta_memory(
+        MetaMemoryRecord(
+            memory_id="fact_history_memory_tool",
+            memory_kind="fact",
+            source_type=SourceType.USER_CONFIRMED,
+            provenance={"source": "test"},
+            last_retrieved_ts=100,
+            retrieval_count=5,
+        )
+    )
+
+    bundle = retrieve_memory(
+        store,
+        MemoryQuery(query_text="", fact_subject="user", fact_object_text="memory notebook", max_results=2),
+    )
+
+    assert [fact.fact_id for fact in bundle.facts] == [
+        "fact_history_memory_tool",
+        "fact_plain_memory_tool",
+    ]
+    first_explanation = bundle.ranking_explanations[0]
+    second_explanation = bundle.ranking_explanations[1]
+    assert first_explanation["memory_kind"] == "fact"
+    assert first_explanation["memory_id"] == "fact_history_memory_tool"
+    assert first_explanation["factors"]["retrieval_history_bonus"] == 0.5
+    assert first_explanation["components"]["retrieval_history_bonus"] == 0.025
+    assert first_explanation["meta_memory"]["retrieval_count"] == 5
+    assert second_explanation["factors"]["retrieval_history_bonus"] == 0.0
+    assert first_explanation["score"] > second_explanation["score"]
     store.close()

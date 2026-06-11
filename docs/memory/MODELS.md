@@ -58,6 +58,8 @@ Facts may carry optional `tags`. Queries may carry optional structured fact filt
 
 These fields are additive. Existing `query_text`-based retrieval remains valid.
 
+`MemoryBundle` may include `ranking_explanations`, a JSON-friendly debug list returned by the retrieval layer. It is optional and defaults to an empty list so existing bundle construction remains compatible.
+
 ## Serialization
 
 The following models expose `to_dict()` and `from_dict()`:

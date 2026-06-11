@@ -39,6 +39,8 @@ Implemented memory code:
 - Include flags for suppressing fact or episode retrieval.
 - Default active-only fact retrieval with explicit non-active status queries for review/debug flows.
 - User-confirmed facts outrank inferred facts when relevance is otherwise similar.
+- Deterministic retrieval reranking over facts and episodes using context match, entity match, recency, salience, confidence, source reliability, and meta-memory retrieval history where available.
+- `MemoryBundle.ranking_explanations` debug output for returned ranked items.
 - A conservative `consolidate_once()` placeholder that counts active episodes and performs no mutations.
 - `open_default_store()` helper pointing at `.local/android_brain_memory.sqlite3`.
 
@@ -51,7 +53,7 @@ The following areas exist but are not complete enough to count as full phase com
 - Episodic memory: episodes can be written, found by text, and retrieved by ID. Participant and object entities are persisted through `episode_entity`. There is no time-window query, topic-specific query API, first-class persisted episode provenance list, or dedicated episode debug output.
 - Provenance: source type, confidence, fact support links, meta-memory provenance JSON, and caller-provided trace references exist in pieces. There is no end-to-end provenance traversal, derivation chain, version history, or persisted episode provenance list.
 - Semantic facts: facts can be upserted, source typed, tagged, searched by structured fields, and linked to supporting episodes. There is no conflict detection or supersession flow.
-- Retrieval manager: retrieval returns facts from free-text or structured searches and episodes from simple text searches. It does not search working memory, summaries, or self model; does not apply the documented reranking formula beyond deterministic source priority; does not use query entities; and does not update retrieval history.
+- Retrieval manager: retrieval returns reranked facts and episodes from local SQLite. It does not search working memory, summaries, or self model, and it does not update retrieval history.
 - Consolidation: a report type and no-op pass exist. No summaries, clustering, fact extraction, conflict detection, decay, or downranking are implemented.
 - Meta-memory: typed storage methods exist for records, but retrieval history updates are not yet integrated into the retrieval manager.
 - Config: `config/memory.yaml` records salience defaults that can be loaded when requested.
@@ -76,7 +78,7 @@ The design documents describe these future capabilities, but the repository does
 
 ## Current Tests
 
-The test suite currently contains four tests:
+The test suite currently contains focused model, salience, storage, and retrieval tests, including:
 
 - `tests/test_salience.py::test_explicit_remember_promotes_to_semantic_candidate`
 - `tests/test_salience.py::test_low_salience_echo_only`
@@ -87,13 +89,15 @@ The test suite currently contains four tests:
 - `tests/test_storage_retrieval.py::test_structured_fact_retrieval_by_object_text_and_tags`
 - `tests/test_storage_retrieval.py::test_user_confirmed_facts_outrank_inferred_facts_when_relevance_is_similar`
 - `tests/test_storage_retrieval.py::test_structured_fact_retrieval_filters_status_by_default_and_explicit_status`
+- `tests/test_storage_retrieval.py::test_reranking_orders_episodes_deterministically_and_explains_factors`
+- `tests/test_storage_retrieval.py::test_retrieval_history_bonus_reranks_similar_facts_and_is_explained`
 - `tests/test_storage_migrations.py::test_migrations_are_tracked_and_idempotent`
 - `tests/test_storage_migrations.py::test_migration_checksum_mismatch_is_rejected`
 - `tests/test_storage_migrations.py::test_meta_memory_write_read_and_update_preserves_fields`
 - `tests/test_storage_migrations.py::test_working_context_snapshots_are_read_recent_first`
 - `tests/test_storage_migrations.py::test_get_episode_and_fact_by_id_preserve_typed_fields`
 
-Coverage is focused on model validation, salience decisions, raw trace/episode/fact writes, migration tracking, meta-memory storage, working context snapshots, structured fact retrieval, basic episode retrieval, and retrieval include flags. There are no tests yet for fact conflict behavior, provenance traversal, full retrieval reranking, consolidation mutations, decay/downranking, raw trace read APIs, or time-window episode queries.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact writes, migration tracking, meta-memory storage, working context snapshots, structured fact retrieval, deterministic retrieval reranking, basic episode retrieval, and retrieval include flags. There are no tests yet for fact conflict behavior, provenance traversal, consolidation mutations, decay/downranking, raw trace read APIs, or time-window episode queries.
 
 ## Verification Commands
 
@@ -124,9 +128,9 @@ The safest next tasks should stay inside the memory prototype and avoid hardware
 
 1. Add raw trace read/list APIs and fact support read APIs.
 2. Add episode time-window retrieval.
-3. Integrate meta-memory retrieval counters into retrieval paths.
-4. Add retrieval reranking behind tests using only existing SQLite data and dataclasses.
-5. Add retrieval support for `MemoryQuery.entities`.
+3. Integrate meta-memory retrieval counter updates into retrieval paths.
+4. Add summary retrieval behind tests once summaries are written.
+5. Add richer episode time/topic retrieval.
 6. Turn `consolidate_once()` into a minimal summary-producing pass only after storage and retrieval contracts are stronger.
 
 ## Current Risk

@@ -108,6 +108,15 @@ def _json_mapping(value: Any, field_name: str) -> dict[str, Any]:
     return dict(value)
 
 
+def _json_mapping_list(value: Any, field_name: str) -> list[dict[str, Any]]:
+    if isinstance(value, str) or not isinstance(value, Sequence):
+        raise ValueError(f"{field_name} must be a list of mappings")
+    items = list(value)
+    if not all(isinstance(item, Mapping) for item in items):
+        raise ValueError(f"{field_name} must be a list of mappings")
+    return [dict(item) for item in items]
+
+
 def _string_list(value: Any, field_name: str) -> list[str]:
     if isinstance(value, str) or not isinstance(value, Sequence):
         raise ValueError(f"{field_name} must be a list of strings")
@@ -450,6 +459,7 @@ class MemoryBundle:
     facts: list[Fact] = field(default_factory=list)
     episodes: list[Episode] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    ranking_explanations: list[dict[str, Any]] = field(default_factory=list)
     provenance_summary: str = ""
 
     def __post_init__(self) -> None:
@@ -464,6 +474,10 @@ class MemoryBundle:
             for item in self.episodes
         ]
         self.warnings = _string_list(self.warnings, "warnings")
+        self.ranking_explanations = _json_mapping_list(
+            self.ranking_explanations,
+            "ranking_explanations",
+        )
         self.provenance_summary = _optional_text(self.provenance_summary, "provenance_summary")
 
     def to_dict(self) -> dict[str, Any]:
@@ -473,6 +487,7 @@ class MemoryBundle:
             "facts": [fact.to_dict() for fact in self.facts],
             "episodes": [episode.to_dict() for episode in self.episodes],
             "warnings": list(self.warnings),
+            "ranking_explanations": [dict(item) for item in self.ranking_explanations],
             "provenance_summary": self.provenance_summary,
         }
 
@@ -485,5 +500,6 @@ class MemoryBundle:
             facts=data.get("facts", []),
             episodes=data.get("episodes", []),
             warnings=data.get("warnings", []),
+            ranking_explanations=data.get("ranking_explanations", []),
             provenance_summary=data.get("provenance_summary", ""),
         )

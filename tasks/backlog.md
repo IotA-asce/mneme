@@ -74,12 +74,13 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Retrieve facts by source type and status filters
 - [x] Retrieve episodes by text query
 - [ ] Retrieve episodes by id/time/topic
-- [ ] Use `MemoryQuery.entities`
+- [x] Use `MemoryQuery.entities` for retrieval ranking
 - [x] Use `MemoryQuery.tags` for fact retrieval
 - [ ] Retrieve summaries when `include_summaries` is enabled
 - [x] Rank user-confirmed facts ahead of inferred facts when relevance is similar
 - [x] Exclude non-active facts from ordinary retrieval
-- [ ] Add reranking
+- [x] Add deterministic retrieval reranking
+- [x] Return retrieval ranking explanations
 - [x] Return provenance summary
 - [ ] Return provenance summary derived from stored support links
 - [x] Add retrieval warnings for explicitly requested non-active fact results

@@ -545,6 +545,7 @@ A retrieval response should include:
 - warnings
 - confidence
 - provenance summary
+- ranking explanations for debug/traceability
 
 ---
 

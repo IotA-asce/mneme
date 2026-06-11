@@ -11,7 +11,8 @@ The retrieval layer owns:
 - accepting `MemoryQuery` objects,
 - querying local fact and episode storage,
 - filtering ordinary fact retrieval to active facts by default,
-- applying deterministic fact ordering,
+- building retrieval candidates,
+- applying deterministic reranking,
 - returning a `MemoryBundle`.
 
 The retrieval layer does not own:
@@ -75,6 +76,56 @@ When facts otherwise match the query similarly, ordering prefers more reliable s
 
 Confidence still breaks ties after source priority. This keeps user-confirmed facts ahead of inferred facts when relevance is otherwise similar.
 
+## Reranking
+
+Retrieval builds typed candidates for facts and episodes. The candidate shape is intentionally generic so summaries can be added later without changing the ranking formula.
+
+Current factors:
+
+```text
+score =
+  0.30 * context_match +
+  0.20 * entity_match +
+  0.15 * recency +
+  0.15 * salience +
+  0.10 * confidence +
+  0.05 * source_reliability +
+  0.05 * retrieval_history_bonus
+```
+
+Factor behavior:
+
+- `context_match`: token overlap between query text/structured fact text/tag cues and candidate text.
+- `entity_match`: token overlap between `MemoryQuery.entities` and candidate entities.
+- `recency`: normalized timestamp where available. Episodes use `end_ts`; facts currently have no first-class timestamp in the domain model.
+- `salience`: episode salience where available. Facts currently have no first-class salience field.
+- `confidence`: domain model confidence.
+- `source_reliability`: source-type score where available. User-confirmed facts receive the highest value; model-inferred facts receive the lowest current value.
+- `retrieval_history_bonus`: derived from matching `meta_memory` retrieval count when a meta-memory record exists.
+
+Ranking is deterministic. Ties are broken by memory kind and memory ID.
+
+`retrieve_memory()` still returns `facts` and `episodes` as separate lists and preserves the existing per-type `max_results` behavior. Internally it overfetches candidates, reranks them, then returns the top facts and top episodes.
+
+## Ranking Explanations
+
+`MemoryBundle.ranking_explanations` is a JSON-friendly debug list for returned items.
+
+Each explanation includes:
+
+- `rank`
+- `memory_kind`
+- `memory_id`
+- `score`
+- `weights`
+- `factors`
+- `components`
+- `matched_query_terms`
+- `matched_entities`
+- `source_type`
+- `timestamp`
+- `meta_memory`
+
 ## Tags
 
 Fact tags are persisted in the `fact_tag` table added by migration `002_fact_tags.sql`.
@@ -121,6 +172,9 @@ Current tests cover:
 - user-confirmed source priority over inferred facts,
 - default active-status filtering,
 - explicit non-active status retrieval warnings.
+- deterministic reranking order,
+- ranking explanations,
+- retrieval history bonus from meta-memory.
 
 Useful targeted command:
 
