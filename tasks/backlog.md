@@ -18,6 +18,9 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Run `python scripts/smoke_test_memory.py`
 - [x] Add pytest baseline
 - [x] Add local artifact ignore rules
+- [x] Add canonical development runbook
+- [x] Add repeatable developer check command
+- [x] Add Python 3.11 GitHub Actions CI
 - [ ] Add migration/table contract tests
 
 ## Memory models
@@ -99,5 +102,6 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add V1 memory-first ADR
 - [x] Add current repository status document
 - [x] Add current roadmap document
+- [x] Add local development runbook
 - [ ] Keep `docs/DESIGN_DOCUMENT.md` current as implementation changes
 - [ ] Add ADRs for major architecture changes

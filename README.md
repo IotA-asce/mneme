@@ -29,14 +29,31 @@ The first implementation target is **not** the full body. It is a bench-first br
 4. Start with the prompt in `prompts/codex/00_project_intake.md`.
 5. Then implement Phase 1 from `docs/IMPLEMENTATION_PLAN.md`.
 
-## Initial local smoke test
+## Local development setup
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -e '.[dev]'
+```
+
+## Canonical verification
+
+Run the full local check:
+
+```bash
+python scripts/dev_check.py
+```
+
+This runs:
+
+```bash
 python scripts/init_db.py
 python scripts/smoke_test_memory.py
+python -m pytest
 ```
+
+See `docs/runbooks/DEVELOPMENT.md` for the full development runbook.
 
 This is intentionally small. The goal is to give Codex a precise, well-scoped project foundation before expanding into ROS 2 nodes, perception workers, and motor control.
