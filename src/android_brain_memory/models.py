@@ -173,12 +173,14 @@ class SalienceResult:
     decision: str
     reasons: list[str] = field(default_factory=list)
     components: dict[str, float] = field(default_factory=dict)
+    explanation: dict[str, Any] = field(default_factory=dict, repr=False)
 
     def __post_init__(self) -> None:
         self.score = validate_salience(self.score, "score")
         self.decision = _required_text(self.decision, "decision")
         self.reasons = _string_list(self.reasons, "reasons")
         self.components = _json_mapping(self.components, "components")
+        self.explanation = _json_mapping(self.explanation, "explanation")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -186,6 +188,7 @@ class SalienceResult:
             "decision": self.decision,
             "reasons": list(self.reasons),
             "components": dict(self.components),
+            "explanation": dict(self.explanation),
         }
 
     @classmethod
@@ -196,6 +199,7 @@ class SalienceResult:
             decision=_required(data, "decision"),
             reasons=data.get("reasons", []),
             components=data.get("components", {}),
+            explanation=data.get("explanation", {}),
         )
 
 

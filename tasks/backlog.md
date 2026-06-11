@@ -42,8 +42,11 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add explicit remember override
 - [x] Add promotion thresholds
 - [x] Add score explanation output
-- [ ] Load salience weights and thresholds from `config/memory.yaml`
-- [ ] Add tests for all promotion threshold boundaries
+- [x] Load salience weights and thresholds from `config/memory.yaml`
+- [x] Add configurable promotion thresholds
+- [x] Add detailed salience explanation payload
+- [x] Add tests for all promotion threshold boundaries
+- [x] Add salience scoring documentation
 
 ## Storage
 
@@ -111,5 +114,6 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add current roadmap document
 - [x] Add local development runbook
 - [x] Add memory storage documentation
+- [x] Add salience scoring documentation
 - [ ] Keep `docs/DESIGN_DOCUMENT.md` current as implementation changes
 - [ ] Add ADRs for major architecture changes

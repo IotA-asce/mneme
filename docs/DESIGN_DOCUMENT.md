@@ -373,6 +373,8 @@ Low-value, obsolete, unsafe, or user-deleted memories are down-ranked, compresse
 
 Salience determines what deserves memory resources.
 
+Detailed V1 implementation notes live in `docs/memory/SALIENCE.md`.
+
 ### 8.1 Scoring factors
 
 Each candidate is scored using:
@@ -402,6 +404,8 @@ salience =
 
 For V1, explicit remember requests may override normal thresholds.
 
+The default weights and thresholds are mirrored in `config/memory.yaml`.
+
 ### 8.3 Promotion thresholds
 
 Suggested defaults:
@@ -409,9 +413,9 @@ Suggested defaults:
 | Score | Action |
 |---:|---|
 | `< 0.25` | Echo only, then decay |
-| `0.25–0.55` | Working memory / short candidate retention |
-| `0.55–0.80` | Store episode |
-| `> 0.80` | Store episode and queue semantic extraction |
+| `>= 0.25` and `< 0.55` | Working memory / short candidate retention |
+| `>= 0.55` and `< 0.80` | Store episode |
+| `>= 0.80` | Store episode and queue semantic extraction |
 
 ---
 
