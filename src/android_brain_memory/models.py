@@ -326,6 +326,7 @@ class Fact:
     confidence: float
     source_type: SourceType
     status: MemoryStatus = MemoryStatus.ACTIVE
+    tags: list[str] = field(default_factory=list)
     supporting_episode_ids: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
@@ -336,6 +337,7 @@ class Fact:
         self.confidence = validate_confidence(self.confidence)
         self.source_type = parse_source_type(self.source_type)
         self.status = parse_memory_status(self.status)
+        self.tags = _string_list(self.tags, "tags")
         self.supporting_episode_ids = _string_list(self.supporting_episode_ids, "supporting_episode_ids")
 
     def to_dict(self) -> dict[str, Any]:
@@ -347,6 +349,7 @@ class Fact:
             "confidence": self.confidence,
             "source_type": self.source_type.value,
             "status": self.status.value,
+            "tags": list(self.tags),
             "supporting_episode_ids": list(self.supporting_episode_ids),
         }
 
@@ -361,6 +364,7 @@ class Fact:
             confidence=_required(data, "confidence"),
             source_type=_required(data, "source_type"),
             status=data.get("status", MemoryStatus.ACTIVE),
+            tags=data.get("tags", []),
             supporting_episode_ids=data.get("supporting_episode_ids", []),
         )
 
@@ -372,6 +376,11 @@ class MemoryQuery:
     query_type: str = "general"
     entities: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
+    fact_subject: str = ""
+    fact_predicate: str = ""
+    fact_object_text: str = ""
+    fact_source_type: SourceType | None = None
+    fact_status: MemoryStatus | None = None
     max_results: int = 5
     include_episodes: bool = True
     include_facts: bool = True
@@ -383,6 +392,13 @@ class MemoryQuery:
         self.query_type = _required_text(self.query_type, "query_type")
         self.entities = _string_list(self.entities, "entities")
         self.tags = _string_list(self.tags, "tags")
+        self.fact_subject = _optional_text(self.fact_subject, "fact_subject")
+        self.fact_predicate = _optional_text(self.fact_predicate, "fact_predicate")
+        self.fact_object_text = _optional_text(self.fact_object_text, "fact_object_text")
+        if self.fact_source_type is not None:
+            self.fact_source_type = parse_source_type(self.fact_source_type, "fact_source_type")
+        if self.fact_status is not None:
+            self.fact_status = parse_memory_status(self.fact_status, "fact_status")
         self.max_results = _positive_int(self.max_results, "max_results")
         self.include_episodes = _bool(self.include_episodes, "include_episodes")
         self.include_facts = _bool(self.include_facts, "include_facts")
@@ -395,6 +411,11 @@ class MemoryQuery:
             "query_type": self.query_type,
             "entities": list(self.entities),
             "tags": list(self.tags),
+            "fact_subject": self.fact_subject,
+            "fact_predicate": self.fact_predicate,
+            "fact_object_text": self.fact_object_text,
+            "fact_source_type": self.fact_source_type.value if self.fact_source_type else None,
+            "fact_status": self.fact_status.value if self.fact_status else None,
             "max_results": self.max_results,
             "include_episodes": self.include_episodes,
             "include_facts": self.include_facts,
@@ -410,6 +431,11 @@ class MemoryQuery:
             query_type=data.get("query_type", "general"),
             entities=data.get("entities", []),
             tags=data.get("tags", []),
+            fact_subject=data.get("fact_subject", ""),
+            fact_predicate=data.get("fact_predicate", ""),
+            fact_object_text=data.get("fact_object_text", ""),
+            fact_source_type=data.get("fact_source_type"),
+            fact_status=data.get("fact_status"),
             max_results=data.get("max_results", 5),
             include_episodes=data.get("include_episodes", True),
             include_facts=data.get("include_facts", True),

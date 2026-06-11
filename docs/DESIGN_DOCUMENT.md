@@ -473,6 +473,7 @@ Main tables:
 - `episode_entity`
 - `fact`
 - `fact_support`
+- `fact_tag`
 - `memory_summary`
 - `meta_memory`
 - `working_context_snapshot`
@@ -491,6 +492,8 @@ The database must support:
 
 Retrieval is cue-based, not global.
 
+Detailed V1 implementation notes live in `docs/memory/RETRIEVAL.md`.
+
 ### 11.1 Query cues
 
 A retrieval query may include:
@@ -504,6 +507,7 @@ A retrieval query may include:
 - active task
 - memory type
 - tags
+- structured fact filters for subject, predicate, object text, source type, and status
 
 ### 11.2 Retrieval order
 

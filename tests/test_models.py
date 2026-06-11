@@ -60,6 +60,7 @@ def sample_fact() -> Fact:
         confidence=0.9,
         source_type=SourceType.USER_CONFIRMED,
         status=MemoryStatus.ACTIVE,
+        tags=["preference"],
         supporting_episode_ids=["ep_001"],
     )
 
@@ -193,6 +194,11 @@ def test_serialization_round_trips_for_domain_models():
         query_type="topic",
         entities=["user"],
         tags=["preference"],
+        fact_subject="user",
+        fact_predicate="prefers",
+        fact_object_text="memory",
+        fact_source_type=SourceType.USER_CONFIRMED,
+        fact_status=MemoryStatus.ACTIVE,
         max_results=3,
         include_summaries=False,
     )

@@ -46,17 +46,19 @@ Exit criteria:
 
 Goal: move beyond simple free-text lookup while preserving the current simple API.
 
+Status: Implemented for facts. Episode time-window/topic retrieval remains future work.
+
 Deliverables:
 
-- Fact lookup by subject, predicate, and optional object/topic text.
-- Tests for user-confirmed and inferred fact retrieval.
-- Clear behavior for active versus superseded/conflicted/suppressed statuses.
-- Backward-compatible `retrieve_memory()` behavior over the new structured storage methods.
+- [x] Fact lookup by subject, predicate, and optional object/topic text.
+- [x] Tests for user-confirmed and inferred fact retrieval.
+- [x] Clear behavior for active versus superseded/conflicted/suppressed statuses.
+- [x] Backward-compatible `retrieve_memory()` behavior over the new structured storage methods.
 
 Exit criteria:
 
-- A topic/person query can return relevant facts without relying only on JSON substring matching.
-- Retrieval results preserve source type and confidence.
+- [x] A topic/person query can return relevant facts without relying only on JSON substring matching.
+- [x] Retrieval results preserve source type and confidence.
 
 ## Phase 3 — Conflict and Meta-Memory
 
@@ -66,13 +68,13 @@ Deliverables:
 
 - Meta-memory writes for stored episodes and facts.
 - Basic conflict detection for facts with the same subject/predicate and incompatible object values.
-- User-confirmed fact precedence over inferred facts.
+- User-confirmed fact precedence over inferred facts during conflict/supersession decisions.
 - Supersession/conflict status tests.
 
 Exit criteria:
 
 - Conflicts are marked rather than silently overwritten.
-- User-confirmed facts outrank weaker inferred facts in tested retrieval scenarios.
+- User-confirmed facts are preferred during conflict/supersession decisions.
 
 ## Phase 4 — Retrieval Ranking
 
@@ -81,7 +83,7 @@ Goal: make retrieval cue-based while staying local and deterministic.
 Deliverables:
 
 - Reranking based on context match, entity match, recency, salience, confidence, source type, and retrieval history where available.
-- Use of `MemoryQuery.entities` and `MemoryQuery.tags`.
+- Use of `MemoryQuery.entities`; `MemoryQuery.tags` is already supported for fact retrieval.
 - Retrieval warnings for empty, suppressed, or conflicting memory results.
 - Tests for rank order and provenance summary.
 

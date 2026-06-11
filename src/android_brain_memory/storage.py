@@ -6,7 +6,7 @@ import json
 import sqlite3
 import time
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +15,7 @@ from .models import (
     Fact,
     MemoryStatus,
     SourceType,
+    parse_memory_status,
     parse_source_type,
     validate_salience,
     validate_timestamp,
@@ -90,6 +91,15 @@ def _positive_int(value: Any, field_name: str) -> int:
     if value < 1:
         raise ValueError(f"{field_name} must be a positive integer")
     return value
+
+
+def _string_list(value: Any, field_name: str) -> list[str]:
+    if isinstance(value, str) or not isinstance(value, Sequence):
+        raise ValueError(f"{field_name} must be a list of strings")
+    items = list(value)
+    if not all(isinstance(item, str) for item in items):
+        raise ValueError(f"{field_name} must be a list of strings")
+    return items
 
 
 class MemoryStore:
@@ -255,6 +265,13 @@ class MemoryStore:
                 last_confirmed,
             ),
         )
+        if self._table_exists("fact_tag"):
+            self.conn.execute("DELETE FROM fact_tag WHERE fact_id = ?", (fact.fact_id,))
+            for tag in fact.tags:
+                self.conn.execute(
+                    "INSERT OR IGNORE INTO fact_tag(fact_id, tag) VALUES (?, ?)",
+                    (fact.fact_id, tag),
+                )
         self.conn.execute("DELETE FROM fact_support WHERE fact_id = ?", (fact.fact_id,))
         for episode_id in fact.supporting_episode_ids:
             self.conn.execute(
@@ -396,16 +413,85 @@ class MemoryStore:
         return self._fact_from_row(row) if row else None
 
     def search_facts(self, text: str, limit: int = 5) -> list[Fact]:
+        return self.search_facts_structured(query_text=text, limit=limit)
+
+    def search_facts_structured(
+        self,
+        *,
+        query_text: str = "",
+        subject: str = "",
+        predicate: str = "",
+        object_text: str = "",
+        source_type: SourceType | str | None = None,
+        status: MemoryStatus | str | None = MemoryStatus.ACTIVE,
+        tags: list[str] | None = None,
+        limit: int = 5,
+    ) -> list[Fact]:
         limit = _positive_int(limit, "limit")
-        like = f"%{text.lower()}%"
+        source = parse_source_type(source_type, "source_type") if source_type is not None else None
+        status_filter = parse_memory_status(status, "status") if status is not None else None
+        tag_filters = _string_list(tags or [], "tags")
+
+        where_clauses = []
+        params: list[Any] = []
+
+        if query_text.strip():
+            like = f"%{query_text.lower()}%"
+            where_clauses.append("(lower(subject) LIKE ? OR lower(predicate) LIKE ? OR lower(object_json) LIKE ?)")
+            params.extend([like, like, like])
+        if subject.strip():
+            where_clauses.append("lower(subject) LIKE ?")
+            params.append(f"%{subject.lower()}%")
+        if predicate.strip():
+            where_clauses.append("lower(predicate) LIKE ?")
+            params.append(f"%{predicate.lower()}%")
+        if object_text.strip():
+            where_clauses.append("lower(object_json) LIKE ?")
+            params.append(f"%{object_text.lower()}%")
+        if source is not None:
+            where_clauses.append("source_type = ?")
+            params.append(source.value)
+        if status_filter is not None:
+            where_clauses.append("status = ?")
+            params.append(status_filter.value)
+        if tag_filters:
+            if not self._table_exists("fact_tag"):
+                return []
+            for tag in tag_filters:
+                where_clauses.append(
+                    """
+                    EXISTS (
+                      SELECT 1
+                      FROM fact_tag
+                      WHERE fact_tag.fact_id = fact.fact_id
+                        AND lower(fact_tag.tag) = ?
+                    )
+                    """
+                )
+                params.append(tag.lower())
+
+        where_sql = " AND ".join(where_clauses) if where_clauses else "1 = 1"
         rows = self.conn.execute(
-            """
-            SELECT * FROM fact
-            WHERE lower(subject) LIKE ? OR lower(predicate) LIKE ? OR lower(object_json) LIKE ?
-            ORDER BY confidence DESC
+            f"""
+            SELECT *
+            FROM fact
+            WHERE {where_sql}
+            ORDER BY
+              CASE source_type
+                WHEN 'user_confirmed' THEN 0
+                WHEN 'imported' THEN 1
+                WHEN 'system_generated' THEN 2
+                WHEN 'executive_generated' THEN 3
+                WHEN 'sensor_observed' THEN 4
+                WHEN 'model_inferred' THEN 5
+                ELSE 6
+              END,
+              confidence DESC,
+              COALESCE(last_confirmed_ts, first_seen_ts) DESC,
+              fact_id ASC
             LIMIT ?
             """,
-            (like, like, like, limit),
+            (*params, limit),
         ).fetchall()
         return [self._fact_from_row(row) for row in rows]
 
@@ -465,6 +551,17 @@ class MemoryStore:
             """,
             (row["fact_id"],),
         ).fetchall()
+        tag_rows = []
+        if self._table_exists("fact_tag"):
+            tag_rows = self.conn.execute(
+                """
+                SELECT tag
+                FROM fact_tag
+                WHERE fact_id = ?
+                ORDER BY tag
+                """,
+                (row["fact_id"],),
+            ).fetchall()
         return Fact(
             fact_id=row["fact_id"],
             subject=row["subject"],
@@ -473,8 +570,20 @@ class MemoryStore:
             confidence=row["confidence"],
             source_type=SourceType(row["source_type"]),
             status=MemoryStatus(row["status"]),
+            tags=[tag["tag"] for tag in tag_rows],
             supporting_episode_ids=[support["episode_id"] for support in support_rows],
         )
+
+    def _table_exists(self, table_name: str) -> bool:
+        row = self.conn.execute(
+            """
+            SELECT 1
+            FROM sqlite_master
+            WHERE type = 'table' AND name = ?
+            """,
+            (table_name,),
+        ).fetchone()
+        return row is not None
 
     @staticmethod
     def _meta_memory_from_row(row: sqlite3.Row) -> MetaMemoryRecord:

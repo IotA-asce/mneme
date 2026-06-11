@@ -3,17 +3,22 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from android_brain_memory.models import Episode, Fact, MemoryQuery, SourceType
+from android_brain_memory.models import Episode, Fact, MemoryQuery, MemoryStatus, SourceType
 from android_brain_memory.retrieval import retrieve_memory
 from android_brain_memory.storage import MemoryStore
 
 
-MIGRATION = Path(__file__).resolve().parents[1] / "storage" / "migrations" / "001_init.sql"
+MIGRATIONS = Path(__file__).resolve().parents[1] / "storage" / "migrations"
+
+
+def open_migrated_store(tmp_path) -> MemoryStore:
+    store = MemoryStore(tmp_path / "memory.sqlite3")
+    store.run_migrations(MIGRATIONS)
+    return store
 
 
 def test_store_trace_episode_and_fact_then_retrieve_bundle(tmp_path):
-    store = MemoryStore(tmp_path / "memory.sqlite3")
-    store.apply_migration(MIGRATION)
+    store = open_migrated_store(tmp_path)
     now = int(time.time())
 
     trace_id = store.store_raw_trace(
@@ -59,8 +64,7 @@ def test_store_trace_episode_and_fact_then_retrieve_bundle(tmp_path):
 
 
 def test_retrieve_memory_respects_fact_and_episode_include_flags(tmp_path):
-    store = MemoryStore(tmp_path / "memory.sqlite3")
-    store.apply_migration(MIGRATION)
+    store = open_migrated_store(tmp_path)
     now = int(time.time())
     store.store_episode(
         Episode(
@@ -97,4 +101,219 @@ def test_retrieve_memory_respects_fact_and_episode_include_flags(tmp_path):
     assert facts_only.episodes == []
     assert episodes_only.facts == []
     assert [episode.episode_id for episode in episodes_only.episodes] == ["ep_test_selective_memory"]
+    store.close()
+
+
+def test_structured_fact_retrieval_by_subject(tmp_path):
+    store = open_migrated_store(tmp_path)
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_user_coffee",
+            subject="user",
+            predicate="prefers",
+            object_value={"value": "black coffee"},
+            confidence=0.9,
+            source_type=SourceType.USER_CONFIRMED,
+            tags=["preference"],
+        )
+    )
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_mneme_storage",
+            subject="mneme",
+            predicate="uses_storage",
+            object_value={"value": "sqlite"},
+            confidence=0.9,
+            source_type=SourceType.SYSTEM_GENERATED,
+        )
+    )
+
+    bundle = retrieve_memory(
+        store,
+        MemoryQuery(query_text="", fact_subject="us", include_episodes=True),
+    )
+
+    assert [fact.fact_id for fact in bundle.facts] == ["fact_user_coffee"]
+    assert bundle.episodes == []
+    store.close()
+
+
+def test_structured_fact_retrieval_by_predicate(tmp_path):
+    store = open_migrated_store(tmp_path)
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_user_color",
+            subject="user",
+            predicate="prefers_color",
+            object_value={"value": "green"},
+            confidence=0.8,
+            source_type=SourceType.USER_CONFIRMED,
+        )
+    )
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_user_location",
+            subject="user",
+            predicate="lives_near",
+            object_value={"value": "lab"},
+            confidence=0.8,
+            source_type=SourceType.USER_CONFIRMED,
+        )
+    )
+
+    bundle = retrieve_memory(store, MemoryQuery(query_text="", fact_predicate="color"))
+
+    assert [fact.fact_id for fact in bundle.facts] == ["fact_user_color"]
+    store.close()
+
+
+def test_structured_fact_retrieval_by_object_text_and_tags(tmp_path):
+    store = open_migrated_store(tmp_path)
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_user_breakfast",
+            subject="user",
+            predicate="prefers_food",
+            object_value={"value": "oatmeal with berries"},
+            confidence=0.8,
+            source_type=SourceType.USER_CONFIRMED,
+            tags=["food", "preference"],
+        )
+    )
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_user_music",
+            subject="user",
+            predicate="prefers_music",
+            object_value={"value": "jazz"},
+            confidence=0.8,
+            source_type=SourceType.USER_CONFIRMED,
+            tags=["music", "preference"],
+        )
+    )
+
+    bundle = retrieve_memory(
+        store,
+        MemoryQuery(query_text="", fact_object_text="berries", tags=["food"]),
+    )
+
+    assert [fact.fact_id for fact in bundle.facts] == ["fact_user_breakfast"]
+    assert bundle.facts[0].tags == ["food", "preference"]
+    store.close()
+
+
+def test_user_confirmed_facts_outrank_inferred_facts_when_relevance_is_similar(tmp_path):
+    store = open_migrated_store(tmp_path)
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_inferred_theme",
+            subject="user",
+            predicate="prefers_interface_theme",
+            object_value={"value": "dark mode"},
+            confidence=0.99,
+            source_type=SourceType.MODEL_INFERRED,
+        )
+    )
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_confirmed_theme",
+            subject="user",
+            predicate="prefers_interface_theme",
+            object_value={"value": "dark mode"},
+            confidence=0.75,
+            source_type=SourceType.USER_CONFIRMED,
+        )
+    )
+
+    bundle = retrieve_memory(
+        store,
+        MemoryQuery(query_text="", fact_subject="user", fact_predicate="theme", max_results=2),
+    )
+    inferred_only = retrieve_memory(
+        store,
+        MemoryQuery(
+            query_text="",
+            fact_subject="user",
+            fact_predicate="theme",
+            fact_source_type=SourceType.MODEL_INFERRED,
+        ),
+    )
+
+    assert [fact.fact_id for fact in bundle.facts] == [
+        "fact_confirmed_theme",
+        "fact_inferred_theme",
+    ]
+    assert [fact.fact_id for fact in inferred_only.facts] == ["fact_inferred_theme"]
+    store.close()
+
+
+def test_structured_fact_retrieval_filters_status_by_default_and_explicit_status(tmp_path):
+    store = open_migrated_store(tmp_path)
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_active_preference",
+            subject="user",
+            predicate="prefers",
+            object_value={"value": "tea"},
+            confidence=0.8,
+            source_type=SourceType.USER_CONFIRMED,
+            status=MemoryStatus.ACTIVE,
+        )
+    )
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_conflicted_preference",
+            subject="user",
+            predicate="prefers",
+            object_value={"value": "coffee"},
+            confidence=0.8,
+            source_type=SourceType.USER_CONFIRMED,
+            status=MemoryStatus.CONFLICTED,
+        )
+    )
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_suppressed_preference",
+            subject="user",
+            predicate="prefers",
+            object_value={"value": "private topic"},
+            confidence=0.8,
+            source_type=SourceType.USER_CONFIRMED,
+            status=MemoryStatus.SUPPRESSED,
+        )
+    )
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_superseded_preference",
+            subject="user",
+            predicate="prefers",
+            object_value={"value": "old preference"},
+            confidence=0.8,
+            source_type=SourceType.USER_CONFIRMED,
+            status=MemoryStatus.SUPERSEDED,
+        )
+    )
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_purged_preference",
+            subject="user",
+            predicate="prefers",
+            object_value={"value": "purged topic"},
+            confidence=0.8,
+            source_type=SourceType.USER_CONFIRMED,
+            status=MemoryStatus.PURGED,
+        )
+    )
+
+    default_bundle = retrieve_memory(store, MemoryQuery(query_text="", fact_predicate="prefers"))
+    conflicted_bundle = retrieve_memory(
+        store,
+        MemoryQuery(query_text="", fact_predicate="prefers", fact_status=MemoryStatus.CONFLICTED),
+    )
+
+    assert [fact.fact_id for fact in default_bundle.facts] == ["fact_active_preference"]
+    assert [fact.fact_id for fact in conflicted_bundle.facts] == ["fact_conflicted_preference"]
+    assert conflicted_bundle.warnings == [
+        "returned non-active fact status(es) due to explicit status filter: conflicted"
+    ]
     store.close()

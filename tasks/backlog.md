@@ -58,6 +58,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add fact support link writes
 - [x] Add episode read-by-id API
 - [x] Add fact read-by-id API
+- [x] Add fact tag persistence
 - [ ] Add raw trace read/list APIs
 - [ ] Add episode time-window APIs
 - [ ] Add fact support read APIs
@@ -69,16 +70,19 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 ## Retrieval
 
 - [x] Retrieve facts by free-text query
-- [ ] Retrieve facts by structured subject/predicate/topic query
+- [x] Retrieve facts by structured subject/predicate/object query
+- [x] Retrieve facts by source type and status filters
 - [x] Retrieve episodes by text query
 - [ ] Retrieve episodes by id/time/topic
 - [ ] Use `MemoryQuery.entities`
-- [ ] Use `MemoryQuery.tags`
+- [x] Use `MemoryQuery.tags` for fact retrieval
 - [ ] Retrieve summaries when `include_summaries` is enabled
+- [x] Rank user-confirmed facts ahead of inferred facts when relevance is similar
+- [x] Exclude non-active facts from ordinary retrieval
 - [ ] Add reranking
 - [x] Return provenance summary
 - [ ] Return provenance summary derived from stored support links
-- [ ] Add retrieval warnings for conflicting or suppressed results
+- [x] Add retrieval warnings for explicitly requested non-active fact results
 
 ## Provenance and truth handling
 
@@ -115,5 +119,6 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add local development runbook
 - [x] Add memory storage documentation
 - [x] Add salience scoring documentation
+- [x] Add memory retrieval documentation
 - [ ] Keep `docs/DESIGN_DOCUMENT.md` current as implementation changes
 - [ ] Add ADRs for major architecture changes

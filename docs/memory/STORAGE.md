@@ -13,6 +13,7 @@ The storage layer owns:
 - Writing raw traces, episodes, facts, fact support links, meta-memory records, and working context snapshots.
 - Reading facts and episodes by ID.
 - Basic text search over facts and episodes.
+- Structured fact search over subject, predicate, object text, source type, status, and tags.
 - Recent working context snapshot reads.
 
 The storage layer does not own:
@@ -101,6 +102,7 @@ Fact lookups preserve:
 - status,
 - confidence,
 - object value,
+- tags,
 - supporting episode IDs.
 
 Episode lookups preserve:
@@ -114,6 +116,26 @@ Episode lookups preserve:
 - object entity IDs.
 
 The current schema does not yet persist `Episode.provenance_refs` as a first-class column or table. Episode provenance should continue to travel through raw traces, context, fact support links, and meta-memory until a dedicated migration adds first-class episode provenance.
+
+## Structured Fact Search
+
+Supported method:
+
+- `search_facts_structured(...)`
+
+Filters:
+
+- query text across subject, predicate, and object JSON,
+- subject partial match,
+- predicate partial match,
+- object text partial match,
+- source type exact match,
+- status exact match,
+- all requested tags.
+
+Ordinary fact search defaults to active facts. Explicit non-active status searches are available for review/debug flows.
+
+Fact tags are stored in `fact_tag`, added by migration `002_fact_tags.sql`. The storage layer tolerates older `001`-only databases by returning empty tag lists and no tag-filtered matches if `fact_tag` does not exist.
 
 ## Local Verification
 

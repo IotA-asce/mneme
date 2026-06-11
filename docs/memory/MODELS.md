@@ -48,6 +48,16 @@ Required identifiers and summaries must be non-empty strings. Whitespace-only su
 
 Optional list fields use dataclass default factories. Missing optional fields in `from_dict()` use their documented defaults, but invalid supplied values are rejected.
 
+Facts may carry optional `tags`. Queries may carry optional structured fact filters:
+
+- `fact_subject`
+- `fact_predicate`
+- `fact_object_text`
+- `fact_source_type`
+- `fact_status`
+
+These fields are additive. Existing `query_text`-based retrieval remains valid.
+
 ## Serialization
 
 The following models expose `to_dict()` and `from_dict()`:

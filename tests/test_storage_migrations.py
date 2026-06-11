@@ -27,9 +27,9 @@ def test_migrations_are_tracked_and_idempotent(tmp_path):
     applied_again = store.run_migrations(MIGRATIONS)
     records = store.get_applied_migrations()
 
-    assert [record.migration_id for record in applied] == ["001_init"]
+    assert [record.migration_id for record in applied] == ["001_init", "002_fact_tags"]
     assert applied_again == []
-    assert [record.migration_id for record in records] == ["001_init"]
+    assert [record.migration_id for record in records] == ["001_init", "002_fact_tags"]
     assert records[0].filename == "001_init.sql"
     assert len(records[0].checksum_sha256) == 64
     assert records[0].applied_ts >= 0
@@ -132,6 +132,7 @@ def test_get_episode_and_fact_by_id_preserve_typed_fields(tmp_path):
         confidence=0.95,
         source_type=SourceType.USER_CONFIRMED,
         status=MemoryStatus.CONFLICTED,
+        tags=["storage"],
         supporting_episode_ids=[episode.episode_id],
     )
 
@@ -150,6 +151,7 @@ def test_get_episode_and_fact_by_id_preserve_typed_fields(tmp_path):
     assert loaded_fact.source_type == SourceType.USER_CONFIRMED
     assert loaded_fact.status == MemoryStatus.CONFLICTED
     assert loaded_fact.confidence == 0.95
+    assert loaded_fact.tags == ["storage"]
     assert loaded_fact.supporting_episode_ids == ["ep_001"]
     assert store.get_episode("missing") is None
     assert store.get_fact("missing") is None
