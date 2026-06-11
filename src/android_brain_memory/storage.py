@@ -25,6 +25,7 @@ from .models import (
 )
 
 SENSITIVE_PROVENANCE_KEY_PARTS = ("password", "secret", "token", "credential", "private_key", "api_key")
+CONFLICT_AWARE_SOURCE_TYPES = {SourceType.USER_CONFIRMED, SourceType.MODEL_INFERRED}
 
 
 @dataclass(slots=True)
@@ -86,6 +87,36 @@ class MemorySummaryRecord:
 
 
 @dataclass(slots=True)
+class FactConflictReport:
+    subject: str
+    predicate: str
+    fact_ids: list[str]
+    active_fact_ids: list[str]
+    conflicted_fact_ids: list[str]
+    superseded_fact_ids: list[str]
+    supersession_edges: dict[str, str]
+    reason: str
+
+    def __post_init__(self) -> None:
+        self.subject = _required_text(self.subject, "subject")
+        self.predicate = _required_text(self.predicate, "predicate")
+        self.fact_ids = _string_list(self.fact_ids, "fact_ids")
+        self.active_fact_ids = _string_list(self.active_fact_ids, "active_fact_ids")
+        self.conflicted_fact_ids = _string_list(self.conflicted_fact_ids, "conflicted_fact_ids")
+        self.superseded_fact_ids = _string_list(self.superseded_fact_ids, "superseded_fact_ids")
+        if not isinstance(self.supersession_edges, Mapping):
+            raise ValueError("supersession_edges must be a mapping")
+        self.supersession_edges = {
+            _required_text(key, "supersession_edges key"): _required_text(
+                value,
+                "supersession_edges value",
+            )
+            for key, value in self.supersession_edges.items()
+        }
+        self.reason = _required_text(self.reason, "reason")
+
+
+@dataclass(slots=True)
 class WorkingContextSnapshot:
     snapshot_id: str
     created_ts: int
@@ -132,6 +163,83 @@ def _string_list(value: Any, field_name: str) -> list[str]:
     if not all(isinstance(item, str) for item in items):
         raise ValueError(f"{field_name} must be a list of strings")
     return items
+
+
+def _canonical_json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+
+
+def _fact_assertion_signature(object_value: Mapping[str, Any]) -> str:
+    if "value" in object_value:
+        return _canonical_json(object_value["value"])
+    return _canonical_json(dict(object_value))
+
+
+def _fact_context_signature(object_value: Mapping[str, Any]) -> str:
+    if "value" not in object_value:
+        return "{}"
+    context = {
+        key: value
+        for key, value in object_value.items()
+        if key != "value"
+    }
+    return _canonical_json(context)
+
+
+def _facts_are_incompatible(new_fact: Fact, existing_fact: Fact) -> bool:
+    if (
+        new_fact.source_type not in CONFLICT_AWARE_SOURCE_TYPES
+        or existing_fact.source_type not in CONFLICT_AWARE_SOURCE_TYPES
+    ):
+        return False
+    if _canonical_json(new_fact.object_value) == _canonical_json(existing_fact.object_value):
+        return False
+    if _fact_context_signature(new_fact.object_value) != _fact_context_signature(
+        existing_fact.object_value,
+    ):
+        return False
+    return _fact_assertion_signature(new_fact.object_value) != _fact_assertion_signature(
+        existing_fact.object_value,
+    )
+
+
+def _fact_conflict_report_from_facts(facts: list[Fact]) -> FactConflictReport:
+    if not facts:
+        raise ValueError("facts must contain at least one fact")
+    subject = facts[0].subject
+    predicate = facts[0].predicate
+    conflicted_fact_ids = [
+        fact.fact_id
+        for fact in facts
+        if fact.status == MemoryStatus.CONFLICTED
+    ]
+    superseded_fact_ids = [
+        fact.fact_id
+        for fact in facts
+        if fact.status == MemoryStatus.SUPERSEDED
+    ]
+    supersession_edges = {
+        fact.fact_id: fact.supersedes_fact_id
+        for fact in facts
+        if fact.supersedes_fact_id is not None
+    }
+    reason = (
+        "incompatible active facts require review"
+        if conflicted_fact_ids
+        else "user-confirmed fact superseded lower-trust active fact"
+    )
+    return FactConflictReport(
+        subject=subject,
+        predicate=predicate,
+        fact_ids=sorted(fact.fact_id for fact in facts),
+        active_fact_ids=sorted(
+            fact.fact_id for fact in facts if fact.status == MemoryStatus.ACTIVE
+        ),
+        conflicted_fact_ids=sorted(conflicted_fact_ids),
+        superseded_fact_ids=sorted(superseded_fact_ids),
+        supersession_edges=supersession_edges,
+        reason=reason,
+    )
 
 
 def _normalize_provenance(
@@ -406,7 +514,7 @@ class MemoryStore:
         notes: str | None = None,
         speakability: Speakability | str = Speakability.NORMAL,
         write_meta: bool = True,
-    ) -> None:
+    ) -> FactConflictReport | None:
         meta_record = (
             self._build_meta_memory_record(
                 memory_id=fact.fact_id,
@@ -426,12 +534,28 @@ class MemoryStore:
             if write_meta
             else None
         )
+        new_status = fact.status
+        supersedes_fact_id = fact.supersedes_fact_id
+        conflict_report = None
+        if fact.status == MemoryStatus.ACTIVE:
+            new_status, supersedes_fact_id, conflict_report = self._resolve_active_fact_conflicts(fact)
         now = int(time.time())
         last_confirmed = now if fact.source_type == SourceType.USER_CONFIRMED else None
         self.conn.execute(
             """
-            INSERT OR REPLACE INTO fact(fact_id, subject, predicate, object_json, confidence, source_type, status, first_seen_ts, last_confirmed_ts)
-            VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT first_seen_ts FROM fact WHERE fact_id = ?), ?), ?)
+            INSERT OR REPLACE INTO fact(
+                fact_id,
+                subject,
+                predicate,
+                object_json,
+                confidence,
+                source_type,
+                status,
+                first_seen_ts,
+                last_confirmed_ts,
+                supersedes_fact_id
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT first_seen_ts FROM fact WHERE fact_id = ?), ?), ?, ?)
             """,
             (
                 fact.fact_id,
@@ -440,10 +564,11 @@ class MemoryStore:
                 json.dumps(fact.object_value),
                 fact.confidence,
                 fact.source_type.value,
-                fact.status.value,
+                new_status.value,
                 fact.fact_id,
                 now,
                 last_confirmed,
+                supersedes_fact_id,
             ),
         )
         if self._table_exists("fact_tag"):
@@ -462,6 +587,106 @@ class MemoryStore:
         if meta_record is not None:
             self.write_meta_memory(meta_record, commit=False)
         self.conn.commit()
+        return conflict_report
+
+    def _resolve_active_fact_conflicts(
+        self,
+        fact: Fact,
+    ) -> tuple[MemoryStatus, str | None, FactConflictReport | None]:
+        conflicting_facts = [
+            existing
+            for existing in self._get_active_facts_for_statement(
+                fact.subject,
+                fact.predicate,
+                exclude_fact_id=fact.fact_id,
+            )
+            if _facts_are_incompatible(fact, existing)
+        ]
+        if not conflicting_facts:
+            return fact.status, fact.supersedes_fact_id, None
+
+        new_status = fact.status
+        supersedes_fact_id = fact.supersedes_fact_id
+        superseded_fact_ids: list[str] = []
+        conflicted_fact_ids: list[str] = []
+
+        for existing in conflicting_facts:
+            if fact.source_type == SourceType.USER_CONFIRMED and existing.source_type != SourceType.USER_CONFIRMED:
+                self._set_fact_status(existing.fact_id, MemoryStatus.SUPERSEDED)
+                superseded_fact_ids.append(existing.fact_id)
+                if supersedes_fact_id is None:
+                    supersedes_fact_id = existing.fact_id
+            elif fact.source_type == SourceType.USER_CONFIRMED and existing.source_type == SourceType.USER_CONFIRMED:
+                self._set_fact_status(existing.fact_id, MemoryStatus.CONFLICTED)
+                conflicted_fact_ids.append(existing.fact_id)
+                new_status = MemoryStatus.CONFLICTED
+            elif existing.source_type == SourceType.USER_CONFIRMED:
+                new_status = MemoryStatus.CONFLICTED
+            else:
+                self._set_fact_status(existing.fact_id, MemoryStatus.CONFLICTED)
+                conflicted_fact_ids.append(existing.fact_id)
+                new_status = MemoryStatus.CONFLICTED
+
+        fact_ids = sorted({fact.fact_id, *(existing.fact_id for existing in conflicting_facts)})
+        active_fact_ids = [fact.fact_id] if new_status == MemoryStatus.ACTIVE else []
+        active_fact_ids.extend(
+            existing.fact_id
+            for existing in conflicting_facts
+            if existing.fact_id not in superseded_fact_ids
+            and existing.fact_id not in conflicted_fact_ids
+        )
+        if new_status == MemoryStatus.CONFLICTED:
+            conflicted_fact_ids.append(fact.fact_id)
+        if new_status == MemoryStatus.SUPERSEDED:
+            superseded_fact_ids.append(fact.fact_id)
+
+        reason = (
+            "user-confirmed fact superseded lower-trust active fact"
+            if superseded_fact_ids and not conflicted_fact_ids
+            else "incompatible active facts require review"
+        )
+        report = FactConflictReport(
+            subject=fact.subject,
+            predicate=fact.predicate,
+            fact_ids=fact_ids,
+            active_fact_ids=sorted(active_fact_ids),
+            conflicted_fact_ids=sorted(set(conflicted_fact_ids)),
+            superseded_fact_ids=sorted(set(superseded_fact_ids)),
+            supersession_edges={fact.fact_id: supersedes_fact_id} if supersedes_fact_id else {},
+            reason=reason,
+        )
+        return new_status, supersedes_fact_id, report
+
+    def _get_active_facts_for_statement(
+        self,
+        subject: str,
+        predicate: str,
+        *,
+        exclude_fact_id: str,
+    ) -> list[Fact]:
+        rows = self.conn.execute(
+            """
+            SELECT *
+            FROM fact
+            WHERE lower(subject) = lower(?)
+              AND lower(predicate) = lower(?)
+              AND status = ?
+              AND fact_id != ?
+            ORDER BY fact_id
+            """,
+            (subject, predicate, MemoryStatus.ACTIVE.value, exclude_fact_id),
+        ).fetchall()
+        return [self._fact_from_row(row) for row in rows]
+
+    def _set_fact_status(self, fact_id: str, status: MemoryStatus) -> None:
+        self.conn.execute(
+            """
+            UPDATE fact
+            SET status = ?
+            WHERE fact_id = ?
+            """,
+            (status.value, fact_id),
+        )
 
     def store_memory_summary(
         self,
@@ -744,6 +969,67 @@ class MemoryStore:
         ).fetchone()
         return self._fact_from_row(row) if row else None
 
+    def get_fact_conflict_reports(
+        self,
+        *,
+        subject: str = "",
+        predicate: str = "",
+        limit: int = 50,
+    ) -> list[FactConflictReport]:
+        limit = _positive_int(limit, "limit")
+        where_clauses = [
+            """
+            (
+              status IN (?, ?)
+              OR supersedes_fact_id IS NOT NULL
+            )
+            """
+        ]
+        params: list[Any] = [MemoryStatus.CONFLICTED.value, MemoryStatus.SUPERSEDED.value]
+        if subject.strip():
+            where_clauses.append("lower(subject) = lower(?)")
+            params.append(subject)
+        if predicate.strip():
+            where_clauses.append("lower(predicate) = lower(?)")
+            params.append(predicate)
+        where_sql = " AND ".join(where_clauses)
+        groups = self.conn.execute(
+            f"""
+            SELECT lower(subject) AS subject_key, lower(predicate) AS predicate_key
+            FROM fact
+            WHERE {where_sql}
+            GROUP BY subject_key, predicate_key
+            ORDER BY subject_key, predicate_key
+            LIMIT ?
+            """,
+            (*params, limit),
+        ).fetchall()
+
+        reports = []
+        for group in groups:
+            rows = self.conn.execute(
+                """
+                SELECT *
+                FROM fact
+                WHERE lower(subject) = ?
+                  AND lower(predicate) = ?
+                ORDER BY
+                  CASE status
+                    WHEN 'active' THEN 0
+                    WHEN 'conflicted' THEN 1
+                    WHEN 'superseded' THEN 2
+                    WHEN 'suppressed' THEN 3
+                    WHEN 'purged' THEN 4
+                    ELSE 5
+                  END,
+                  fact_id
+                """,
+                (group["subject_key"], group["predicate_key"]),
+            ).fetchall()
+            facts = [self._fact_from_row(row) for row in rows]
+            reports.append(_fact_conflict_report_from_facts(facts))
+        return reports
+
     def search_facts(self, text: str, limit: int = 5) -> list[Fact]:
         return self.search_facts_structured(query_text=text, limit=limit)
 
@@ -904,6 +1190,7 @@ class MemoryStore:
             status=MemoryStatus(row["status"]),
             tags=[tag["tag"] for tag in tag_rows],
             supporting_episode_ids=[support["episode_id"] for support in support_rows],
+            supersedes_fact_id=row["supersedes_fact_id"],
         )
 
     def _table_exists(self, table_name: str) -> bool:

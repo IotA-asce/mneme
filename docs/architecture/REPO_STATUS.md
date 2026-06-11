@@ -56,9 +56,9 @@ The following areas exist but are not complete enough to count as full phase com
 - Working memory: `working_context_snapshot` can be written and read as recent snapshots, but there is no active working-memory lifecycle or state manager yet.
 - Episodic memory: episodes can be written, found by text, and retrieved by ID. Participant and object entities are persisted through `episode_entity`. There is no time-window query, topic-specific query API, first-class persisted episode provenance list, or dedicated episode debug output.
 - Provenance: source type, confidence, fact support links, normalized meta-memory provenance JSON, retrieval counters, speakability, and caller-provided trace references exist in pieces. There is no end-to-end provenance traversal, version history, or persisted episode provenance list.
-- Semantic facts: facts can be upserted, source typed, tagged, searched by structured fields, and linked to supporting episodes. There is no conflict detection or supersession flow.
+- Semantic facts: facts can be upserted, source typed, tagged, searched by structured fields, linked to supporting episodes, checked for conservative semantic conflicts, marked `superseded`/`conflicted`, and queried through conflict reports.
 - Retrieval manager: retrieval returns reranked facts and episodes from local SQLite, updates meta-memory retrieval history for returned records, and filters internal-only speakability records by default. It does not search working memory, summaries, or self model.
-- Consolidation: a report type and no-op pass exist. No summaries, clustering, fact extraction, conflict detection, decay, or downranking are implemented.
+- Consolidation: a report type and no-op pass exist. No background summaries, clustering, fact extraction, decay, or downranking are implemented.
 - Meta-memory: typed storage methods exist for records, provenance JSON, speakability, and retrieval history updates.
 - Config: `config/memory.yaml` records salience defaults that can be loaded when requested.
 
@@ -100,8 +100,12 @@ The test suite currently contains focused model, salience, storage, and retrieva
 - `tests/test_storage_migrations.py::test_meta_memory_write_read_and_update_preserves_fields`
 - `tests/test_storage_migrations.py::test_working_context_snapshots_are_read_recent_first`
 - `tests/test_storage_migrations.py::test_get_episode_and_fact_by_id_preserve_typed_fields`
+- `tests/test_storage_migrations.py::test_user_confirmed_fact_supersedes_inferred_conflict`
+- `tests/test_storage_migrations.py::test_user_confirmed_fact_conflict_preserves_both_for_review`
+- `tests/test_storage_migrations.py::test_same_semantic_fact_duplicate_is_not_a_conflict`
+- `tests/test_storage_migrations.py::test_context_preserving_fact_difference_is_not_a_conflict`
 
-Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, basic episode retrieval, and retrieval include flags. There are no tests yet for fact conflict behavior, full provenance traversal, consolidation mutations, decay/downranking, raw trace read APIs, or time-window episode queries.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, and retrieval include flags. There are no tests yet for full provenance traversal, consolidation mutations, decay/downranking, raw trace read APIs, or time-window episode queries.
 
 ## Verification Commands
 

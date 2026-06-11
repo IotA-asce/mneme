@@ -265,6 +265,151 @@ def test_get_episode_and_fact_by_id_preserve_typed_fields(tmp_path):
     assert loaded_fact.confidence == 0.95
     assert loaded_fact.tags == ["storage"]
     assert loaded_fact.supporting_episode_ids == ["ep_001"]
+    assert loaded_fact.supersedes_fact_id is None
     assert store.get_episode("missing") is None
     assert store.get_fact("missing") is None
+    store.close()
+
+
+def test_user_confirmed_fact_supersedes_inferred_conflict(tmp_path):
+    store = open_migrated_store(tmp_path)
+    inferred = Fact(
+        fact_id="fact_inferred_preference",
+        subject="user",
+        predicate="prefers",
+        object_value={"value": "tea"},
+        confidence=0.6,
+        source_type=SourceType.MODEL_INFERRED,
+    )
+    confirmed = Fact(
+        fact_id="fact_confirmed_preference",
+        subject="user",
+        predicate="prefers",
+        object_value={"value": "coffee"},
+        confidence=0.95,
+        source_type=SourceType.USER_CONFIRMED,
+    )
+
+    assert store.upsert_fact(inferred) is None
+    report = store.upsert_fact(confirmed)
+
+    loaded_inferred = store.get_fact(inferred.fact_id)
+    loaded_confirmed = store.get_fact(confirmed.fact_id)
+    assert report is not None
+    assert report.active_fact_ids == [confirmed.fact_id]
+    assert report.superseded_fact_ids == [inferred.fact_id]
+    assert report.supersession_edges == {confirmed.fact_id: inferred.fact_id}
+    assert loaded_inferred is not None
+    assert loaded_inferred.status == MemoryStatus.SUPERSEDED
+    assert loaded_confirmed is not None
+    assert loaded_confirmed.status == MemoryStatus.ACTIVE
+    assert loaded_confirmed.supersedes_fact_id == inferred.fact_id
+
+    active = store.search_facts_structured(subject="user", predicate="prefers", limit=10)
+    reports = store.get_fact_conflict_reports(subject="user", predicate="prefers")
+    assert [fact.fact_id for fact in active] == [confirmed.fact_id]
+    assert len(reports) == 1
+    assert reports[0].superseded_fact_ids == [inferred.fact_id]
+    store.close()
+
+
+def test_user_confirmed_fact_conflict_preserves_both_for_review(tmp_path):
+    store = open_migrated_store(tmp_path)
+    first = Fact(
+        fact_id="fact_confirmed_tea",
+        subject="user",
+        predicate="prefers",
+        object_value={"value": "tea"},
+        confidence=0.95,
+        source_type=SourceType.USER_CONFIRMED,
+    )
+    second = Fact(
+        fact_id="fact_confirmed_coffee",
+        subject="user",
+        predicate="prefers",
+        object_value={"value": "coffee"},
+        confidence=0.95,
+        source_type=SourceType.USER_CONFIRMED,
+    )
+
+    assert store.upsert_fact(first) is None
+    report = store.upsert_fact(second)
+
+    loaded_first = store.get_fact(first.fact_id)
+    loaded_second = store.get_fact(second.fact_id)
+    assert report is not None
+    assert report.conflicted_fact_ids == [second.fact_id, first.fact_id]
+    assert loaded_first is not None
+    assert loaded_first.status == MemoryStatus.CONFLICTED
+    assert loaded_second is not None
+    assert loaded_second.status == MemoryStatus.CONFLICTED
+
+    active = store.search_facts_structured(subject="user", predicate="prefers", limit=10)
+    conflicted = store.search_facts_structured(
+        subject="user",
+        predicate="prefers",
+        status=MemoryStatus.CONFLICTED,
+        limit=10,
+    )
+    reports = store.get_fact_conflict_reports(subject="user", predicate="prefers")
+    assert active == []
+    assert {fact.fact_id for fact in conflicted} == {first.fact_id, second.fact_id}
+    assert len(reports) == 1
+    assert set(reports[0].conflicted_fact_ids) == {first.fact_id, second.fact_id}
+    store.close()
+
+
+def test_same_semantic_fact_duplicate_is_not_a_conflict(tmp_path):
+    store = open_migrated_store(tmp_path)
+    first = Fact(
+        fact_id="fact_duplicate_a",
+        subject="user",
+        predicate="prefers",
+        object_value={"value": "tea"},
+        confidence=0.9,
+        source_type=SourceType.USER_CONFIRMED,
+    )
+    second = Fact(
+        fact_id="fact_duplicate_b",
+        subject="user",
+        predicate="prefers",
+        object_value={"value": "tea"},
+        confidence=0.8,
+        source_type=SourceType.MODEL_INFERRED,
+    )
+
+    assert store.upsert_fact(first) is None
+    assert store.upsert_fact(second) is None
+
+    active = store.search_facts_structured(subject="user", predicate="prefers", limit=10)
+    assert {fact.fact_id for fact in active} == {first.fact_id, second.fact_id}
+    assert store.get_fact_conflict_reports(subject="user", predicate="prefers") == []
+    store.close()
+
+
+def test_context_preserving_fact_difference_is_not_a_conflict(tmp_path):
+    store = open_migrated_store(tmp_path)
+    morning = Fact(
+        fact_id="fact_morning_preference",
+        subject="user",
+        predicate="prefers",
+        object_value={"value": "tea", "context": "morning"},
+        confidence=0.9,
+        source_type=SourceType.USER_CONFIRMED,
+    )
+    evening = Fact(
+        fact_id="fact_evening_preference",
+        subject="user",
+        predicate="prefers",
+        object_value={"value": "coffee", "context": "evening"},
+        confidence=0.9,
+        source_type=SourceType.USER_CONFIRMED,
+    )
+
+    assert store.upsert_fact(morning) is None
+    assert store.upsert_fact(evening) is None
+
+    active = store.search_facts_structured(subject="user", predicate="prefers", limit=10)
+    assert {fact.fact_id for fact in active} == {morning.fact_id, evening.fact_id}
+    assert store.get_fact_conflict_reports(subject="user", predicate="prefers") == []
     store.close()

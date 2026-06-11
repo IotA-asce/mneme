@@ -47,6 +47,8 @@ Exit criteria:
 
 ## Phase 3 — Semantic facts
 
+Status: V1 storage-time conflict detection is implemented for conservative `user_confirmed` and `model_inferred` fact assertions. Background consolidation conflict detection remains future work.
+
 Deliverables:
 
 - fact model

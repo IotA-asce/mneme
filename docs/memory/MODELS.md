@@ -65,6 +65,8 @@ Facts may carry optional `tags`. Queries may carry optional structured fact filt
 
 These fields are additive. Existing `query_text`-based retrieval remains valid.
 
+Facts may also carry `supersedes_fact_id` when one fact supersedes another. This is persisted by storage and remains optional for compatibility with existing fact construction.
+
 `MemoryBundle` may include `ranking_explanations`, a JSON-friendly debug list returned by the retrieval layer. It is optional and defaults to an empty list so existing bundle construction remains compatible.
 
 `MemoryQuery.trusted_internal` and `MemoryQuery.include_internal` default to `False`. Both must be true before retrieval may include `never_say` or `internal_only` items.

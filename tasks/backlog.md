@@ -98,15 +98,15 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add speakability values: `normal`, `restricted`, `never_say`, `internal_only`
 - [ ] Preserve episode `provenance_refs` as first-class stored data
 - [ ] Traverse raw trace -> episode -> fact support provenance
-- [ ] Implement user-confirmed fact precedence over inferred facts
-- [ ] Mark conflicting facts instead of silently overwriting
+- [x] Implement user-confirmed fact precedence over inferred facts
+- [x] Mark conflicting facts instead of silently overwriting
 
 ## Consolidation
 
 - [x] Add conservative non-mutating consolidation report placeholder
 - [ ] Add simple summary creation
 - [ ] Add repeated-event clustering placeholder
-- [ ] Add conflict detection
+- [ ] Add background consolidation conflict detection
 - [ ] Add decay/downranking fields
 - [ ] Add consolidation report tests
 

@@ -607,6 +607,8 @@ When new information conflicts with old information:
 4. Mark obsolete facts as `superseded`.
 5. Ask for confirmation if the conflict matters for behavior.
 
+V1 deterministic fact conflict behavior is documented in `docs/memory/CONFLICTS.md`.
+
 ---
 
 ## 15. API design

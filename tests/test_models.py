@@ -170,9 +170,11 @@ def test_enum_conversion_and_invalid_enum_values():
         confidence=0.8,
         source_type="user_confirmed",
         status="superseded",
+        supersedes_fact_id="fact_old",
     )
     assert fact.source_type == SourceType.USER_CONFIRMED
     assert fact.status == MemoryStatus.SUPERSEDED
+    assert fact.supersedes_fact_id == "fact_old"
 
     with pytest.raises(ValueError):
         parse_source_type("untrusted_guess")

@@ -354,6 +354,7 @@ class Fact:
     status: MemoryStatus = MemoryStatus.ACTIVE
     tags: list[str] = field(default_factory=list)
     supporting_episode_ids: list[str] = field(default_factory=list)
+    supersedes_fact_id: str | None = None
 
     def __post_init__(self) -> None:
         self.fact_id = _required_text(self.fact_id, "fact_id")
@@ -365,6 +366,8 @@ class Fact:
         self.status = parse_memory_status(self.status)
         self.tags = _string_list(self.tags, "tags")
         self.supporting_episode_ids = _string_list(self.supporting_episode_ids, "supporting_episode_ids")
+        if self.supersedes_fact_id is not None:
+            self.supersedes_fact_id = _required_text(self.supersedes_fact_id, "supersedes_fact_id")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -377,6 +380,7 @@ class Fact:
             "status": self.status.value,
             "tags": list(self.tags),
             "supporting_episode_ids": list(self.supporting_episode_ids),
+            "supersedes_fact_id": self.supersedes_fact_id,
         }
 
     @classmethod
@@ -392,6 +396,7 @@ class Fact:
             status=data.get("status", MemoryStatus.ACTIVE),
             tags=data.get("tags", []),
             supporting_episode_ids=data.get("supporting_episode_ids", []),
+            supersedes_fact_id=data.get("supersedes_fact_id"),
         )
 
 

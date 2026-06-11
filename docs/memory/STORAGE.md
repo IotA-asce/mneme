@@ -13,9 +13,11 @@ The storage layer owns:
 - Writing raw traces, episodes, facts, fact support links, meta-memory records, and working context snapshots.
 - Writing memory summaries.
 - Writing corresponding meta-memory records during raw trace, episode, fact, and summary storage.
+- Conservative semantic fact conflict and supersession handling during fact upsert.
 - Reading facts and episodes by ID.
 - Basic text search over facts and episodes.
 - Structured fact search over subject, predicate, object text, source type, status, and tags.
+- Conflict/supersession report queries for facts.
 - Recent working context snapshot reads.
 
 The storage layer does not own:
@@ -23,7 +25,7 @@ The storage layer does not own:
 - Salience scoring.
 - Retrieval reranking.
 - Consolidation or semantic extraction.
-- Conflict resolution policy.
+- Human review workflows for unresolved conflicts.
 - ROS 2 transport.
 - Hardware or actuator behavior.
 
@@ -54,6 +56,7 @@ The storage module exposes lightweight dataclasses for storage-specific rows:
 
 - `MigrationRecord`
 - `MetaMemoryRecord`
+- `FactConflictReport`
 - `WorkingContextSnapshot`
 
 These are storage transfer objects, not separate cognition layers. Core memory domain models still live in `src/android_brain_memory/models.py`.
@@ -115,6 +118,7 @@ Fact lookups preserve:
 - status,
 - confidence,
 - object value,
+- supersession link,
 - tags,
 - supporting episode IDs.
 
@@ -129,6 +133,22 @@ Episode lookups preserve:
 - object entity IDs.
 
 The current schema does not yet persist `Episode.provenance_refs` as a first-class column or table. Episode provenance should continue to travel through raw traces, context, fact support links, and meta-memory until a dedicated migration adds first-class episode provenance.
+
+## Fact Conflicts
+
+`upsert_fact()` performs conservative semantic conflict handling for active `user_confirmed` and `model_inferred` facts.
+
+When an incompatible user-confirmed fact supersedes an inferred fact, the inferred fact is marked `superseded`, the new fact remains `active`, and `supersedes_fact_id` points at the older fact.
+
+When incompatible user-confirmed facts disagree, both facts are preserved and marked `conflicted` for review.
+
+Different context in `object_value` preserves both facts as active. Duplicate object values are not conflicts.
+
+Supported helper:
+
+- `get_fact_conflict_reports(subject="", predicate="", limit=50)`
+
+See `docs/memory/CONFLICTS.md` for the full V1 rule set.
 
 ## Structured Fact Search
 

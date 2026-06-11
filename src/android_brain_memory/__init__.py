@@ -27,7 +27,14 @@ from .salience import (
     score_candidate,
     threshold_for_score,
 )
-from .storage import MemoryStore, MemorySummaryRecord, MetaMemoryRecord, MigrationRecord, WorkingContextSnapshot
+from .storage import (
+    FactConflictReport,
+    MemoryStore,
+    MemorySummaryRecord,
+    MetaMemoryRecord,
+    MigrationRecord,
+    WorkingContextSnapshot,
+)
 from .retrieval import retrieve_memory
 
 __all__ = [
@@ -55,6 +62,7 @@ __all__ = [
     "promotion_decision",
     "threshold_for_score",
     "MemoryStore",
+    "FactConflictReport",
     "MemorySummaryRecord",
     "MetaMemoryRecord",
     "MigrationRecord",

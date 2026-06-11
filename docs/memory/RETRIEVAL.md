@@ -73,6 +73,8 @@ These statuses are not treated as ordinary active facts:
 
 A caller may explicitly set `MemoryQuery.fact_status` to retrieve one of those statuses for review/debug flows. When non-active facts are returned, the `MemoryBundle.warnings` field records that they came from an explicit status filter.
 
+Fact conflict handling can mark inferred facts `superseded` or incompatible confirmed facts `conflicted`. Ordinary retrieval hides those facts through the same active-status default.
+
 ## Source Priority
 
 When facts otherwise match the query similarly, ordering prefers more reliable source types:

@@ -70,14 +70,14 @@ Goal: implement the truth/provenance rules documented in the design.
 Deliverables:
 
 - [x] Meta-memory writes for stored episodes and facts.
-- Basic conflict detection for facts with the same subject/predicate and incompatible object values.
-- User-confirmed fact precedence over inferred facts during conflict/supersession decisions.
-- Supersession/conflict status tests.
+- [x] Basic conflict detection for facts with the same subject/predicate and incompatible object values.
+- [x] User-confirmed fact precedence over inferred facts during conflict/supersession decisions.
+- [x] Supersession/conflict status tests.
 
 Exit criteria:
 
-- Conflicts are marked rather than silently overwritten.
-- User-confirmed facts are preferred during conflict/supersession decisions.
+- [x] Conflicts are marked rather than silently overwritten.
+- [x] User-confirmed facts are preferred during conflict/supersession decisions.
 
 ## Phase 4 — Retrieval Ranking
 
