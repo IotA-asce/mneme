@@ -34,6 +34,9 @@ Deliverables:
 
 - Read APIs for raw traces and fact support links.
 - Episode time-window retrieval.
+- [x] Meta-memory writes for raw traces, episodes, facts, and summaries.
+- [x] Speakability filtering for ordinary retrieval.
+- [x] Retrieval count updates for returned records.
 - Provenance summary generation from stored trace, episode, and fact support data.
 
 Exit criteria:
@@ -66,7 +69,7 @@ Goal: implement the truth/provenance rules documented in the design.
 
 Deliverables:
 
-- Meta-memory writes for stored episodes and facts.
+- [x] Meta-memory writes for stored episodes and facts.
 - Basic conflict detection for facts with the same subject/predicate and incompatible object values.
 - User-confirmed fact precedence over inferred facts during conflict/supersession decisions.
 - Supersession/conflict status tests.
@@ -101,7 +104,7 @@ Goal: create useful summaries without pretending to have a full daemon.
 
 Deliverables:
 
-- `memory_summary` writes for repeated or high-salience episodes.
+- [x] `memory_summary` writes for repeated or high-salience episodes.
 - A deterministic repeated-event grouping placeholder.
 - Decay/downranking fields or documented schema changes if current tables are insufficient.
 - Consolidation report tests.

@@ -11,6 +11,8 @@ The storage layer owns:
 - SQLite connection setup.
 - Applying tracked SQL migrations.
 - Writing raw traces, episodes, facts, fact support links, meta-memory records, and working context snapshots.
+- Writing memory summaries.
+- Writing corresponding meta-memory records during raw trace, episode, fact, and summary storage.
 - Reading facts and episodes by ID.
 - Basic text search over facts and episodes.
 - Structured fact search over subject, predicate, object text, source type, status, and tags.
@@ -65,6 +67,7 @@ Supported methods:
 - `write_meta_memory(record)`
 - `get_meta_memory(memory_id, memory_kind)`
 - `update_meta_memory(memory_id, memory_kind, ...)`
+- `record_retrieval(memory_id, memory_kind, ...)`
 
 Fields preserved:
 
@@ -77,6 +80,16 @@ Fields preserved:
 - speakability.
 
 The provenance field is stored as JSON and returned as a dictionary. Source type is normalized back to `SourceType`.
+
+See `docs/memory/PROVENANCE.md` for normalized provenance fields and speakability policy.
+
+## Summaries
+
+Supported method:
+
+- `store_memory_summary(...)`
+
+Summary storage writes to `memory_summary` and can write a corresponding `meta_memory` row. Summary retrieval is not implemented yet.
 
 ## Working Context Snapshots
 

@@ -12,8 +12,10 @@ from android_brain_memory.models import (
     MemoryQuery,
     MemoryStatus,
     SalienceFeatures,
+    Speakability,
     SourceType,
     parse_memory_status,
+    parse_speakability,
     parse_source_type,
     validate_confidence,
     validate_salience,
@@ -158,6 +160,7 @@ def test_timestamp_validation_and_ordering():
 def test_enum_conversion_and_invalid_enum_values():
     assert parse_source_type("user_confirmed") == SourceType.USER_CONFIRMED
     assert parse_memory_status("conflicted") == MemoryStatus.CONFLICTED
+    assert parse_speakability("never_say") == Speakability.NEVER_SAY
 
     fact = Fact(
         fact_id="fact_enum",
@@ -176,6 +179,9 @@ def test_enum_conversion_and_invalid_enum_values():
 
     with pytest.raises(ValueError):
         parse_memory_status("archived")
+
+    with pytest.raises(ValueError):
+        parse_speakability("public")
 
 
 def assert_json_round_trip(model):
@@ -201,6 +207,8 @@ def test_serialization_round_trips_for_domain_models():
         fact_status=MemoryStatus.ACTIVE,
         max_results=3,
         include_summaries=False,
+        trusted_internal=True,
+        include_internal=True,
     )
     bundle = MemoryBundle(
         query_id="query_001",

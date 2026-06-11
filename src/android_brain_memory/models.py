@@ -24,6 +24,13 @@ class MemoryStatus(StrEnum):
     PURGED = "purged"
 
 
+class Speakability(StrEnum):
+    NORMAL = "normal"
+    RESTRICTED = "restricted"
+    NEVER_SAY = "never_say"
+    INTERNAL_ONLY = "internal_only"
+
+
 def validate_probability(value: Any, field_name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f"{field_name} must be a number between 0.0 and 1.0")
@@ -74,6 +81,16 @@ def parse_memory_status(value: Any, field_name: str = "status") -> MemoryStatus:
         return MemoryStatus(value)
     except (TypeError, ValueError) as exc:
         allowed = ", ".join(item.value for item in MemoryStatus)
+        raise ValueError(f"{field_name} must be one of: {allowed}") from exc
+
+
+def parse_speakability(value: Any, field_name: str = "speakability") -> Speakability:
+    if isinstance(value, Speakability):
+        return value
+    try:
+        return Speakability(value)
+    except (TypeError, ValueError) as exc:
+        allowed = ", ".join(item.value for item in Speakability)
         raise ValueError(f"{field_name} must be one of: {allowed}") from exc
 
 
@@ -394,6 +411,8 @@ class MemoryQuery:
     include_episodes: bool = True
     include_facts: bool = True
     include_summaries: bool = True
+    trusted_internal: bool = False
+    include_internal: bool = False
 
     def __post_init__(self) -> None:
         self.query_text = _optional_text(self.query_text, "query_text")
@@ -412,6 +431,8 @@ class MemoryQuery:
         self.include_episodes = _bool(self.include_episodes, "include_episodes")
         self.include_facts = _bool(self.include_facts, "include_facts")
         self.include_summaries = _bool(self.include_summaries, "include_summaries")
+        self.trusted_internal = _bool(self.trusted_internal, "trusted_internal")
+        self.include_internal = _bool(self.include_internal, "include_internal")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -429,6 +450,8 @@ class MemoryQuery:
             "include_episodes": self.include_episodes,
             "include_facts": self.include_facts,
             "include_summaries": self.include_summaries,
+            "trusted_internal": self.trusted_internal,
+            "include_internal": self.include_internal,
         }
 
     @classmethod
@@ -449,6 +472,8 @@ class MemoryQuery:
             include_episodes=data.get("include_episodes", True),
             include_facts=data.get("include_facts", True),
             include_summaries=data.get("include_summaries", True),
+            trusted_internal=data.get("trusted_internal", False),
+            include_internal=data.get("include_internal", False),
         )
 
 

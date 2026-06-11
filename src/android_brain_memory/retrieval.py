@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 import re
+import time
 import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from .models import Episode, Fact, MemoryBundle, MemoryQuery, MemoryStatus, SourceType
+from .models import Episode, Fact, MemoryBundle, MemoryQuery, MemoryStatus, SourceType, Speakability
 from .storage import MemoryStore, MetaMemoryRecord
 
 RANKING_WEIGHTS = {
@@ -29,6 +30,7 @@ SOURCE_RELIABILITY = {
 }
 
 TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
+INTERNAL_SPEAKABILITY = {Speakability.NEVER_SAY, Speakability.INTERNAL_ONLY}
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,10 +88,15 @@ def retrieve_memory(store: MemoryStore, query: MemoryQuery) -> MemoryBundle:
         if query.include_episodes and (query.query_text.strip() or not has_structured_fact_filters)
         else []
     )
-    ranked = rank_retrieval_candidates(
+    candidates = _filter_candidates_by_speakability(
         store,
         query,
         _build_retrieval_candidates(raw_facts, raw_episodes),
+    )
+    ranked = rank_retrieval_candidates(
+        store,
+        query,
+        candidates,
     )
     facts = [
         ranked_item.candidate.item
@@ -130,6 +137,7 @@ def retrieve_memory(store: MemoryStore, query: MemoryQuery) -> MemoryBundle:
             "returned non-active fact status(es) due to explicit status filter: "
             + ", ".join(non_active_statuses)
         )
+    _record_retrievals(store, returned_ids)
 
     return MemoryBundle(
         query_id=f"query_{uuid.uuid4().hex[:12]}",
@@ -162,6 +170,30 @@ def rank_retrieval_candidates(
             ranked_item.candidate.memory_id,
         ),
     )
+
+
+def _filter_candidates_by_speakability(
+    store: MemoryStore,
+    query: MemoryQuery,
+    candidates: list[RetrievalCandidate],
+) -> list[RetrievalCandidate]:
+    allow_internal = query.trusted_internal and query.include_internal
+    visible = []
+    for candidate in candidates:
+        meta = store.get_meta_memory(candidate.memory_id, candidate.memory_kind)
+        if meta is None:
+            visible.append(candidate)
+            continue
+        if meta.speakability in INTERNAL_SPEAKABILITY and not allow_internal:
+            continue
+        visible.append(candidate)
+    return visible
+
+
+def _record_retrievals(store: MemoryStore, returned_ids: set[tuple[str, str]]) -> None:
+    retrieved_ts = int(time.time())
+    for memory_kind, memory_id in sorted(returned_ids):
+        store.record_retrieval(memory_id, memory_kind, retrieved_ts=retrieved_ts)
 
 
 def _rank_candidate(

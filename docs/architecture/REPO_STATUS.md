@@ -31,7 +31,11 @@ Implemented memory code:
 - Fact support link writes through `fact_support`.
 - Fact tag persistence through `fact_tag`.
 - Meta-memory record writes, reads, and partial updates.
+- Meta-memory writes during raw trace, episode, fact, and summary storage.
+- Meta-memory retrieval count and last-retrieved timestamp updates when retrieval returns facts or episodes.
+- Speakability filtering for `never_say` and `internal_only` records during ordinary retrieval.
 - Working context snapshot writes and recent snapshot reads.
+- Memory summary writes.
 - Fact and episode lookup by ID.
 - Free-text and structured fact search over subject, predicate, object text, source type, status, and tags.
 - Basic free-text episode search over summary and JSON context.
@@ -51,11 +55,11 @@ The following areas exist but are not complete enough to count as full phase com
 - Sensory echo: `raw_trace` exists and can be written, but there is no read-by-id/list API, no retention policy, and no promotion pipeline that starts from raw traces.
 - Working memory: `working_context_snapshot` can be written and read as recent snapshots, but there is no active working-memory lifecycle or state manager yet.
 - Episodic memory: episodes can be written, found by text, and retrieved by ID. Participant and object entities are persisted through `episode_entity`. There is no time-window query, topic-specific query API, first-class persisted episode provenance list, or dedicated episode debug output.
-- Provenance: source type, confidence, fact support links, meta-memory provenance JSON, and caller-provided trace references exist in pieces. There is no end-to-end provenance traversal, derivation chain, version history, or persisted episode provenance list.
+- Provenance: source type, confidence, fact support links, normalized meta-memory provenance JSON, retrieval counters, speakability, and caller-provided trace references exist in pieces. There is no end-to-end provenance traversal, version history, or persisted episode provenance list.
 - Semantic facts: facts can be upserted, source typed, tagged, searched by structured fields, and linked to supporting episodes. There is no conflict detection or supersession flow.
-- Retrieval manager: retrieval returns reranked facts and episodes from local SQLite. It does not search working memory, summaries, or self model, and it does not update retrieval history.
+- Retrieval manager: retrieval returns reranked facts and episodes from local SQLite, updates meta-memory retrieval history for returned records, and filters internal-only speakability records by default. It does not search working memory, summaries, or self model.
 - Consolidation: a report type and no-op pass exist. No summaries, clustering, fact extraction, conflict detection, decay, or downranking are implemented.
-- Meta-memory: typed storage methods exist for records, but retrieval history updates are not yet integrated into the retrieval manager.
+- Meta-memory: typed storage methods exist for records, provenance JSON, speakability, and retrieval history updates.
 - Config: `config/memory.yaml` records salience defaults that can be loaded when requested.
 
 ## Documented But Not Implemented
@@ -71,7 +75,7 @@ The design documents describe these future capabilities, but the repository does
 - Working memory lifecycle and active context management.
 - Procedural memory and self model behavior.
 - Memory summaries and semanticization of repeated episodes.
-- Forgetting, suppression, accessibility decay, detail decay, purge policy, and speakability policy.
+- Forgetting, accessibility decay, detail decay, and purge policy beyond the current speakability retrieval filter.
 - Contradiction review or supersession workflow.
 - Structured observability logs for promotion decisions, retrieval rankings, consolidation changes, conflicts, and pruning.
 - Full JSON-friendly serialization contract for future ROS wrappers.
@@ -97,7 +101,7 @@ The test suite currently contains focused model, salience, storage, and retrieva
 - `tests/test_storage_migrations.py::test_working_context_snapshots_are_read_recent_first`
 - `tests/test_storage_migrations.py::test_get_episode_and_fact_by_id_preserve_typed_fields`
 
-Coverage is focused on model validation, salience decisions, raw trace/episode/fact writes, migration tracking, meta-memory storage, working context snapshots, structured fact retrieval, deterministic retrieval reranking, basic episode retrieval, and retrieval include flags. There are no tests yet for fact conflict behavior, provenance traversal, consolidation mutations, decay/downranking, raw trace read APIs, or time-window episode queries.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, basic episode retrieval, and retrieval include flags. There are no tests yet for fact conflict behavior, full provenance traversal, consolidation mutations, decay/downranking, raw trace read APIs, or time-window episode queries.
 
 ## Verification Commands
 
@@ -128,8 +132,8 @@ The safest next tasks should stay inside the memory prototype and avoid hardware
 
 1. Add raw trace read/list APIs and fact support read APIs.
 2. Add episode time-window retrieval.
-3. Integrate meta-memory retrieval counter updates into retrieval paths.
-4. Add summary retrieval behind tests once summaries are written.
+3. Add summary retrieval behind tests now that summary writes exist.
+4. Add provenance traversal across raw traces, episodes, facts, and summaries.
 5. Add richer episode time/topic retrieval.
 6. Turn `consolidate_once()` into a minimal summary-producing pass only after storage and retrieval contracts are stronger.
 

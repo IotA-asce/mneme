@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from android_brain_memory.models import Episode, Fact, MemoryQuery, MemoryStatus, SourceType
+from android_brain_memory.models import Episode, Fact, MemoryQuery, MemoryStatus, SourceType, Speakability
 from android_brain_memory.retrieval import retrieve_memory
 from android_brain_memory.storage import MemoryStore, MetaMemoryRecord
 
@@ -429,4 +429,135 @@ def test_retrieval_history_bonus_reranks_similar_facts_and_is_explained(tmp_path
     assert first_explanation["meta_memory"]["retrieval_count"] == 5
     assert second_explanation["factors"]["retrieval_history_bonus"] == 0.0
     assert first_explanation["score"] > second_explanation["score"]
+    store.close()
+
+
+def test_retrieval_updates_meta_memory_counts_for_returned_items(tmp_path):
+    store = open_migrated_store(tmp_path)
+    episode = Episode(
+        episode_id="ep_counter",
+        start_ts=10,
+        end_ts=20,
+        summary="Counter memory episode.",
+        context={"topic": "counter memory"},
+        salience=0.7,
+        confidence=0.9,
+    )
+    fact = Fact(
+        fact_id="fact_counter",
+        subject="mneme",
+        predicate="tracks_counter",
+        object_value={"value": "counter memory"},
+        confidence=0.9,
+        source_type=SourceType.SYSTEM_GENERATED,
+    )
+    store.store_episode(episode)
+    store.upsert_fact(fact)
+
+    first = retrieve_memory(store, MemoryQuery(query_text="counter memory", max_results=2))
+    second = retrieve_memory(store, MemoryQuery(query_text="counter memory", max_results=2))
+
+    assert [fact.fact_id for fact in first.facts] == ["fact_counter"]
+    assert [episode.episode_id for episode in second.episodes] == ["ep_counter"]
+    fact_meta = store.get_meta_memory("fact_counter", "fact")
+    episode_meta = store.get_meta_memory("ep_counter", "episode")
+    assert fact_meta is not None
+    assert episode_meta is not None
+    assert fact_meta.retrieval_count == 2
+    assert episode_meta.retrieval_count == 2
+    assert fact_meta.last_retrieved_ts is not None
+    assert episode_meta.last_retrieved_ts is not None
+    store.close()
+
+
+def test_retrieval_filters_internal_speakability_without_trusted_override(tmp_path):
+    store = open_migrated_store(tmp_path)
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_normal_policy",
+            subject="mneme",
+            predicate="policy",
+            object_value={"value": "normal policy"},
+            confidence=0.9,
+            source_type=SourceType.SYSTEM_GENERATED,
+        ),
+        speakability=Speakability.NORMAL,
+    )
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_restricted_policy",
+            subject="mneme",
+            predicate="policy",
+            object_value={"value": "restricted policy"},
+            confidence=0.9,
+            source_type=SourceType.SYSTEM_GENERATED,
+        ),
+        speakability=Speakability.RESTRICTED,
+    )
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_never_say_policy",
+            subject="mneme",
+            predicate="policy",
+            object_value={"value": "never say policy"},
+            confidence=0.9,
+            source_type=SourceType.SYSTEM_GENERATED,
+        ),
+        speakability=Speakability.NEVER_SAY,
+    )
+    store.upsert_fact(
+        Fact(
+            fact_id="fact_internal_only_policy",
+            subject="mneme",
+            predicate="policy",
+            object_value={"value": "internal only policy"},
+            confidence=0.9,
+            source_type=SourceType.SYSTEM_GENERATED,
+        ),
+        speakability=Speakability.INTERNAL_ONLY,
+    )
+
+    default_bundle = retrieve_memory(
+        store,
+        MemoryQuery(query_text="", fact_subject="mneme", fact_predicate="policy", max_results=10),
+    )
+    untrusted_internal_request = retrieve_memory(
+        store,
+        MemoryQuery(
+            query_text="",
+            fact_subject="mneme",
+            fact_predicate="policy",
+            max_results=10,
+            include_internal=True,
+        ),
+    )
+    trusted_internal_bundle = retrieve_memory(
+        store,
+        MemoryQuery(
+            query_text="",
+            fact_subject="mneme",
+            fact_predicate="policy",
+            max_results=10,
+            trusted_internal=True,
+            include_internal=True,
+        ),
+    )
+
+    assert [fact.fact_id for fact in default_bundle.facts] == [
+        "fact_normal_policy",
+        "fact_restricted_policy",
+    ]
+    assert [fact.fact_id for fact in untrusted_internal_request.facts] == [
+        "fact_normal_policy",
+        "fact_restricted_policy",
+    ]
+    assert [fact.fact_id for fact in trusted_internal_bundle.facts] == [
+        "fact_normal_policy",
+        "fact_restricted_policy",
+        "fact_internal_only_policy",
+        "fact_never_say_policy",
+    ]
+    hidden_meta = store.get_meta_memory("fact_never_say_policy", "fact")
+    assert hidden_meta is not None
+    assert hidden_meta.retrieval_count == 1
     store.close()

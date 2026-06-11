@@ -9,8 +9,10 @@ from .models import (
     MemoryQuery,
     MemoryBundle,
     MemoryStatus,
+    Speakability,
     SourceType,
     parse_memory_status,
+    parse_speakability,
     parse_source_type,
     validate_confidence,
     validate_salience,
@@ -25,7 +27,7 @@ from .salience import (
     score_candidate,
     threshold_for_score,
 )
-from .storage import MemoryStore, MetaMemoryRecord, MigrationRecord, WorkingContextSnapshot
+from .storage import MemoryStore, MemorySummaryRecord, MetaMemoryRecord, MigrationRecord, WorkingContextSnapshot
 from .retrieval import retrieve_memory
 
 __all__ = [
@@ -37,8 +39,10 @@ __all__ = [
     "MemoryQuery",
     "MemoryBundle",
     "MemoryStatus",
+    "Speakability",
     "SourceType",
     "parse_memory_status",
+    "parse_speakability",
     "parse_source_type",
     "validate_confidence",
     "validate_salience",
@@ -51,6 +55,7 @@ __all__ = [
     "promotion_decision",
     "threshold_for_score",
     "MemoryStore",
+    "MemorySummaryRecord",
     "MetaMemoryRecord",
     "MigrationRecord",
     "WorkingContextSnapshot",

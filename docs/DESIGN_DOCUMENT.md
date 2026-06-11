@@ -421,6 +421,8 @@ Suggested defaults:
 
 ## 9. Truth and provenance model
 
+Detailed V1 provenance and meta-memory notes live in `docs/memory/PROVENANCE.md`.
+
 The system must never collapse these categories:
 
 ```text
@@ -586,6 +588,8 @@ Multiple similar episodes become a summary.
 ### 13.4 Suppression
 
 Unsafe, irrelevant, or user-restricted items are hidden from normal retrieval.
+
+V1 speakability values are `normal`, `restricted`, `never_say`, and `internal_only`. Ordinary retrieval hides `never_say` and `internal_only` unless a trusted internal query explicitly asks for internal records.
 
 ### 13.5 Purge
 

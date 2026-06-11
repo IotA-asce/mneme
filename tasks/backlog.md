@@ -66,6 +66,8 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add working context snapshot writes/reads
 - [x] Add meta-memory writes
 - [x] Add meta-memory reads/updates
+- [x] Add meta-memory writes during raw trace, episode, fact, and summary storage
+- [x] Add memory summary writes
 
 ## Retrieval
 
@@ -84,12 +86,16 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Return provenance summary
 - [ ] Return provenance summary derived from stored support links
 - [x] Add retrieval warnings for explicitly requested non-active fact results
+- [x] Update meta-memory retrieval counters for returned memories
+- [x] Filter `never_say` and `internal_only` memories from ordinary retrieval
 
 ## Provenance and truth handling
 
 - [x] Preserve source type and confidence on core models
 - [x] Store source type and confidence for raw traces and facts
 - [x] Store fact-to-episode support links
+- [x] Normalize provenance JSON with source, derivation path, supporting memory IDs, and notes
+- [x] Add speakability values: `normal`, `restricted`, `never_say`, `internal_only`
 - [ ] Preserve episode `provenance_refs` as first-class stored data
 - [ ] Traverse raw trace -> episode -> fact support provenance
 - [ ] Implement user-confirmed fact precedence over inferred facts
@@ -121,5 +127,6 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add memory storage documentation
 - [x] Add salience scoring documentation
 - [x] Add memory retrieval documentation
+- [x] Add provenance and meta-memory documentation
 - [ ] Keep `docs/DESIGN_DOCUMENT.md` current as implementation changes
 - [ ] Add ADRs for major architecture changes

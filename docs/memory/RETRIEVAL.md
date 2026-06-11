@@ -11,8 +11,10 @@ The retrieval layer owns:
 - accepting `MemoryQuery` objects,
 - querying local fact and episode storage,
 - filtering ordinary fact retrieval to active facts by default,
+- filtering internal-only speakability records by default,
 - building retrieval candidates,
 - applying deterministic reranking,
+- updating meta-memory retrieval counters for returned items,
 - returning a `MemoryBundle`.
 
 The retrieval layer does not own:
@@ -21,6 +23,7 @@ The retrieval layer does not own:
 - contradiction detection,
 - consolidation,
 - long-term decay,
+- complete authorization or encryption policy,
 - actuator or safety behavior.
 
 ## Query Modes
@@ -45,6 +48,13 @@ Structured fact retrieval is additive. `MemoryQuery` supports these fact filters
 Text filters are case-insensitive partial matches. Full exact strings also match because they are a specific partial match. `fact_source_type`, `fact_status`, and `tags` are exact enum or string-value filters.
 
 When a structured fact query has an empty `query_text`, episode retrieval is skipped so a fact-only lookup does not accidentally return every episode.
+
+Trusted internal retrieval is explicit. To include `never_say` or `internal_only` meta-memory records, callers must set both:
+
+- `trusted_internal=True`
+- `include_internal=True`
+
+Setting only one flag is not enough.
 
 ## Status Handling
 
@@ -106,6 +116,21 @@ Factor behavior:
 Ranking is deterministic. Ties are broken by memory kind and memory ID.
 
 `retrieve_memory()` still returns `facts` and `episodes` as separate lists and preserves the existing per-type `max_results` behavior. Internally it overfetches candidates, reranks them, then returns the top facts and top episodes.
+
+When a returned fact or episode has a meta-memory record, retrieval increments `retrieval_count` and sets `last_retrieved_ts`. Ranking explanations show the meta-memory values used before the current retrieval update.
+
+## Speakability Filtering
+
+Retrieval uses `meta_memory.speakability` when a meta-memory record exists:
+
+| Speakability | Ordinary retrieval |
+|---|---|
+| `normal` | Returned |
+| `restricted` | Returned |
+| `never_say` | Hidden |
+| `internal_only` | Hidden |
+
+`never_say` and `internal_only` can only be returned by a trusted internal query that explicitly includes internal records.
 
 ## Ranking Explanations
 
@@ -175,6 +200,8 @@ Current tests cover:
 - deterministic reranking order,
 - ranking explanations,
 - retrieval history bonus from meta-memory.
+- retrieval count updates,
+- speakability filtering and trusted internal override.
 
 Useful targeted command:
 

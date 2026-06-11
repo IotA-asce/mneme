@@ -44,6 +44,13 @@ Memory statuses must match `MemoryStatus`:
 - `suppressed`
 - `purged`
 
+Speakability values must match `Speakability`:
+
+- `normal`
+- `restricted`
+- `never_say`
+- `internal_only`
+
 Required identifiers and summaries must be non-empty strings. Whitespace-only summaries are invalid.
 
 Optional list fields use dataclass default factories. Missing optional fields in `from_dict()` use their documented defaults, but invalid supplied values are rejected.
@@ -59,6 +66,8 @@ Facts may carry optional `tags`. Queries may carry optional structured fact filt
 These fields are additive. Existing `query_text`-based retrieval remains valid.
 
 `MemoryBundle` may include `ranking_explanations`, a JSON-friendly debug list returned by the retrieval layer. It is optional and defaults to an empty list so existing bundle construction remains compatible.
+
+`MemoryQuery.trusted_internal` and `MemoryQuery.include_internal` default to `False`. Both must be true before retrieval may include `never_say` or `internal_only` items.
 
 ## Serialization
 

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from android_brain_memory.models import Episode, Fact, MemoryStatus, SourceType
+from android_brain_memory.models import Episode, Fact, MemoryStatus, SourceType, Speakability
 from android_brain_memory.storage import MetaMemoryRecord, MemoryStore
 
 
@@ -80,12 +80,124 @@ def test_meta_memory_write_read_and_update_preserves_fields(tmp_path):
 
     assert loaded == record
     assert updated.source_type == SourceType.USER_CONFIRMED
-    assert updated.provenance == {"supporting_episode_ids": ["ep_001"], "source": "test"}
+    assert updated.provenance == {
+        "supporting_episode_ids": ["ep_001"],
+        "source": "test",
+        "source_type": "user_confirmed",
+        "source_id": None,
+        "derivation_path": [],
+        "supporting_memory_ids": [],
+        "notes": None,
+    }
     assert updated.last_retrieved_ts == 120
     assert updated.retrieval_count == 2
     assert updated.contradiction_score == 0.4
-    assert updated.speakability == "restricted"
+    assert updated.speakability == Speakability.RESTRICTED
     assert store.get_meta_memory("missing", "fact") is None
+    store.close()
+
+
+def test_storage_writes_meta_memory_with_normalized_provenance(tmp_path):
+    store = open_migrated_store(tmp_path)
+    trace_id = store.store_raw_trace(
+        summary="User asked Mneme to remember provenance.",
+        payload={"utterance": "remember provenance"},
+        source_type=SourceType.USER_CONFIRMED,
+        confidence=0.9,
+        salience=0.8,
+        source_id="dialogue_001",
+        derivation_path=["dialogue", "raw_trace"],
+        notes="Raw trace provenance test.",
+        speakability=Speakability.RESTRICTED,
+    )
+    episode = Episode(
+        episode_id="ep_provenance",
+        start_ts=10,
+        end_ts=11,
+        summary="User asked about provenance.",
+        context={"trace_id": trace_id},
+        salience=0.8,
+        confidence=0.9,
+        provenance_refs=[trace_id],
+    )
+    store.store_episode(
+        episode,
+        source_type=SourceType.USER_CONFIRMED,
+        source_id="dialogue_001",
+        derivation_path=["raw_trace", "episode"],
+        notes="Episode derived from raw trace.",
+    )
+    fact = Fact(
+        fact_id="fact_provenance",
+        subject="mneme",
+        predicate="tracks",
+        object_value={"value": "provenance"},
+        confidence=0.9,
+        source_type=SourceType.USER_CONFIRMED,
+        supporting_episode_ids=[episode.episode_id],
+    )
+    store.upsert_fact(
+        fact,
+        source_id="dialogue_001",
+        derivation_path=["episode", "fact"],
+        notes="Fact derived from episode.",
+    )
+    summary = store.store_memory_summary(
+        summary_type="topic",
+        scope_key="provenance",
+        summary="Mneme tracks provenance for memory records.",
+        confidence=0.85,
+        summary_id="summary_provenance",
+        source_type=SourceType.SYSTEM_GENERATED,
+        derivation_path=["episode", "summary"],
+        supporting_memory_ids=[episode.episode_id, fact.fact_id],
+        notes="Summary derived from episode and fact.",
+    )
+
+    trace_meta = store.get_meta_memory(trace_id, "raw_trace")
+    episode_meta = store.get_meta_memory(episode.episode_id, "episode")
+    fact_meta = store.get_meta_memory(fact.fact_id, "fact")
+    summary_meta = store.get_meta_memory(summary.summary_id, "summary")
+
+    assert trace_meta is not None
+    assert trace_meta.speakability == Speakability.RESTRICTED
+    assert trace_meta.provenance == {
+        "source_type": "user_confirmed",
+        "source_id": "dialogue_001",
+        "derivation_path": ["dialogue", "raw_trace"],
+        "supporting_memory_ids": [],
+        "notes": "Raw trace provenance test.",
+    }
+    assert episode_meta is not None
+    assert episode_meta.provenance["supporting_memory_ids"] == [trace_id]
+    assert episode_meta.provenance["derivation_path"] == ["raw_trace", "episode"]
+    assert fact_meta is not None
+    assert fact_meta.provenance["supporting_memory_ids"] == [episode.episode_id]
+    assert fact_meta.provenance["notes"] == "Fact derived from episode."
+    assert summary_meta is not None
+    assert summary_meta.provenance["supporting_memory_ids"] == [episode.episode_id, fact.fact_id]
+    assert summary_meta.provenance["derivation_path"] == ["episode", "summary"]
+    store.close()
+
+
+def test_meta_memory_rejects_secret_like_provenance_keys(tmp_path):
+    store = open_migrated_store(tmp_path)
+
+    with pytest.raises(ValueError, match="secret-bearing"):
+        store.store_raw_trace(
+            summary="Bad provenance.",
+            payload={},
+            source_type=SourceType.SYSTEM_GENERATED,
+            confidence=0.5,
+            salience=0.1,
+            provenance={"api_token": "do-not-store"},
+        )
+    store.store_working_context_snapshot({"after": "rejection"})
+    row = store.conn.execute(
+        "SELECT COUNT(*) AS count FROM raw_trace WHERE summary = ?",
+        ("Bad provenance.",),
+    ).fetchone()
+    assert row["count"] == 0
     store.close()
 
 
