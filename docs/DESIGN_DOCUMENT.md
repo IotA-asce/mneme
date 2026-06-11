@@ -567,6 +567,8 @@ Jobs:
 
 V1 can implement this as a simple CLI/background function rather than a real daemon.
 
+V1 deterministic consolidation behavior is documented in `docs/memory/CONSOLIDATION.md`.
+
 ---
 
 ## 13. Forgetting policy
@@ -576,6 +578,8 @@ Forgetting is not only deletion. The system supports:
 ### 13.1 Accessibility decay
 
 The item remains stored but becomes less likely to retrieve.
+
+V1 records consolidation-driven decay/downranking hints in `meta_memory.provenance_json["decay"]`; retrieval does not consume those hints yet.
 
 ### 13.2 Detail decay
 

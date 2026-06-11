@@ -45,7 +45,7 @@ Implemented memory code:
 - User-confirmed facts outrank inferred facts when relevance is otherwise similar.
 - Deterministic retrieval reranking over facts and episodes using context match, entity match, recency, salience, confidence, source reliability, and meta-memory retrieval history where available.
 - `MemoryBundle.ranking_explanations` debug output for returned ranked items.
-- A conservative `consolidate_once()` placeholder that counts active episodes and performs no mutations.
+- A deterministic `consolidate_once()` skeleton that groups repeated episodes, creates summaries, preserves episodes, and writes decay/downranking metadata to meta-memory.
 - `open_default_store()` helper pointing at `.local/android_brain_memory.sqlite3`.
 
 ## Partially Implemented
@@ -58,7 +58,7 @@ The following areas exist but are not complete enough to count as full phase com
 - Provenance: source type, confidence, fact support links, normalized meta-memory provenance JSON, retrieval counters, speakability, and caller-provided trace references exist in pieces. There is no end-to-end provenance traversal, version history, or persisted episode provenance list.
 - Semantic facts: facts can be upserted, source typed, tagged, searched by structured fields, linked to supporting episodes, checked for conservative semantic conflicts, marked `superseded`/`conflicted`, and queried through conflict reports.
 - Retrieval manager: retrieval returns reranked facts and episodes from local SQLite, updates meta-memory retrieval history for returned records, and filters internal-only speakability records by default. It does not search working memory, summaries, or self model.
-- Consolidation: a report type and no-op pass exist. No background summaries, clustering, fact extraction, decay, or downranking are implemented.
+- Consolidation: a one-shot deterministic pass can create repeated-episode summaries and meta-memory decay hints. No long-running daemon, fact extraction, contradiction review, purge behavior, or retrieval downranking is implemented.
 - Meta-memory: typed storage methods exist for records, provenance JSON, speakability, and retrieval history updates.
 - Config: `config/memory.yaml` records salience defaults that can be loaded when requested.
 
@@ -74,8 +74,8 @@ The design documents describe these future capabilities, but the repository does
 - Promotion pipeline from observation to buffer to scoring to storage.
 - Working memory lifecycle and active context management.
 - Procedural memory and self model behavior.
-- Memory summaries and semanticization of repeated episodes.
-- Forgetting, accessibility decay, detail decay, and purge policy beyond the current speakability retrieval filter.
+- Semanticization of repeated episodes into facts.
+- Forgetting, accessibility decay, detail decay, and purge policy beyond current speakability filtering and consolidation decay metadata.
 - Contradiction review or supersession workflow.
 - Structured observability logs for promotion decisions, retrieval rankings, consolidation changes, conflicts, and pruning.
 - Full JSON-friendly serialization contract for future ROS wrappers.
@@ -104,8 +104,9 @@ The test suite currently contains focused model, salience, storage, and retrieva
 - `tests/test_storage_migrations.py::test_user_confirmed_fact_conflict_preserves_both_for_review`
 - `tests/test_storage_migrations.py::test_same_semantic_fact_duplicate_is_not_a_conflict`
 - `tests/test_storage_migrations.py::test_context_preserving_fact_difference_is_not_a_conflict`
+- `tests/test_consolidation.py::test_consolidate_once_creates_summary_for_repeated_episodes`
 
-Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, and retrieval include flags. There are no tests yet for full provenance traversal, consolidation mutations, decay/downranking, raw trace read APIs, or time-window episode queries.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, and retrieval include flags. There are no tests yet for full provenance traversal, fact extraction from consolidation, retrieval use of decay/downranking, raw trace read APIs, or time-window episode queries.
 
 ## Verification Commands
 
@@ -136,10 +137,10 @@ The safest next tasks should stay inside the memory prototype and avoid hardware
 
 1. Add raw trace read/list APIs and fact support read APIs.
 2. Add episode time-window retrieval.
-3. Add summary retrieval behind tests now that summary writes exist.
+3. Add summary retrieval behind tests now that summary writes and consolidation summaries exist.
 4. Add provenance traversal across raw traces, episodes, facts, and summaries.
 5. Add richer episode time/topic retrieval.
-6. Turn `consolidate_once()` into a minimal summary-producing pass only after storage and retrieval contracts are stronger.
+6. Add retrieval use of consolidation decay/downranking metadata after summary retrieval exists.
 
 ## Current Risk
 

@@ -104,11 +104,11 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 ## Consolidation
 
 - [x] Add conservative non-mutating consolidation report placeholder
-- [ ] Add simple summary creation
-- [ ] Add repeated-event clustering placeholder
+- [x] Add simple summary creation
+- [x] Add repeated-event clustering placeholder
 - [ ] Add background consolidation conflict detection
-- [ ] Add decay/downranking fields
-- [ ] Add consolidation report tests
+- [x] Add decay/downranking fields
+- [x] Add consolidation report tests
 
 ## Interfaces and future integration
 

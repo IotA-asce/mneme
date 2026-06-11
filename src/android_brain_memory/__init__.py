@@ -36,6 +36,7 @@ from .storage import (
     WorkingContextSnapshot,
 )
 from .retrieval import retrieve_memory
+from .consolidation import ConsolidationOptions, ConsolidationReport, consolidate_once
 
 __all__ = [
     "MemoryCandidate",
@@ -68,4 +69,7 @@ __all__ = [
     "MigrationRecord",
     "WorkingContextSnapshot",
     "retrieve_memory",
+    "ConsolidationOptions",
+    "ConsolidationReport",
+    "consolidate_once",
 ]

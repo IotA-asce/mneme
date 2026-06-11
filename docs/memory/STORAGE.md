@@ -13,8 +13,11 @@ The storage layer owns:
 - Writing raw traces, episodes, facts, fact support links, meta-memory records, and working context snapshots.
 - Writing memory summaries.
 - Writing corresponding meta-memory records during raw trace, episode, fact, and summary storage.
+- Reading memory summaries.
+- Writing decay/downranking metadata through meta-memory provenance.
 - Conservative semantic fact conflict and supersession handling during fact upsert.
 - Reading facts and episodes by ID.
+- Reading recent active episodes.
 - Basic text search over facts and episodes.
 - Structured fact search over subject, predicate, object text, source type, status, and tags.
 - Conflict/supersession report queries for facts.
@@ -71,6 +74,7 @@ Supported methods:
 - `get_meta_memory(memory_id, memory_kind)`
 - `update_meta_memory(memory_id, memory_kind, ...)`
 - `record_retrieval(memory_id, memory_kind, ...)`
+- `update_decay_metadata(memory_id, memory_kind, ...)`
 
 Fields preserved:
 
@@ -86,13 +90,17 @@ The provenance field is stored as JSON and returned as a dictionary. Source type
 
 See `docs/memory/PROVENANCE.md` for normalized provenance fields and speakability policy.
 
+Consolidation decay/downranking hints are stored in `provenance_json["decay"]`. This is metadata only; retrieval does not use it for ranking yet.
+
 ## Summaries
 
 Supported method:
 
 - `store_memory_summary(...)`
+- `get_memory_summary(summary_id)`
+- `get_memory_summaries(...)`
 
-Summary storage writes to `memory_summary` and can write a corresponding `meta_memory` row. Summary retrieval is not implemented yet.
+Summary storage writes to `memory_summary` and can write a corresponding `meta_memory` row. Summary retrieval through the main retrieval manager is not implemented yet.
 
 ## Working Context Snapshots
 
@@ -110,6 +118,7 @@ Snapshots are returned newest first by `created_ts`.
 Supported ID lookups:
 
 - `get_episode(episode_id)`
+- `get_recent_episodes(...)`
 - `get_fact(fact_id)`
 
 Fact lookups preserve:

@@ -79,6 +79,8 @@ Exit criteria:
 
 ## Phase 5 — Consolidation skeleton
 
+Status: V1 deterministic summary-producing consolidation is implemented as a manual one-shot pass, not a long-running daemon.
+
 Deliverables:
 
 - consolidation pass

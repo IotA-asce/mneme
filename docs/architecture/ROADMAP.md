@@ -105,14 +105,14 @@ Goal: create useful summaries without pretending to have a full daemon.
 Deliverables:
 
 - [x] `memory_summary` writes for repeated or high-salience episodes.
-- A deterministic repeated-event grouping placeholder.
-- Decay/downranking fields or documented schema changes if current tables are insufficient.
-- Consolidation report tests.
+- [x] A deterministic repeated-event grouping placeholder.
+- [x] Decay/downranking fields or documented schema changes if current tables are insufficient.
+- [x] Consolidation report tests.
 
 Exit criteria:
 
-- Repeated events can produce one summary artifact.
-- The consolidation pass remains safe, local, and deterministic.
+- [x] Repeated events can produce one summary artifact.
+- [x] The consolidation pass remains safe, local, and deterministic.
 
 ## Deferred Until V1 Memory Is Stable
 

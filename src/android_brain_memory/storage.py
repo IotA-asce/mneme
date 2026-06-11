@@ -763,6 +763,46 @@ class MemoryStore:
         self.conn.commit()
         return record
 
+    def get_memory_summary(self, summary_id: str) -> MemorySummaryRecord | None:
+        row = self.conn.execute(
+            """
+            SELECT *
+            FROM memory_summary
+            WHERE summary_id = ?
+            """,
+            (summary_id,),
+        ).fetchone()
+        return self._memory_summary_from_row(row) if row else None
+
+    def get_memory_summaries(
+        self,
+        *,
+        summary_type: str = "",
+        scope_key: str = "",
+        limit: int = 50,
+    ) -> list[MemorySummaryRecord]:
+        limit = _positive_int(limit, "limit")
+        where_clauses = []
+        params: list[Any] = []
+        if summary_type.strip():
+            where_clauses.append("summary_type = ?")
+            params.append(summary_type)
+        if scope_key.strip():
+            where_clauses.append("scope_key = ?")
+            params.append(scope_key)
+        where_sql = " AND ".join(where_clauses) if where_clauses else "1 = 1"
+        rows = self.conn.execute(
+            f"""
+            SELECT *
+            FROM memory_summary
+            WHERE {where_sql}
+            ORDER BY created_ts DESC, summary_id ASC
+            LIMIT ?
+            """,
+            (*params, limit),
+        ).fetchall()
+        return [self._memory_summary_from_row(row) for row in rows]
+
     def write_meta_memory(self, record: MetaMemoryRecord, *, commit: bool = True) -> None:
         self.conn.execute(
             """
@@ -895,6 +935,44 @@ class MemoryStore:
         self.write_meta_memory(updated)
         return updated
 
+    def update_decay_metadata(
+        self,
+        memory_id: str,
+        memory_kind: str,
+        decay_metadata: dict[str, Any],
+        *,
+        source_type: SourceType | str = SourceType.SYSTEM_GENERATED,
+    ) -> MetaMemoryRecord:
+        decay = _json_mapping(decay_metadata, "decay_metadata")
+        existing = self.get_meta_memory(memory_id, memory_kind)
+        if existing is None:
+            record = MetaMemoryRecord(
+                memory_id=memory_id,
+                memory_kind=memory_kind,
+                source_type=source_type,
+                provenance={
+                    "derivation_path": ["consolidation", "decay_metadata"],
+                    "decay": decay,
+                },
+            )
+            self.write_meta_memory(record)
+            return record
+
+        provenance = dict(existing.provenance)
+        provenance["decay"] = decay
+        updated = MetaMemoryRecord(
+            memory_id=existing.memory_id,
+            memory_kind=existing.memory_kind,
+            source_type=existing.source_type,
+            provenance=provenance,
+            last_retrieved_ts=existing.last_retrieved_ts,
+            retrieval_count=existing.retrieval_count,
+            contradiction_score=existing.contradiction_score,
+            speakability=existing.speakability,
+        )
+        self.write_meta_memory(updated)
+        return updated
+
     def record_retrieval(
         self,
         memory_id: str,
@@ -957,6 +1035,26 @@ class MemoryStore:
             (episode_id,),
         ).fetchone()
         return self._episode_from_row(row) if row else None
+
+    def get_recent_episodes(
+        self,
+        *,
+        limit: int = 100,
+        status: MemoryStatus | str = MemoryStatus.ACTIVE,
+    ) -> list[Episode]:
+        limit = _positive_int(limit, "limit")
+        status_filter = parse_memory_status(status, "status")
+        rows = self.conn.execute(
+            """
+            SELECT *
+            FROM episode
+            WHERE status = ?
+            ORDER BY end_ts DESC, episode_id DESC
+            LIMIT ?
+            """,
+            (status_filter.value, limit),
+        ).fetchall()
+        return [self._episode_from_row(row) for row in rows]
 
     def get_fact(self, fact_id: str) -> Fact | None:
         row = self.conn.execute(
@@ -1215,6 +1313,19 @@ class MemoryStore:
             retrieval_count=row["retrieval_count"],
             contradiction_score=row["contradiction_score"],
             speakability=row["speakability"],
+        )
+
+    @staticmethod
+    def _memory_summary_from_row(row: sqlite3.Row) -> MemorySummaryRecord:
+        return MemorySummaryRecord(
+            summary_id=row["summary_id"],
+            summary_type=row["summary_type"],
+            scope_key=row["scope_key"],
+            summary=row["summary"],
+            confidence=row["confidence"],
+            start_ts=row["start_ts"],
+            end_ts=row["end_ts"],
+            created_ts=row["created_ts"],
         )
 
     @staticmethod
