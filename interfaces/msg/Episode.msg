@@ -1,0 +1,12 @@
+std_msgs/Header header
+string episode_id
+builtin_interfaces/Time start_time
+builtin_interfaces/Time end_time
+string context_json
+string[] participants
+string[] objects
+string summary
+float32 salience
+float32 confidence
+string[] provenance_refs
+string[] derived_fact_ids

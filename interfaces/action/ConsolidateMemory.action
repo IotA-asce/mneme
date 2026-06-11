@@ -1,0 +1,10 @@
+bool full_pass
+uint32 max_episodes
+---
+bool success
+uint32 episodes_compacted
+uint32 facts_created
+uint32 conflicts_flagged
+---
+string phase
+uint32 processed

@@ -1,0 +1,6 @@
+android_brain_interfaces/MemoryQuery query
+---
+android_brain_interfaces/MemoryBundle bundle
+---
+string stage
+uint32 candidates_examined

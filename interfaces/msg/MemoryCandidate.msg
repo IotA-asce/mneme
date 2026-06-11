@@ -1,0 +1,12 @@
+std_msgs/Header header
+string candidate_id
+string candidate_type
+string source_node
+string[] entities
+string[] tags
+float32 salience
+float32 confidence
+builtin_interfaces/Duration ttl
+string summary
+string payload_json
+string[] provenance_refs

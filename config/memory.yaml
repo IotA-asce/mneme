@@ -1,0 +1,29 @@
+salience:
+  weights:
+    novelty: 0.22
+    task_relevance: 0.18
+    social_relevance: 0.18
+    surprise: 0.14
+    risk: 0.12
+    contradiction: 0.08
+    repetition_signal: 0.05
+    explicit_remember_flag: 0.03
+  thresholds:
+    echo_only_max: 0.25
+    working_memory_max: 0.55
+    episode_max: 0.80
+    semantic_candidate_min: 0.80
+  explicit_remember_override: true
+
+retention:
+  sensory_echo_ttl_seconds: 60
+  working_memory_turns: 10
+  default_episode_decay_days: 90
+  preserve_user_confirmed_facts: true
+
+privacy:
+  default_speakability: normal
+  inferred_personal_facts_require_confirmation: true
+
+storage:
+  database_path: .local/android_brain_memory.sqlite3

@@ -1,0 +1,12 @@
+flowchart LR
+  A[Sensory Inputs] --> B[Parallel Perception Workers]
+  B --> C[Shared World Model]
+  C --> D[Attention Manager]
+  D --> E[Memory System]
+  E --> F[Executive / Thought Engine]
+  F --> G[Skill Controllers]
+  G --> H[Actuator Bridge]
+  S[Safety & Observability] -. supervises .-> C
+  S -. supervises .-> F
+  S -. supervises .-> G
+  S -. overrides .-> H

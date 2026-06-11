@@ -1,0 +1,11 @@
+std_msgs/Header header
+string requester
+string query_text
+string query_type
+string[] entities
+string[] tags
+string context_json
+uint32 max_results
+bool include_episodes
+bool include_facts
+bool include_summaries

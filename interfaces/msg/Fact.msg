@@ -1,0 +1,10 @@
+std_msgs/Header header
+string fact_id
+string subject
+string predicate
+string object_json
+float32 confidence
+string source_type
+string status
+string[] supporting_episode_ids
+builtin_interfaces/Time last_confirmed_at
