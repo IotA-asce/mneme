@@ -30,7 +30,10 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Implement/extend `Fact`
 - [x] Implement/extend `MemoryQuery`
 - [x] Implement/extend `MemoryBundle`
-- [ ] Add model validation for malformed confidence/salience inputs
+- [x] Add model validation for malformed confidence/salience inputs
+- [x] Add timestamp, source type, status, and summary validation
+- [x] Add JSON-friendly model serialization helpers
+- [x] Add memory model boundary documentation
 - [ ] Add working context model
 
 ## Salience
