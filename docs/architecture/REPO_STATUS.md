@@ -26,8 +26,12 @@ Implemented memory code:
 - Promotion decisions for echo-only, working-memory candidate, episode, and episode-plus-semantic-candidate.
 - Explicit remember override when `explicit_remember_flag >= 0.9`.
 - SQLite connection management and migration application through `MemoryStore`.
+- Migration tracking through `schema_migration`, including migration IDs, filenames, checksums, and applied timestamps.
 - Writes for raw traces, episodes, and facts.
 - Fact support link writes through `fact_support`.
+- Meta-memory record writes, reads, and partial updates.
+- Working context snapshot writes and recent snapshot reads.
+- Fact and episode lookup by ID.
 - Basic free-text fact search over subject, predicate, and JSON object value.
 - Basic free-text episode search over summary and JSON context.
 - Basic `retrieve_memory()` bundle creation over facts and episodes.
@@ -40,13 +44,13 @@ Implemented memory code:
 The following areas exist but are not complete enough to count as full phase completion:
 
 - Sensory echo: `raw_trace` exists and can be written, but there is no read-by-id/list API, no retention policy, and no promotion pipeline that starts from raw traces.
-- Working memory: `working_context_snapshot` exists in the schema, but no model or store API writes or reads it.
-- Episodic memory: episodes can be written and found by text, and participant entities are written. There is no read-by-id, time-window query, topic-specific query API, object entity persistence, or dedicated episode debug output.
-- Provenance: source type, confidence, fact support links, and caller-provided trace references exist in pieces. There is no end-to-end provenance traversal, derivation chain, version history, or persisted episode provenance list.
+- Working memory: `working_context_snapshot` can be written and read as recent snapshots, but there is no active working-memory lifecycle or state manager yet.
+- Episodic memory: episodes can be written, found by text, and retrieved by ID. Participant and object entities are persisted through `episode_entity`. There is no time-window query, topic-specific query API, first-class persisted episode provenance list, or dedicated episode debug output.
+- Provenance: source type, confidence, fact support links, meta-memory provenance JSON, and caller-provided trace references exist in pieces. There is no end-to-end provenance traversal, derivation chain, version history, or persisted episode provenance list.
 - Semantic facts: facts can be upserted, source typed, and linked to supporting episodes. There is no conflict detection, supersession flow, source precedence, or user-confirmed outranking behavior.
 - Retrieval manager: retrieval returns facts and episodes from simple text searches. It does not search working memory, summaries, or self model; does not apply the documented reranking formula; does not use query entities/tags; and does not update retrieval history.
 - Consolidation: a report type and no-op pass exist. No summaries, clustering, fact extraction, conflict detection, decay, or downranking are implemented.
-- Meta-memory: the `meta_memory` table exists, but no runtime code writes or reads it.
+- Meta-memory: typed storage methods exist for records, but retrieval history updates are not yet integrated into the retrieval manager.
 - Config: `config/memory.yaml` records defaults, but the Python code currently uses hardcoded salience weights and thresholds.
 
 ## Documented But Not Implemented
@@ -60,7 +64,7 @@ The design documents describe these future capabilities, but the repository does
 - Long-running memory daemon or background process.
 - Promotion pipeline from observation to buffer to scoring to storage.
 - Working memory lifecycle and active context management.
-- Procedural memory, self model, and meta-memory behavior.
+- Procedural memory and self model behavior.
 - Memory summaries and semanticization of repeated episodes.
 - Forgetting, suppression, accessibility decay, detail decay, purge policy, and speakability policy.
 - Contradiction review or supersession workflow.
@@ -75,8 +79,13 @@ The test suite currently contains four tests:
 - `tests/test_salience.py::test_low_salience_echo_only`
 - `tests/test_storage_retrieval.py::test_store_trace_episode_and_fact_then_retrieve_bundle`
 - `tests/test_storage_retrieval.py::test_retrieve_memory_respects_fact_and_episode_include_flags`
+- `tests/test_storage_migrations.py::test_migrations_are_tracked_and_idempotent`
+- `tests/test_storage_migrations.py::test_migration_checksum_mismatch_is_rejected`
+- `tests/test_storage_migrations.py::test_meta_memory_write_read_and_update_preserves_fields`
+- `tests/test_storage_migrations.py::test_working_context_snapshots_are_read_recent_first`
+- `tests/test_storage_migrations.py::test_get_episode_and_fact_by_id_preserve_typed_fields`
 
-Coverage is focused on salience decisions, raw trace/episode/fact writes, basic retrieval, and retrieval include flags. There are no tests yet for migrations as a standalone contract, malformed inputs, fact conflict behavior, provenance traversal, retrieval reranking, consolidation mutations, decay/downranking, or working context snapshots.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact writes, migration tracking, meta-memory storage, working context snapshots, basic retrieval, and retrieval include flags. There are no tests yet for fact conflict behavior, provenance traversal, retrieval reranking, consolidation mutations, decay/downranking, raw trace read APIs, or time-window episode queries.
 
 ## Verification Commands
 
@@ -105,10 +114,10 @@ There is no configured lint, typecheck, formatter, or build command beyond packa
 
 The safest next tasks should stay inside the memory prototype and avoid hardware, ROS runtime, new dependencies, and broad refactors:
 
-1. Add storage contract tests for the migration tables, raw trace reads, episode participant persistence, and fact support links.
-2. Add small read APIs for raw traces, episodes, and fact support links before expanding retrieval behavior.
+1. Add raw trace read/list APIs and fact support read APIs.
+2. Add episode time-window retrieval.
 3. Implement structured fact retrieval by subject/predicate/topic with tests.
-4. Add meta-memory writes for stored facts and episodes, preserving source type and provenance.
+4. Integrate meta-memory retrieval counters into retrieval paths.
 5. Add retrieval reranking behind tests using only existing SQLite data and dataclasses.
 6. Turn `consolidate_once()` into a minimal summary-producing pass only after storage and retrieval contracts are stronger.
 

@@ -12,15 +12,18 @@ Status: mostly complete.
 Already present:
 
 - Package skeleton, SQLite migration, scripts, tests, docs, config, and interface drafts.
+- Tracked migration runner with checksum audit.
 - Salience scoring with explicit remember override.
 - Raw trace, episode, and fact writes.
+- Meta-memory and working context snapshot storage methods.
+- Fact and episode ID lookups.
 - Basic text retrieval over facts and episodes.
 - Conservative non-mutating consolidation placeholder.
 
 Remaining baseline cleanup:
 
 - Keep status documents and backlog aligned with implemented behavior.
-- Add storage contract tests before adding more storage behavior.
+- Add raw trace read/list and fact support read APIs before expanding retrieval behavior.
 - Avoid treating interface drafts as runtime ROS integration.
 
 ## Phase 1 — Storage and Provenance Baseline
@@ -29,15 +32,14 @@ Goal: make stored memories inspectable and provenance-preserving without changin
 
 Deliverables:
 
-- Read APIs for raw traces, episodes, facts, and fact support links.
-- Tests for migration table creation and foreign-key-backed support links.
-- Episode persistence for participant/object roles or a documented V1 limitation if object persistence is deferred.
+- Read APIs for raw traces and fact support links.
+- Episode time-window retrieval.
 - Provenance summary generation from stored trace, episode, and fact support data.
 
 Exit criteria:
 
 - A stored candidate can be traced from raw trace to episode to fact support.
-- Tests prove support links survive writes and reads.
+- Tests prove support links can be read directly.
 - No new dependencies are introduced.
 
 ## Phase 2 — Structured Fact Retrieval
@@ -116,4 +118,4 @@ Do not start these until the memory core is demonstrably stable:
 
 ## Current Safest Next Task
 
-Start with Phase 1 storage and provenance tests. This gives the next implementation a narrow blast radius and creates confidence before retrieval ranking, conflict handling, or consolidation changes.
+Start with the remaining Phase 1 storage/provenance read APIs: raw trace reads, fact support reads, and episode time-window retrieval. This keeps the next implementation narrow before retrieval ranking, conflict handling, or consolidation changes.

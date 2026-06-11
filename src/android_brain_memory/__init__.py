@@ -18,7 +18,7 @@ from .models import (
     validate_timestamp_range,
 )
 from .salience import score_candidate, promotion_decision
-from .storage import MemoryStore
+from .storage import MemoryStore, MetaMemoryRecord, MigrationRecord, WorkingContextSnapshot
 from .retrieval import retrieve_memory
 
 __all__ = [
@@ -40,5 +40,8 @@ __all__ = [
     "score_candidate",
     "promotion_decision",
     "MemoryStore",
+    "MetaMemoryRecord",
+    "MigrationRecord",
+    "WorkingContextSnapshot",
     "retrieve_memory",
 ]

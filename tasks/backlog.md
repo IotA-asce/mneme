@@ -21,7 +21,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add canonical development runbook
 - [x] Add repeatable developer check command
 - [x] Add Python 3.11 GitHub Actions CI
-- [ ] Add migration/table contract tests
+- [x] Add migration/table contract tests
 
 ## Memory models
 
@@ -48,16 +48,20 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 ## Storage
 
 - [x] Add migration runner
+- [x] Add migration tracking table
 - [x] Add raw trace writes
 - [x] Add episode writes
 - [x] Add fact upserts
 - [x] Add fact support link writes
+- [x] Add episode read-by-id API
+- [x] Add fact read-by-id API
 - [ ] Add raw trace read/list APIs
-- [ ] Add episode read-by-id and time-window APIs
+- [ ] Add episode time-window APIs
 - [ ] Add fact support read APIs
-- [ ] Persist episode object entities or document why V1 defers them
-- [ ] Add working context snapshot writes/reads
-- [ ] Add meta-memory writes
+- [x] Persist episode object entities
+- [x] Add working context snapshot writes/reads
+- [x] Add meta-memory writes
+- [x] Add meta-memory reads/updates
 
 ## Retrieval
 
@@ -106,5 +110,6 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add current repository status document
 - [x] Add current roadmap document
 - [x] Add local development runbook
+- [x] Add memory storage documentation
 - [ ] Keep `docs/DESIGN_DOCUMENT.md` current as implementation changes
 - [ ] Add ADRs for major architecture changes

@@ -1,5 +1,12 @@
 PRAGMA foreign_keys = ON;
 
+CREATE TABLE IF NOT EXISTS schema_migration (
+  migration_id TEXT PRIMARY KEY,
+  filename TEXT NOT NULL,
+  checksum_sha256 TEXT NOT NULL,
+  applied_ts INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS raw_trace (
   trace_id TEXT PRIMARY KEY,
   created_ts INTEGER NOT NULL,
