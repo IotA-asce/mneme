@@ -1,6 +1,6 @@
 # Backlog
 
-Last audited: 2026-06-11
+Last audited: 2026-06-12
 
 This backlog tracks implementation status against the V1 memory prototype. Checked items are implemented and have at least basic verification. Unchecked items may be documented, drafted in schema/interfaces, or planned, but should not be treated as complete.
 
@@ -22,6 +22,17 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add repeatable developer check command
 - [x] Add Python 3.11 GitHub Actions CI
 - [x] Add migration/table contract tests
+
+## Memory API and CLI
+
+- [x] Add high-level `MnemeMemory` / `MemoryEngine` facade
+- [x] Wrap migration initialization, candidate scoring, raw trace storage, episode encoding, fact upsert, retrieval, consolidation, and database inspection
+- [x] Add argparse CLI with `init-db`, `remember-candidate`, `add-episode`, `add-fact`, `retrieve`, `consolidate-once`, and `inspect-db`
+- [x] Support JSON input/output for Codex, replay, and debug use
+- [x] Add integration tests for candidate -> score -> episode/fact -> retrieve -> consolidate flow
+- [x] Add memory CLI runbook
+- [ ] Add package console-script entry point after CLI command shape settles
+- [ ] Add optional raw trace inspection commands after raw trace read/list APIs exist
 
 ## Memory models
 
@@ -124,6 +135,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add current repository status document
 - [x] Add current roadmap document
 - [x] Add local development runbook
+- [x] Add memory CLI runbook
 - [x] Add memory storage documentation
 - [x] Add salience scoring documentation
 - [x] Add memory retrieval documentation
