@@ -20,6 +20,11 @@ DEFAULT_ATTENTION_TARGET_TTL_MS = 3_000
 DEFAULT_ATTENTION_DWELL_MS = 500
 DEFAULT_SWITCH_MARGIN = 0.12
 DEFAULT_SELF_NAMES = ("mneme", "robot")
+DEFAULT_IOR_MS = 2_000
+DEFAULT_IOR_PENALTY = 0.15
+DEFAULT_STATE_HISTORY = 64
+CURIOSITY_LABELS = ("scan_left", "scan_center", "scan_right")
+CURIOSITY_PRIORITY = 0.05
 
 ATTENTION_WEIGHTS = {
     "safety_relevance": 0.50,
@@ -190,12 +195,22 @@ class AttentionManager:
         source: str = "attention_manager",
         clock: Callable[[], int] | None = None,
         bus: EventBus | None = None,
+        ior_ms: int = DEFAULT_IOR_MS,
+        ior_penalty: float = DEFAULT_IOR_PENALTY,
+        enable_curiosity: bool = False,
+        max_history: int = DEFAULT_STATE_HISTORY,
     ) -> None:
         self.dwell_ms = _positive_int(dwell_ms, "dwell_ms")
         self.target_ttl_ms = _positive_int(target_ttl_ms, "target_ttl_ms")
         self.switch_margin = validate_salience(switch_margin, "switch_margin")
         self.self_names = tuple(_required_text(name, "self_names") for name in self_names)
         self.source = _required_text(source, "source")
+        self.ior_ms = _positive_int(ior_ms, "ior_ms")
+        self.ior_penalty = validate_salience(ior_penalty, "ior_penalty")
+        if not isinstance(enable_curiosity, bool):
+            raise ValueError("enable_curiosity must be a boolean")
+        self.enable_curiosity = enable_curiosity
+        self.max_history = _positive_int(max_history, "max_history")
         self._clock = clock or _now_ms
         self._targets: dict[str, AttentionTarget] = {}
         self._active_target_id: str | None = None
@@ -204,8 +219,16 @@ class AttentionManager:
         self._subscription: Subscription | None = None
         self._bus: EventBus | None = None
         self._current_goal_text: str | None = None
+        self._exposures: dict[str, int] = {}
+        self._inhibited_until: dict[str, int] = {}
+        self._history: list[dict[str, Any]] = []
+        self._curiosity_counter = 0
         if bus is not None:
             self.attach_to_bus(bus)
+
+    @property
+    def state_history(self) -> list[dict[str, Any]]:
+        return [dict(entry) for entry in self._history]
 
     def attach_to_bus(self, bus: EventBus) -> Subscription:
         self._bus = bus
@@ -227,7 +250,15 @@ class AttentionManager:
         target = self._target_from_event(event)
         if target is not None and not target.is_expired(now_ms):
             self._targets[target.target_id] = target
+            self._exposures[target.target_id] = self._exposures.get(target.target_id, 0) + 1
         state = self._select_state(now_ms=now_ms)
+        self._publish_state(state)
+        return state
+
+    def idle_tick(self, *, now_ms: int | None = None) -> AttentionState:
+        now = self._clock() if now_ms is None else validate_timestamp(now_ms, "now_ms")
+        self.expire(now_ms=now)
+        state = self._select_state(now_ms=now)
         self._publish_state(state)
         return state
 
@@ -239,6 +270,11 @@ class AttentionManager:
         if self._active_target_id not in self._targets:
             self._active_target_id = None
             self._locked_until_ts = None
+        self._inhibited_until = {
+            target_id: until
+            for target_id, until in self._inhibited_until.items()
+            if until > now
+        }
         return sorted(expired, key=lambda target: (target.last_seen_ts, target.target_id))
 
     def state(self, *, now_ms: int | None = None) -> AttentionState:
@@ -299,7 +335,6 @@ class AttentionManager:
             target_id = f"touch:{zone}"
             label = zone
             target_type = "touch"
-            factors["novelty"] = 1.0
         else:
             object_id = _first_text(payload, ("object_id", "target_id", "label", "name"))
             if object_id is None:
@@ -308,10 +343,7 @@ class AttentionManager:
             label = object_id
             target_type = "object"
 
-        if target_id not in self._targets:
-            factors["novelty"] = max(factors["novelty"], 1.0)
-        else:
-            factors["novelty"] = max(factors["novelty"], 0.25)
+        factors["novelty"] = max(factors["novelty"], self._novelty_for(target_id))
         factors["current_goal"] = self._goal_match_factor(payload, label)
         return self._build_target(
             event=event,
@@ -328,7 +360,7 @@ class AttentionManager:
         factors = _empty_factors(confidence)
         factors["safety_relevance"] = _safety_relevance(safety_level)
         if factors["safety_relevance"] > 0:
-            factors["novelty"] = 1.0 if f"safety:{safety_level}" not in self._targets else 0.25
+            factors["novelty"] = self._novelty_for(f"safety:{safety_level}")
         return self._build_target(
             event=event,
             target_id=f"safety:{safety_level}",
@@ -346,7 +378,7 @@ class AttentionManager:
         confidence = event.confidence if event.confidence is not None else 0.7
         factors = _empty_factors(confidence)
         factors["current_goal"] = 1.0
-        factors["novelty"] = 1.0 if f"goal:{goal}" not in self._targets else 0.25
+        factors["novelty"] = self._novelty_for(f"goal:{goal}")
         return self._build_target(
             event=event,
             target_id=f"goal:{goal}",
@@ -365,7 +397,7 @@ class AttentionManager:
             confidence = event.confidence if event.confidence is not None else 0.7
             factors = _empty_factors(confidence)
             factors["active_speaker"] = 1.0
-            factors["novelty"] = 1.0 if f"person:{speaker}" not in self._targets else 0.25
+            factors["novelty"] = self._novelty_for(f"person:{speaker}")
             return self._build_target(
                 event=event,
                 target_id=f"person:{speaker}",
@@ -396,7 +428,17 @@ class AttentionManager:
             name: round(normalized_factors.get(name, 0.0) * weight, 6)
             for name, weight in ATTENTION_WEIGHTS.items()
         }
-        priority = validate_salience(sum(components.values()), "priority")
+        raw_priority = sum(components.values())
+        inhibited_until = self._inhibited_until.get(target_id)
+        if (
+            inhibited_until is not None
+            and event.timestamp < inhibited_until
+            and target_type != "safety"
+        ):
+            normalized_factors["inhibition_of_return"] = 1.0
+            components["inhibition_of_return"] = -round(self.ior_penalty, 6)
+            raw_priority = max(0.0, raw_priority - self.ior_penalty)
+        priority = validate_salience(raw_priority, "priority")
         ttl_ms = event.ttl_ms if event.ttl_ms is not None else self.target_ttl_ms
         return AttentionTarget(
             target_id=target_id,
@@ -423,6 +465,8 @@ class AttentionManager:
         if best is None:
             self._active_target_id = None
             self._locked_until_ts = None
+            if self.enable_curiosity:
+                return self._curiosity_state(now_ms=now_ms)
             return self._build_state(now_ms=now_ms, reason="no_target")
 
         if current is None:
@@ -452,6 +496,11 @@ class AttentionManager:
         return self._build_state(now_ms=now_ms, reason="current_target_retained")
 
     def _activate(self, target: AttentionTarget, *, now_ms: int) -> None:
+        if (
+            self._active_target_id is not None
+            and self._active_target_id != target.target_id
+        ):
+            self._inhibited_until[self._active_target_id] = now_ms + self.ior_ms
         self._active_target_id = target.target_id
         self._locked_until_ts = now_ms + self.dwell_ms
 
@@ -466,7 +515,7 @@ class AttentionManager:
         dwell_remaining = 0
         if self._locked_until_ts is not None:
             dwell_remaining = max(0, self._locked_until_ts - now_ms)
-        return AttentionState(
+        state = AttentionState(
             state_id=f"attn_state_{self._state_counter:06d}",
             created_ts=now_ms,
             active_target_id=self._active_target_id,
@@ -476,6 +525,55 @@ class AttentionManager:
             dwell_remaining_ms=dwell_remaining,
             reason=reason,
         )
+        self._record_history(state)
+        return state
+
+    def _curiosity_state(self, *, now_ms: int) -> AttentionState:
+        label = CURIOSITY_LABELS[self._curiosity_counter % len(CURIOSITY_LABELS)]
+        self._curiosity_counter += 1
+        self._state_counter += 1
+        target = AttentionTarget(
+            target_id=f"curiosity:{label}",
+            target_type="curiosity",
+            label=label,
+            source=self.source,
+            last_event_id=f"evt_curiosity_{self._curiosity_counter:06d}",
+            last_seen_ts=now_ms,
+            confidence=1.0,
+            priority=CURIOSITY_PRIORITY,
+            factors={"confidence": 1.0},
+            payload={},
+            ttl_ms=self.target_ttl_ms,
+        )
+        state = AttentionState(
+            state_id=f"attn_state_{self._state_counter:06d}",
+            created_ts=now_ms,
+            active_target_id=target.target_id,
+            active_target=target,
+            candidates=[target],
+            locked_until_ts=None,
+            dwell_remaining_ms=0,
+            reason="curiosity_idle",
+        )
+        self._record_history(state)
+        return state
+
+    def _record_history(self, state: AttentionState) -> None:
+        self._history.append(
+            {
+                "state_id": state.state_id,
+                "created_ts": state.created_ts,
+                "active_target_id": state.active_target_id,
+                "reason": state.reason,
+            }
+        )
+        self._history = self._history[-self.max_history :]
+
+    def _novelty_for(self, target_id: str) -> float:
+        exposures = self._exposures.get(target_id, 0)
+        if exposures == 0:
+            return 1.0
+        return max(0.0, round(0.5 ** exposures, 6))
 
     def _publish_state(self, state: AttentionState) -> None:
         if self._bus is None or state.active_target is None:

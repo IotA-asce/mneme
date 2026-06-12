@@ -80,3 +80,14 @@ Covered behavior includes:
 - dwell lock preventing rapid flicker
 - expired targets being released
 - JSON round trips for attention state
+
+## v1 Behaviors (Stage 2 / M2.3)
+
+All deterministic and additive to v0:
+
+- **Habituation**: each target tracks an exposure count; novelty is 1.0 on first sighting, then decays geometrically (`0.5 ** exposures`: 0.5, 0.25, 0.125, …). Repeated stimuli fade instead of staying at a fixed re-seen value.
+- **Inhibition of return**: when focus switches away from a target, that target is penalized (`ior_penalty`, default 0.15 priority) for `ior_ms` (default 2 s). The penalty appears as an explicit `inhibition_of_return` factor and negative weighted component. Safety targets are never inhibited.
+- **Curiosity (opt-in)**: with `enable_curiosity=True` and no live targets, `idle_tick()` activates synthetic transient targets rotating `scan_left` → `scan_center` → `scan_right` (type `curiosity`, priority 0.05, reason `curiosity_idle`). Any real target immediately wins. Disabled by default to preserve the v0 idle contract (`active_target_id is None`).
+- **State history**: every state build appends `{state_id, created_ts, active_target_id, reason}` to a bounded history (`max_history`, default 64), exposed via `state_history` for trace-level explainability.
+
+v1 verification (`tests/test_attention_v1.py`) covers habituation decline, IOR penalty and expiry, safety override immunity to IOR, curiosity rotation/preemption/opt-out, and history recording/bounding.
