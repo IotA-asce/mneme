@@ -18,6 +18,10 @@ The storage layer owns:
 - Conservative semantic fact conflict and supersession handling during fact upsert.
 - Reading facts and episodes by ID.
 - Reading recent active episodes.
+- Reading raw traces by ID and listing recent raw traces.
+- Reading fact support links directly, in both directions.
+- Reading episodes by overlapping time window.
+- Generating provenance chains from stored trace, episode, fact support, and meta-memory data.
 - Basic text search over facts and episodes.
 - Structured fact search over subject, predicate, object text, source type, status, and tags.
 - Conflict/supersession report queries for facts.
@@ -61,6 +65,8 @@ The storage module exposes lightweight dataclasses for storage-specific rows:
 - `MetaMemoryRecord`
 - `FactConflictReport`
 - `WorkingContextSnapshot`
+- `RawTraceRecord`
+- `FactSupportRecord`
 
 These are storage transfer objects, not separate cognition layers. Core memory domain models still live in `src/android_brain_memory/models.py`.
 
@@ -113,12 +119,44 @@ Supported methods:
 
 Snapshots are returned newest first by `created_ts`.
 
+## Raw Traces
+
+Supported methods:
+
+- `get_raw_trace(trace_id)` returns a `RawTraceRecord` or `None`.
+- `get_recent_raw_traces(limit=50, source_type=None)` returns records newest first (`created_ts DESC, trace_id DESC`), optionally filtered to one source type.
+- `store_raw_trace(...)` accepts an optional `created_ts` keyword so replay and tests can write deterministic timestamps. The default remains the current time.
+
+`RawTraceRecord` preserves the trace ID, created timestamp, source type, optional source ID, summary, decoded JSON payload, confidence, and salience.
+
+## Fact Support Links
+
+Supported methods:
+
+- `get_fact_support(fact_id)` returns `FactSupportRecord` links ordered by `episode_id`.
+- `get_facts_for_episode(episode_id)` returns the facts supported by an episode ordered by `fact_id`.
+
+These reads expose the `fact_support` table directly so provenance and review tooling does not need to re-derive support from `Fact.supporting_episode_ids`.
+
+## Provenance Chains
+
+`get_provenance_chain(memory_id, memory_kind)` walks already-stored provenance for a `raw_trace`, `episode`, `fact`, or `summary`:
+
+- facts link to supporting episodes through `fact_support` (`supported_by` edges),
+- every node follows `meta_memory.provenance.supporting_memory_ids` (`derived_from` edges),
+- referenced IDs are resolved against raw traces, episodes, facts, then summaries,
+- IDs that cannot be resolved are reported under `missing` instead of failing,
+- traversal is breadth-first, cycle-safe, and deterministic.
+
+The result is a JSON-friendly dict with `nodes`, `edges`, `missing`, and a human-readable `summary` string. An unknown root raises `KeyError`; an unsupported kind raises `ValueError`. Traversal is read-only and never repairs or rewrites stored provenance.
+
 ## Episodes and Facts
 
 Supported ID lookups:
 
 - `get_episode(episode_id)`
 - `get_recent_episodes(...)`
+- `get_episodes_in_window(start_ts, end_ts, limit=100, status=active)` — returns episodes overlapping the window (`start_ts <= window_end AND end_ts >= window_start`) ordered by `start_ts ASC, episode_id ASC`; pass `status=None` to disable the status filter.
 - `get_fact(fact_id)`
 
 Fact lookups preserve:

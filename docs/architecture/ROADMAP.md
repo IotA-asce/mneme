@@ -37,20 +37,22 @@ Remaining baseline cleanup:
 
 Goal: make stored memories inspectable and provenance-preserving without changing the schema.
 
+Status: Implemented.
+
 Deliverables:
 
-- Read APIs for raw traces and fact support links.
-- Episode time-window retrieval.
+- [x] Read APIs for raw traces and fact support links.
+- [x] Episode time-window retrieval.
 - [x] Meta-memory writes for raw traces, episodes, facts, and summaries.
 - [x] Speakability filtering for ordinary retrieval.
 - [x] Retrieval count updates for returned records.
-- Provenance summary generation from stored trace, episode, and fact support data.
+- [x] Provenance summary generation from stored trace, episode, and fact support data (`get_provenance_chain`).
 
 Exit criteria:
 
-- A stored candidate can be traced from raw trace to episode to fact support.
-- Tests prove support links can be read directly.
-- No new dependencies are introduced.
+- [x] A stored candidate can be traced from raw trace to episode to fact support.
+- [x] Tests prove support links can be read directly.
+- [x] No new dependencies are introduced.
 
 ## Phase 2 — Structured Fact Retrieval
 

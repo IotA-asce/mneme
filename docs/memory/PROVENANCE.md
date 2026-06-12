@@ -98,6 +98,18 @@ Retrieval history is also used as a small ranking factor. The ranking explanatio
 
 `store_memory_summary()` writes `memory_summary` rows and can write corresponding meta-memory records. Summary retrieval is still future work.
 
+## Provenance Chain Traversal
+
+`MemoryStore.get_provenance_chain(memory_id, memory_kind)` reconstructs the derivation path of a stored memory from data that is already persisted:
+
+- fact → episode edges come from `fact_support` (`supported_by`),
+- episode → raw trace (and other) edges come from normalized `supporting_memory_ids` in meta-memory (`derived_from`),
+- references that no longer resolve (for example echo-only traces that were never persisted) are listed under `missing`.
+
+This satisfies the Phase 1 exit criterion that a stored candidate can be traced from raw trace to episode to fact support. The traversal is read-only; it reports stored provenance and never invents or repairs links.
+
+See `docs/memory/STORAGE.md` for the read API surface (`get_raw_trace`, `get_recent_raw_traces`, `get_fact_support`, `get_facts_for_episode`, `get_episodes_in_window`).
+
 ## Testing
 
 Current tests cover:
@@ -106,4 +118,7 @@ Current tests cover:
 - secret-like provenance key rejection,
 - retrieval count updates,
 - speakability filtering,
-- trusted internal retrieval override.
+- trusted internal retrieval override,
+- raw trace and fact support read APIs,
+- episode time-window retrieval,
+- end-to-end fact → episode → raw trace chain traversal and missing-reference reporting.

@@ -29,10 +29,12 @@ from .salience import (
 )
 from .storage import (
     FactConflictReport,
+    FactSupportRecord,
     MemoryStore,
     MemorySummaryRecord,
     MetaMemoryRecord,
     MigrationRecord,
+    RawTraceRecord,
     WorkingContextSnapshot,
 )
 from .retrieval import retrieve_memory
@@ -95,7 +97,9 @@ __all__ = [
     "threshold_for_score",
     "MemoryStore",
     "FactConflictReport",
+    "FactSupportRecord",
     "MemorySummaryRecord",
+    "RawTraceRecord",
     "MetaMemoryRecord",
     "MigrationRecord",
     "WorkingContextSnapshot",
