@@ -160,6 +160,11 @@ Supported ID lookups:
 - `get_episodes_in_window(start_ts, end_ts, limit=100, status=active)` — returns episodes overlapping the window (`start_ts <= window_end AND end_ts >= window_start`) ordered by `start_ts ASC, episode_id ASC`; pass `status=None` to disable the status filter.
 - `get_fact(fact_id)`
 
+Status setters for lifecycle transitions (suppression, purge, review workflows):
+
+- `set_episode_status(episode_id, status)` — also refreshes `updated_ts`; raises `KeyError` for unknown IDs.
+- `set_fact_status(fact_id, status)` — raises `KeyError` for unknown IDs.
+
 Fact lookups preserve:
 
 - source type,

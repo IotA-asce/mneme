@@ -66,11 +66,12 @@ Goal: the memory lifecycle (`observe → buffer → score → promote → consol
 - [x] Schedulable, replay-testable consolidation wrapper over the one-shot pass: minimum-interval scheduling policy, batch limits, cumulative stats, and `memory_lifecycle` progress events.
 - [x] Exit: repeated invocations are idempotent; daemon behavior fully testable without threads (`tests/test_consolidation_daemon.py`). Idle-detection triggers deferred to Stage 2 (needs executive/world-model integration). See `docs/memory/CONSOLIDATION.md`.
 
-### M1.4 Forgetting and decay policy
+### M1.4 Forgetting and decay policy — complete (2026-06-12)
 
-- Retrieval-time downranking from existing decay metadata; accessibility decay (harder to retrieve) before detail decay (summarized) before suppression; explicit purge policy with provenance-preserving tombstones.
-- Never silently delete user-confirmed facts.
-- Exit: decay outcomes deterministic and explainable; purge requires explicit policy invocation.
+- [x] Retrieval-time downranking from decay metadata (`score × (1 − penalty)`, visible in ranking explanations).
+- [x] Staged forgetting: accessibility decay → suppression (`run_decay_once`, reversible, conservative criteria) → explicit purge with provenance-preserving tombstones (`purge_memory`).
+- [x] User-confirmed facts never auto-suppressed; purging one requires `force=True` with a reason.
+- [x] Exit: decay outcomes deterministic and explainable; purge requires explicit invocation (`tests/test_decay.py`). Detail decay (in-place summarization) and raw-trace retention remain documented future work. See `docs/memory/DECAY.md`.
 
 ### M1.5 Memory observability
 

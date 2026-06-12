@@ -59,6 +59,7 @@ from .runtime import (
     skill_status,
     world_state_update,
 )
+from .decay import DecayOptions, DecayReport, purge_memory, run_decay_once
 from .extraction import FactExtractionReport, FactExtractor, statement_fact_id
 from .promotion import MemoryPromoter, PromotionOutcome
 from .working_memory import EchoFragment, SensoryEchoBuffer, WorkingMemory, WorkingMemorySnapshot
@@ -138,6 +139,10 @@ __all__ = [
     "FactExtractor",
     "FactExtractionReport",
     "statement_fact_id",
+    "DecayOptions",
+    "DecayReport",
+    "run_decay_once",
+    "purge_memory",
     "executive_intent",
     "skill_goal",
     "skill_status",

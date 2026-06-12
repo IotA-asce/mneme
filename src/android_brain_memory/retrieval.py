@@ -4,6 +4,7 @@ import json
 import re
 import time
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -31,6 +32,7 @@ SOURCE_RELIABILITY = {
 
 TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
 INTERNAL_SPEAKABILITY = {Speakability.NEVER_SAY, Speakability.INTERNAL_ONLY}
+DEFAULT_DECAY_DOWNRANK = 0.3
 
 
 @dataclass(frozen=True, slots=True)
@@ -237,11 +239,15 @@ def _rank_candidate(
         name: factors[name] * weight
         for name, weight in RANKING_WEIGHTS.items()
     }
-    score = sum(components.values())
+    score_before_decay = sum(components.values())
+    decay_penalty = _decay_penalty(meta)
+    score = score_before_decay * (1.0 - decay_penalty)
     explanation = {
         "memory_kind": candidate.memory_kind,
         "memory_id": candidate.memory_id,
         "score": round(score, 6),
+        "score_before_decay": round(score_before_decay, 6),
+        "decay_penalty": round(decay_penalty, 6),
         "weights": dict(RANKING_WEIGHTS),
         "factors": {name: round(value, 6) for name, value in factors.items()},
         "components": {name: round(value, 6) for name, value in components.items()},
@@ -397,6 +403,20 @@ def _source_reliability(source_type: SourceType | None) -> float:
     if source_type is None:
         return 0.0
     return SOURCE_RELIABILITY[source_type]
+
+
+def _decay_penalty(meta: MetaMemoryRecord | None) -> float:
+    if meta is None:
+        return 0.0
+    decay = meta.provenance.get("decay")
+    if not isinstance(decay, Mapping):
+        return 0.0
+    downrank = decay.get("downrank")
+    if not isinstance(downrank, bool) and isinstance(downrank, (int, float)):
+        return max(0.0, min(1.0, float(downrank)))
+    if decay.get("accessibility") == "downrank_candidate":
+        return DEFAULT_DECAY_DOWNRANK
+    return 0.0
 
 
 def _retrieval_history_bonus(meta: MetaMemoryRecord | None) -> float:

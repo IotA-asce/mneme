@@ -86,7 +86,7 @@ Non-representative episodes covered by a summary receive metadata like:
 }
 ```
 
-Retrieval does not consume this metadata yet. It is a documented hook for future accessibility decay and downranking.
+Retrieval consumes this metadata for accessibility decay: episodes marked `downrank_candidate` are downranked at retrieval time, and the decay pass can later suppress them. See `docs/memory/DECAY.md`.
 
 ## Report
 
