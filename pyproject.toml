@@ -19,6 +19,45 @@ mneme-memory = "android_brain_memory.cli:main"
 dev = [
   "pytest>=8.0.0"
 ]
+audio-local = [
+  "numpy>=1.26.0",
+  "sounddevice>=0.4.7"
+]
+vad-local = [
+  "webrtcvad-wheels>=2.0.14"
+]
+asr-local = [
+  "faster-whisper>=1.1.0"
+]
+tts-local = [
+  "kokoro>=0.9.0",
+  "numpy>=1.26.0",
+  "sounddevice>=0.4.7"
+]
+vision-local = [
+  "opencv-python>=4.9.0",
+  "mediapipe>=0.10.14"
+]
+local-speech = [
+  "faster-whisper>=1.1.0",
+  "kokoro>=0.9.0",
+  "numpy>=1.26.0",
+  "sounddevice>=0.4.7",
+  "webrtcvad-wheels>=2.0.14"
+]
+local-vision = [
+  "mediapipe>=0.10.14",
+  "opencv-python>=4.9.0"
+]
+local-lab = [
+  "faster-whisper>=1.1.0",
+  "kokoro>=0.9.0",
+  "mediapipe>=0.10.14",
+  "numpy>=1.26.0",
+  "opencv-python>=4.9.0",
+  "sounddevice>=0.4.7",
+  "webrtcvad-wheels>=2.0.14"
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]

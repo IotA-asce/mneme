@@ -1,7 +1,7 @@
 # ROS 2 Integration Plan
 
-Date: 2026-06-12
-Status: **Deferred** — moved to the Stage 6 physical-embodiment track by owner decision (master roadmap revision 2). The interface contracts and node boundaries below remain the plan of record for when the physical track resumes; until then the cross-platform local runtime (Stage 3) is the transport. No ROS packages should be added before that track is green-lit.
+Date: 2026-06-13
+Status: **Deferred** — moved to the Stage 8 physical-embodiment track by owner decision. The interface contracts and node boundaries below remain the plan of record for when the physical track resumes; until then the cross-platform local runtime and Stage 6 Local Living Lab are the transport. No ROS packages should be added before that track is green-lit.
 
 This document records the node boundaries and the future launch sequence so that ROS 2 integration is a mechanical wrapping exercise, not a redesign.
 

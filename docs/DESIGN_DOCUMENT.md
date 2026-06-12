@@ -82,7 +82,7 @@ V1 is a **local memory prototype** that can run on a laptop or Mac mini without 
 - a CLI/demo path
 - JSON-friendly outputs suitable for future ROS messages
 
-### V1 must not include
+### V1 originally did not include
 
 - physical actuator control
 - real-time safety-critical code
@@ -90,6 +90,8 @@ V1 is a **local memory prototype** that can run on a laptop or Mac mini without 
 - full ROS 2 integration
 - long-running LLM agents
 - procedural self-modification
+
+The implementation has since moved beyond the original memory-only V1 into the virtual-head and Stage 6 Local Living Lab path. Direct local camera/microphone processing is now allowed only behind optional dependency extras and the existing perception-worker boundaries. Physical actuator control, real-time safety-critical code, ROS runtime nodes, long-running cloud/LLM agents, and procedural self-modification remain out of scope unless separately designed and approved.
 
 ---
 

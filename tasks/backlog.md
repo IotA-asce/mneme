@@ -132,18 +132,28 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add live camera capture worker
 - [x] Add live microphone transcript worker with local command adapter
 - [x] Add perception-scale raw frame/transcript retention controls
-- [ ] Add optional built-in native camera backend after dependency choice
-- [ ] Add optional built-in face/person detector after model choice
-- [ ] Add optional built-in VAD/ASR backend after dependency choice
+- [x] Add optional built-in native camera backend after dependency choice
+- [x] Add optional built-in face/person detector after model choice
+- [x] Add optional built-in VAD/ASR backend after dependency choice
 - [x] Add terminal virtual head command `mneme run`
 - [x] Add scripted JSON mode for deterministic virtual-head demos
 - [x] Add virtual conversational presence coordinator
 - [x] Add simulated speech output backend
 - [x] Add optional local TTS command adapter for speech output
+- [x] Add optional native local TTS backend
 - [x] Persist speech voice selection as procedural memory
 - [x] Add virtual avatar state for listening, thinking, speaking, idle, gaze, and safety
 - [x] Add virtual skill runner with accepted/running/completed/failed/preempted/canceled statuses
 - [x] Add deterministic barge-in preemption for active virtual speech
+- [x] Add local model registry and `mneme models` CLI
+- [x] Add Stage 6 runtime profiles for local-speech, local-vision, and local-lab
+- [x] Add stdlib local browser UI command `mneme ui`
+- [x] Add local evaluation JSONL logger and `mneme eval summarize`
+- [ ] Validate local-speech with real microphone, ASR model files, TTS playback, and barge-in on the current Mac
+- [ ] Validate local-vision with real camera permission, OpenCV frame capture, and MediaPipe face/person observations
+- [ ] Improve local browser UI from dashboard to expressive virtual head
+- [ ] Add redacted daily-driver logs and soak replay fixtures
+- [ ] Add richer evaluation metrics for latency, correction rate, contradiction rate, and stuck states
 - [x] Add ROS-style interface drafts
 - [x] Add local runtime event model for ROS-like architecture boundaries
 - [x] Add deterministic in-process event bus for tests and demos
@@ -177,6 +187,8 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add scenario replay runbook
 - [x] Add Stage 3 virtual head runbook
 - [x] Add Stage 5 conversational presence runbook
+- [x] Add Stage 6 Local Living Lab runbook
+- [x] Add local model hygiene runbook
 - [x] Add sensory echo and working memory documentation
 - [x] Add memory storage documentation
 - [x] Add salience scoring documentation

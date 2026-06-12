@@ -62,6 +62,7 @@ from .runtime import (
 from .context_windows import ContextWindow, ContextWindowManager
 from .decay import DecayOptions, DecayReport, purge_memory, run_decay_once
 from .dialogue import DialogueActType, DialoguePlanner, UtterancePlan
+from .evaluation import EvaluationLogger, EvaluationRecord
 from .extraction import FactExtractionReport, FactExtractor, statement_fact_id
 from .promotion import MemoryPromoter, PromotionOutcome
 from .live_perception import (
@@ -80,6 +81,23 @@ from .live_perception import (
     ScriptedSpeechRecognitionBackend,
     SpeechRecognitionBackend,
     SpeechTranscriptObservation,
+)
+from .local_audio import (
+    AudioCapture,
+    FasterWhisperSpeechRecognitionBackend,
+    KokoroSpeechOutputBackend,
+    SoundDeviceMicrophoneRecorder,
+    VadDecision,
+    WebRtcVadEndpointDetector,
+    pcm16_frames,
+    write_silent_wav,
+)
+from .local_models import LocalModelRecord, LocalModelRegistry, ModelVerification
+from .local_ui import make_ui_handler, render_snapshot_html, serve_ui
+from .local_vision import (
+    FaceDetectionBackend,
+    MediaPipeFaceDetectionBackend,
+    OpenCVCameraCaptureBackend,
 )
 from .peripherals import (
     FakePeripheralBackend,
@@ -211,6 +229,23 @@ __all__ = [
     "ScriptedSpeechRecognitionBackend",
     "SpeechRecognitionBackend",
     "SpeechTranscriptObservation",
+    "AudioCapture",
+    "SoundDeviceMicrophoneRecorder",
+    "VadDecision",
+    "WebRtcVadEndpointDetector",
+    "FasterWhisperSpeechRecognitionBackend",
+    "KokoroSpeechOutputBackend",
+    "write_silent_wav",
+    "pcm16_frames",
+    "LocalModelRecord",
+    "LocalModelRegistry",
+    "ModelVerification",
+    "render_snapshot_html",
+    "make_ui_handler",
+    "serve_ui",
+    "FaceDetectionBackend",
+    "MediaPipeFaceDetectionBackend",
+    "OpenCVCameraCaptureBackend",
     "PeripheralKind",
     "PeripheralDevice",
     "PeripheralSnapshot",
@@ -249,6 +284,8 @@ __all__ = [
     "DialogueActType",
     "DialoguePlanner",
     "UtterancePlan",
+    "EvaluationLogger",
+    "EvaluationRecord",
     "SelfModel",
     "ProceduralMemory",
     "PersonPresence",
