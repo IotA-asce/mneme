@@ -18,6 +18,7 @@ Implemented foundations:
 - Project documentation, starter prompts, configuration, and architecture diagrams.
 - Local runtime event types and an in-process event bus for ROS-like test/demo boundaries without requiring ROS.
 - Bounded sensory echo and working-memory runtime components that can subscribe to local runtime events.
+- Deterministic simulated perception workers and YAML/JSON scenario replay for local tests and demos.
 
 Implemented memory code:
 
@@ -53,6 +54,7 @@ Implemented memory code:
 - High-level `MnemeMemory` / `MemoryEngine` facade for migration initialization, candidate scoring, raw trace storage, episode encoding/storage, fact upsert, retrieval, one-shot consolidation, and database inspection.
 - JSON-oriented memory CLI with `init-db`, `remember-candidate`, `add-episode`, `add-fact`, `retrieve`, `consolidate-once`, and `inspect-db` commands.
 - Runtime event helpers for perception observations, world/state updates, attention updates, memory candidates, executive intents, skill goals/status, and safety events.
+- Scenario replay runner that publishes simulated face/person, speech transcript, sound direction, touch, and body/internal health events through the local runtime bus.
 
 ## Partially Implemented
 
@@ -72,7 +74,7 @@ The following areas exist but are not complete enough to count as full phase com
 
 The design documents describe these future capabilities, but the repository does not yet implement them:
 
-- Parallel perception workers for vision, speech, sound direction, touch, body state, or internal health.
+- Real perception workers for vision, speech, sound direction, touch, body state, or internal health.
 - Shared world model, attention manager, executive arbiter, skill controllers, actuator bridge, and safety supervisor.
 - Physical actuator control or dry-run hardware backend.
 - Full ROS 2 package/runtime integration.
@@ -123,8 +125,11 @@ The test suite currently contains focused model, salience, storage, and retrieva
 - `tests/test_working_memory.py::test_working_memory_updates_from_runtime_events_and_stays_bounded`
 - `tests/test_working_memory.py::test_working_memory_records_world_state_and_skill_goal_status`
 - `tests/test_working_memory.py::test_working_memory_snapshot_persists_to_storage`
+- `tests/test_scenario_replay.py::test_loads_basic_conversation_scenario`
+- `tests/test_scenario_replay.py::test_replay_basic_conversation_updates_echo_working_memory_and_candidates`
+- `tests/test_scenario_replay.py::test_json_scenario_replay_matches_yaml_shape`
 
-Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, and bounded sensory echo/working-memory behavior. There are no tests yet for full provenance traversal, fact extraction from consolidation, retrieval use of decay/downranking, raw trace read APIs, time-window episode queries, ROS adapters, cross-process runtime behavior, or autonomous promotion from working memory.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, bounded sensory echo/working-memory behavior, and deterministic scenario replay. There are no tests yet for full provenance traversal, fact extraction from consolidation, retrieval use of decay/downranking, raw trace read APIs, time-window episode queries, ROS adapters, cross-process runtime behavior, real sensor workers, or autonomous promotion from working memory.
 
 ## Verification Commands
 

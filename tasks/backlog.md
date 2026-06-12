@@ -128,6 +128,8 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add local runtime event model for ROS-like architecture boundaries
 - [x] Add deterministic in-process event bus for tests and demos
 - [x] Integrate sensory echo and working memory with local runtime events
+- [x] Add deterministic simulated perception workers and scenario replay
+- [x] Add scenario replay runbook and fixture format
 - [x] Document local runtime boundaries
 - [ ] Align Python models with interface drafts
 - [ ] Add JSON serialization helpers for future wrappers
@@ -143,6 +145,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add local runtime architecture document
 - [x] Add local development runbook
 - [x] Add memory CLI runbook
+- [x] Add scenario replay runbook
 - [x] Add sensory echo and working memory documentation
 - [x] Add memory storage documentation
 - [x] Add salience scoring documentation

@@ -54,6 +54,18 @@ from .runtime import (
     world_state_update,
 )
 from .working_memory import EchoFragment, SensoryEchoBuffer, WorkingMemory, WorkingMemorySnapshot
+from .simulation import (
+    BodyHealthWorker,
+    FacePersonWorker,
+    ReplayResult,
+    Scenario,
+    ScenarioReplayRunner,
+    ScenarioStep,
+    SoundDirectionWorker,
+    SpeechTranscriptWorker,
+    TouchWorker,
+    load_scenario,
+)
 
 __all__ = [
     "MemoryCandidate",
@@ -110,4 +122,14 @@ __all__ = [
     "SensoryEchoBuffer",
     "WorkingMemory",
     "WorkingMemorySnapshot",
+    "Scenario",
+    "ScenarioStep",
+    "ReplayResult",
+    "ScenarioReplayRunner",
+    "load_scenario",
+    "FacePersonWorker",
+    "SpeechTranscriptWorker",
+    "SoundDirectionWorker",
+    "TouchWorker",
+    "BodyHealthWorker",
 ]
