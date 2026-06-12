@@ -21,6 +21,7 @@ Already present:
 - Conservative non-mutating consolidation placeholder.
 - High-level memory facade and JSON CLI for local debug/replay workflows.
 - Local runtime event model and deterministic in-process event bus for ROS-like tests and demos.
+- Bounded sensory echo and working memory components integrated with local runtime events.
 
 Remaining baseline cleanup:
 
@@ -29,6 +30,7 @@ Remaining baseline cleanup:
 - Avoid treating interface drafts as runtime ROS integration.
 - Consider a package console-script entry point after CLI command shape settles.
 - Keep local runtime events adapter-free until the event boundaries stabilize.
+- Add promotion/replay flows only after echo and working-memory behavior remains stable under tests.
 
 ## Phase 1 — Storage and Provenance Baseline
 

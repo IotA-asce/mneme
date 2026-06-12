@@ -17,6 +17,7 @@ Implemented foundations:
 - ROS-style interface drafts under `interfaces/`; these are documentation/contract drafts, not generated runtime bindings.
 - Project documentation, starter prompts, configuration, and architecture diagrams.
 - Local runtime event types and an in-process event bus for ROS-like test/demo boundaries without requiring ROS.
+- Bounded sensory echo and working-memory runtime components that can subscribe to local runtime events.
 
 Implemented memory code:
 
@@ -36,6 +37,7 @@ Implemented memory code:
 - Meta-memory retrieval count and last-retrieved timestamp updates when retrieval returns facts or episodes.
 - Speakability filtering for `never_say` and `internal_only` records during ordinary retrieval.
 - Working context snapshot writes and recent snapshot reads.
+- Active working-memory context tracking for current speaker, topic, attention target, recent dialogue turns, active goal, safety state, and pending response intent.
 - Memory summary writes.
 - Fact and episode lookup by ID.
 - Free-text and structured fact search over subject, predicate, object text, source type, status, and tags.
@@ -57,7 +59,7 @@ Implemented memory code:
 The following areas exist but are not complete enough to count as full phase completion:
 
 - Sensory echo: `raw_trace` exists and can be written, but there is no read-by-id/list API, no retention policy, and no promotion pipeline that starts from raw traces.
-- Working memory: `working_context_snapshot` can be written and read as recent snapshots, but there is no active working-memory lifecycle or state manager yet.
+- Working memory: `WorkingMemory` maintains a bounded active context and can export/persist snapshots. There is no autonomous promotion pipeline or long-running working-memory daemon yet.
 - Episodic memory: episodes can be written, found by text, and retrieved by ID. Participant and object entities are persisted through `episode_entity`. There is no time-window query, topic-specific query API, first-class persisted episode provenance list, or dedicated episode debug output.
 - Provenance: source type, confidence, fact support links, normalized meta-memory provenance JSON, retrieval counters, speakability, and caller-provided trace references exist in pieces. There is no end-to-end provenance traversal, version history, or persisted episode provenance list.
 - Semantic facts: facts can be upserted, source typed, tagged, searched by structured fields, linked to supporting episodes, checked for conservative semantic conflicts, marked `superseded`/`conflicted`, and queried through conflict reports.
@@ -116,8 +118,13 @@ The test suite currently contains focused model, salience, storage, and retrieva
 - `tests/test_runtime_events.py::test_expired_events_are_not_delivered_and_can_be_pruned`
 - `tests/test_runtime_events.py::test_all_required_runtime_event_types_are_json_friendly`
 - `tests/test_runtime_events.py::test_event_validation_rejects_invalid_confidence_and_mismatched_topic`
+- `tests/test_working_memory.py::test_sensory_echo_buffer_expires_fragments_and_respects_capacity`
+- `tests/test_working_memory.py::test_sensory_echo_buffer_subscribes_to_event_bus_with_filters`
+- `tests/test_working_memory.py::test_working_memory_updates_from_runtime_events_and_stays_bounded`
+- `tests/test_working_memory.py::test_working_memory_records_world_state_and_skill_goal_status`
+- `tests/test_working_memory.py::test_working_memory_snapshot_persists_to_storage`
 
-Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, and local runtime event publication/subscription behavior. There are no tests yet for full provenance traversal, fact extraction from consolidation, retrieval use of decay/downranking, raw trace read APIs, time-window episode queries, ROS adapters, or cross-process runtime behavior.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, and bounded sensory echo/working-memory behavior. There are no tests yet for full provenance traversal, fact extraction from consolidation, retrieval use of decay/downranking, raw trace read APIs, time-window episode queries, ROS adapters, cross-process runtime behavior, or autonomous promotion from working memory.
 
 ## Verification Commands
 
