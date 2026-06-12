@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .models import Episode, Fact, MemoryBundle, MemoryQuery, MemoryStatus, SourceType, Speakability
-from .storage import MemoryStore, MetaMemoryRecord
+from .storage import MemorySummaryRecord, MemoryStore, MetaMemoryRecord
 
 RANKING_WEIGHTS = {
     "context_match": 0.30,
@@ -37,7 +37,7 @@ INTERNAL_SPEAKABILITY = {Speakability.NEVER_SAY, Speakability.INTERNAL_ONLY}
 class RetrievalCandidate:
     memory_kind: str
     memory_id: str
-    item: Fact | Episode
+    item: Fact | Episode | MemorySummaryRecord
     search_text: str
     entities: list[str]
     confidence: float
@@ -88,11 +88,14 @@ def retrieve_memory(store: MemoryStore, query: MemoryQuery) -> MemoryBundle:
         if query.include_episodes and (query.query_text.strip() or not has_structured_fact_filters)
         else []
     )
-    candidates = _filter_candidates_by_speakability(
-        store,
-        query,
-        _build_retrieval_candidates(raw_facts, raw_episodes),
+    raw_summaries = (
+        store.search_memory_summaries(query.query_text, limit=candidate_limit)
+        if query.include_summaries and query.query_text.strip()
+        else []
     )
+    all_candidates = _build_retrieval_candidates(raw_facts, raw_episodes, raw_summaries)
+    candidates = _filter_candidates_by_speakability(store, query, all_candidates)
+    withheld_count = len(all_candidates) - len(candidates)
     ranked = rank_retrieval_candidates(
         store,
         query,
@@ -108,12 +111,20 @@ def retrieve_memory(store: MemoryStore, query: MemoryQuery) -> MemoryBundle:
         for ranked_item in ranked
         if ranked_item.candidate.memory_kind == "episode"
     ][: query.max_results]
+    summaries = [
+        ranked_item.candidate.item
+        for ranked_item in ranked
+        if ranked_item.candidate.memory_kind == "summary"
+    ][: query.max_results]
     returned_ids = {
         ("fact", fact.fact_id)
         for fact in facts
     } | {
         ("episode", episode.episode_id)
         for episode in episodes
+    } | {
+        ("summary", record.summary_id)
+        for record in summaries
     }
     ranking_explanations = [
         dict(ranked_item.explanation, rank=rank)
@@ -127,8 +138,13 @@ def retrieve_memory(store: MemoryStore, query: MemoryQuery) -> MemoryBundle:
         parts.append(f"found {len(facts)} fact(s)")
     if episodes:
         parts.append(f"found {len(episodes)} episode(s)")
+    if summaries:
+        parts.append(f"found {len(summaries)} summary(ies)")
     if not parts:
         parts.append("no matching memory found")
+        warnings.append("no matching memory found for this query")
+    if withheld_count:
+        warnings.append(f"{withheld_count} candidate(s) withheld by speakability policy")
     non_active_statuses = sorted(
         {fact.status.value for fact in facts if fact.status != MemoryStatus.ACTIVE}
     )
@@ -137,6 +153,7 @@ def retrieve_memory(store: MemoryStore, query: MemoryQuery) -> MemoryBundle:
             "returned non-active fact status(es) due to explicit status filter: "
             + ", ".join(non_active_statuses)
         )
+    warnings.extend(_conflict_warnings(store, facts))
     _record_retrievals(store, returned_ids)
 
     return MemoryBundle(
@@ -144,9 +161,10 @@ def retrieve_memory(store: MemoryStore, query: MemoryQuery) -> MemoryBundle:
         summary="; ".join(parts),
         facts=facts,
         episodes=episodes,
+        summaries=[record.to_dict() for record in summaries],
         warnings=warnings,
         ranking_explanations=ranking_explanations,
-        provenance_summary="Results came from local SQLite fact and episode stores.",
+        provenance_summary=_build_provenance_summary(store, facts, episodes, summaries),
     )
 
 
@@ -242,7 +260,58 @@ def _rank_candidate(
     )
 
 
-def _build_retrieval_candidates(facts: list[Fact], episodes: list[Episode]) -> list[RetrievalCandidate]:
+def _conflict_warnings(store: MemoryStore, facts: list[Fact]) -> list[str]:
+    warnings = []
+    seen_statements: set[tuple[str, str]] = set()
+    for fact in facts:
+        statement = (fact.subject.lower(), fact.predicate.lower())
+        if statement in seen_statements:
+            continue
+        seen_statements.add(statement)
+        reports = store.get_fact_conflict_reports(
+            subject=fact.subject,
+            predicate=fact.predicate,
+        )
+        if any(report.conflicted_fact_ids for report in reports):
+            warnings.append(
+                f"conflicting fact records exist for {fact.subject} {fact.predicate}"
+            )
+    return sorted(warnings)
+
+
+def _build_provenance_summary(
+    store: MemoryStore,
+    facts: list[Fact],
+    episodes: list[Episode],
+    summaries: list[MemorySummaryRecord],
+) -> str:
+    returned = [
+        *(("fact", fact.fact_id) for fact in facts),
+        *(("episode", episode.episode_id) for episode in episodes),
+        *(("summary", record.summary_id) for record in summaries),
+    ]
+    lines: list[str] = []
+    for memory_kind, memory_id in returned:
+        chain = store.get_provenance_chain(memory_id, memory_kind)
+        for edge in chain["edges"]:
+            line = (
+                f"{edge['from_kind']} {edge['from_id']} {edge['relation']} "
+                f"{edge['to_kind']} {edge['to_id']}"
+            )
+            if line not in lines:
+                lines.append(line)
+    if not returned:
+        return "no memories were returned for this query"
+    if not lines:
+        return "results came from local SQLite stores; no stored provenance links for returned memories"
+    return "; ".join(lines)
+
+
+def _build_retrieval_candidates(
+    facts: list[Fact],
+    episodes: list[Episode],
+    summaries: list[MemorySummaryRecord] | None = None,
+) -> list[RetrievalCandidate]:
     candidates = []
     for fact in facts:
         candidates.append(
@@ -281,6 +350,20 @@ def _build_retrieval_candidates(facts: list[Fact], episodes: list[Episode]) -> l
                 confidence=episode.confidence,
                 timestamp=episode.end_ts,
                 salience=episode.salience,
+            )
+        )
+    for record in summaries or []:
+        candidates.append(
+            RetrievalCandidate(
+                memory_kind="summary",
+                memory_id=record.summary_id,
+                item=record,
+                search_text=" ".join(
+                    [record.summary, record.scope_key, record.summary_type]
+                ),
+                entities=[],
+                confidence=record.confidence,
+                timestamp=record.end_ts if record.end_ts is not None else record.created_ts,
             )
         )
     return candidates

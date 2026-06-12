@@ -488,6 +488,7 @@ class MemoryBundle:
     summary: str
     facts: list[Fact] = field(default_factory=list)
     episodes: list[Episode] = field(default_factory=list)
+    summaries: list[dict[str, Any]] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     ranking_explanations: list[dict[str, Any]] = field(default_factory=list)
     provenance_summary: str = ""
@@ -503,6 +504,7 @@ class MemoryBundle:
             item if isinstance(item, Episode) else Episode.from_dict(item)
             for item in self.episodes
         ]
+        self.summaries = _json_mapping_list(self.summaries, "summaries")
         self.warnings = _string_list(self.warnings, "warnings")
         self.ranking_explanations = _json_mapping_list(
             self.ranking_explanations,
@@ -516,6 +518,7 @@ class MemoryBundle:
             "summary": self.summary,
             "facts": [fact.to_dict() for fact in self.facts],
             "episodes": [episode.to_dict() for episode in self.episodes],
+            "summaries": [dict(item) for item in self.summaries],
             "warnings": list(self.warnings),
             "ranking_explanations": [dict(item) for item in self.ranking_explanations],
             "provenance_summary": self.provenance_summary,
@@ -529,6 +532,7 @@ class MemoryBundle:
             summary=_required(data, "summary"),
             facts=data.get("facts", []),
             episodes=data.get("episodes", []),
+            summaries=data.get("summaries", []),
             warnings=data.get("warnings", []),
             ranking_explanations=data.get("ranking_explanations", []),
             provenance_summary=data.get("provenance_summary", ""),

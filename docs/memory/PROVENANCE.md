@@ -96,7 +96,7 @@ Retrieval history is also used as a small ranking factor. The ranking explanatio
 
 ## Summary Support
 
-`store_memory_summary()` writes `memory_summary` rows and can write corresponding meta-memory records. Summary retrieval is still future work.
+`store_memory_summary()` writes `memory_summary` rows and can write corresponding meta-memory records. Summaries are retrievable through `retrieve_memory()` text queries; their meta-memory records drive the same speakability filtering and retrieval-history updates as facts and episodes.
 
 ## Provenance Chain Traversal
 

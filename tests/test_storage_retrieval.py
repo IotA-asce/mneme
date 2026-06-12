@@ -59,7 +59,7 @@ def test_store_trace_episode_and_fact_then_retrieve_bundle(tmp_path):
     assert "found 1 episode(s)" in bundle.summary
     assert [fact.fact_id for fact in bundle.facts] == ["fact_test_architecture"]
     assert [episode.episode_id for episode in bundle.episodes] == ["ep_test_architecture"]
-    assert "SQLite" in bundle.provenance_summary
+    assert "fact fact_test_architecture supported_by episode ep_test_architecture" in bundle.provenance_summary
     store.close()
 
 
@@ -314,7 +314,8 @@ def test_structured_fact_retrieval_filters_status_by_default_and_explicit_status
     assert [fact.fact_id for fact in default_bundle.facts] == ["fact_active_preference"]
     assert [fact.fact_id for fact in conflicted_bundle.facts] == ["fact_conflicted_preference"]
     assert conflicted_bundle.warnings == [
-        "returned non-active fact status(es) due to explicit status filter: conflicted"
+        "returned non-active fact status(es) due to explicit status filter: conflicted",
+        "conflicting fact records exist for user prefers",
     ]
     store.close()
 

@@ -105,8 +105,9 @@ Supported method:
 - `store_memory_summary(...)`
 - `get_memory_summary(summary_id)`
 - `get_memory_summaries(...)`
+- `search_memory_summaries(text, limit=5)` — case-insensitive partial match over summary text and scope key, ordered `created_ts DESC, summary_id ASC`.
 
-Summary storage writes to `memory_summary` and can write a corresponding `meta_memory` row. Summary retrieval through the main retrieval manager is not implemented yet.
+Summary storage writes to `memory_summary` and can write a corresponding `meta_memory` row. The retrieval manager searches summaries for text queries and returns them in `MemoryBundle.summaries`.
 
 ## Working Context Snapshots
 
