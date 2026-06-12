@@ -20,6 +20,13 @@ retention:
   working_memory_turns: 10
   default_episode_decay_days: 90
   preserve_user_confirmed_facts: true
+  perception:
+    frame_archive_dir: .local/perception_frames
+    max_archived_frames: 1000
+    max_frame_archive_bytes: 536870912
+    max_frame_age_ms: 604800000
+    persist_raw_frames: true
+    persist_transcripts: true
 
 privacy:
   default_speakability: normal

@@ -2,7 +2,7 @@
 
 Stage 4 begins with host peripheral inventory. Mneme can now list cameras, microphones, and speakers discovered by the operating system.
 
-This is inventory only. Mneme does not yet open camera streams, record microphone audio, run speech recognition, play speech, or verify permissions.
+This runbook is inventory only. The separate live-perception path can use configured local commands to capture frames or produce transcripts, but discovery by itself does not open camera streams, record microphone audio, run speech recognition, play speech, or verify permissions.
 
 ## Run
 
@@ -85,7 +85,8 @@ mneme run --no-fake-devices --json --input "hello"
 - Inventory does not prove permission to capture or play media.
 - Linux output depends on which device tools are installed.
 - Duplicate physical devices can appear through multiple Linux audio APIs.
-- Live frame capture, speech transcription, speaker output, and permission UX remain future Stage 4/5 work.
+- Live frame capture and speech transcription require configured local command adapters; see `docs/runbooks/LIVE_PERCEPTION.md`.
+- Speaker output and permission UX remain later-stage work.
 
 ## Verification
 

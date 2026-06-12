@@ -84,6 +84,15 @@ mneme run --device-backend real --json --input "hello"
 
 Real discovery lists host devices only. It does not open camera streams, record microphone audio, play audio, or run perception models. See `docs/runbooks/REAL_DEVICE_DISCOVERY.md`.
 
+Stage 4 live-perception workers can be enabled with local command adapters:
+
+```bash
+mneme run --device-backend real --camera-command "your-camera-tool --output {output}" --json
+mneme run --device-backend real --speech-command "your-local-asr --device {device_id}" --json
+```
+
+See `docs/runbooks/LIVE_PERCEPTION.md` for command contracts, retention controls, and limitations.
+
 ## Verification
 
 Run:
