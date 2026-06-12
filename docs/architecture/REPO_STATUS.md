@@ -68,13 +68,14 @@ Implemented memory code:
 - Staged forgetting (`decay.py`): retrieval-time downranking from decay metadata, deterministic suppression passes for summarized episodes and superseded facts, and explicit provenance-preserving purge tombstones with user-confirmed protection.
 - Full lifecycle observability: `memory_lifecycle` events for promotion, extraction, consolidation, decay, retrieval, and fact conflicts (engine `event_bus` opt-in; content never leaks into events), plus `inspect-provenance` / `inspect-decay` CLI commands.
 - Shared world model (`WorldModel`): typed TTL-bounded fusion of perception events (persons, active speaker, sound, touch, internal state, safety level) publishing `world_state_update` events with deterministic snapshots.
+- Interaction-bounded context windows (`ContextWindowManager`): open on speech/person/touch, close on idle timeout or explicit boundary, persisting working-memory snapshots automatically.
 
 ## Partially Implemented
 
 The following areas exist but are not complete enough to count as full phase completion:
 
 - Sensory echo: `raw_trace` rows can be written, read by ID, and listed newest-first with a source-type filter. There is still no retention policy and no promotion pipeline that starts from raw traces.
-- Working memory: `WorkingMemory` maintains a bounded active context and can export/persist snapshots. There is no autonomous promotion pipeline or long-running working-memory daemon yet.
+- Working memory: `WorkingMemory` maintains a bounded active context with automatic interaction-bounded context windows (`ContextWindowManager`) that persist snapshots at close boundaries. There is no long-running working-memory daemon yet.
 - Episodic memory: episodes can be written, found by text, retrieved by ID, and queried by overlapping time window. Participant and object entities are persisted through `episode_entity`. There is no topic-specific query API, first-class persisted episode provenance list, or dedicated episode debug output.
 - Provenance: source type, confidence, fact support links, normalized meta-memory provenance JSON, retrieval counters, and speakability are stored, and `get_provenance_chain()` traverses fact → episode → raw trace derivations end-to-end with missing-reference reporting. There is still no version history or persisted episode provenance list.
 - Semantic facts: facts can be upserted, source typed, tagged, searched by structured fields, linked to supporting episodes, checked for conservative semantic conflicts, marked `superseded`/`conflicted`, and queried through conflict reports.
@@ -92,7 +93,6 @@ The design documents describe these future capabilities, but the repository does
 - Physical actuator control or dry-run hardware backend.
 - Full ROS 2 package/runtime integration.
 - Long-running memory daemon or background process.
-- Working memory lifecycle and active context management.
 - Procedural memory and self model behavior.
 - Semanticization of consolidation summaries into facts (structured episode statements are implemented).
 - Detail decay (in-place content summarization) and raw trace retention policy (accessibility decay, suppression, and explicit purge are implemented).
