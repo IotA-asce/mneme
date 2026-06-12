@@ -1,0 +1,76 @@
+name: basic_conversation
+start_ts: 1000
+default_ttl_ms: 5000
+steps:
+  - id: face_user
+    at_ms: 0
+    worker: face_person
+    confidence: 0.92
+    payload:
+      person_id: user
+      label: User
+      expression: attentive
+
+  - id: sound_user
+    at_ms: 10
+    worker: sound_direction
+    confidence: 0.81
+    payload:
+      direction_deg: 15
+      source_label: user
+
+  - id: user_speech
+    at_ms: 20
+    worker: speech_transcript
+    confidence: 0.96
+    important: true
+    payload:
+      speaker: user
+      transcript: "Mneme, remember that I prefer short calibration prompts."
+      topic: calibration
+    memory_candidate:
+      candidate_id: cand_user_short_calibration_prompts
+      candidate_type: user_preference_observation
+      summary: "User prefers short calibration prompts."
+      source_type: sensor_observed
+      confidence: 0.96
+      features:
+        novelty: 0.7
+        task_relevance: 0.9
+        social_relevance: 0.8
+        surprise: 0.2
+        risk: 0.0
+        contradiction: 0.0
+        repetition_signal: 0.1
+        explicit_remember_flag: 1.0
+      entities:
+        - user
+      tags:
+        - preference
+        - calibration
+
+  - id: touch_ack
+    at_ms: 30
+    worker: touch
+    confidence: 0.88
+    payload:
+      zone: left_cheek
+      gesture: tap
+
+  - id: health_nominal
+    at_ms: 40
+    worker: body_health
+    confidence: 0.99
+    payload:
+      status: nominal
+      battery_pct: 87
+      safety_level: normal
+
+  - id: mneme_speech
+    at_ms: 50
+    worker: speech_transcript
+    confidence: 0.93
+    payload:
+      speaker: mneme
+      transcript: "I will keep calibration prompts short."
+      topic: calibration
