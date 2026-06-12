@@ -67,6 +67,7 @@ Implemented memory code:
 - Schedulable consolidation daemon (`ConsolidationDaemon`): interval-policed, batch-bounded consolidation passes with lifecycle events and cumulative stats, driven by injected-clock ticks (no threads).
 - Staged forgetting (`decay.py`): retrieval-time downranking from decay metadata, deterministic suppression passes for summarized episodes and superseded facts, and explicit provenance-preserving purge tombstones with user-confirmed protection.
 - Full lifecycle observability: `memory_lifecycle` events for promotion, extraction, consolidation, decay, retrieval, and fact conflicts (engine `event_bus` opt-in; content never leaks into events), plus `inspect-provenance` / `inspect-decay` CLI commands.
+- Shared world model (`WorldModel`): typed TTL-bounded fusion of perception events (persons, active speaker, sound, touch, internal state, safety level) publishing `world_state_update` events with deterministic snapshots.
 
 ## Partially Implemented
 
@@ -87,7 +88,7 @@ The following areas exist but are not complete enough to count as full phase com
 The design documents describe these future capabilities, but the repository does not yet implement them:
 
 - Real perception workers for vision, speech, sound direction, touch, body state, or internal health.
-- Shared world model, attention manager, executive arbiter, skill controllers, actuator bridge, and safety supervisor.
+- Skill controllers, actuator bridge, and safety supervisor (the shared world model, attention manager v0, and executive arbiter v0 are implemented).
 - Physical actuator control or dry-run hardware backend.
 - Full ROS 2 package/runtime integration.
 - Long-running memory daemon or background process.
