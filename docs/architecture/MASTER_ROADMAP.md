@@ -55,11 +55,11 @@ Goal: the memory lifecycle (`observe → buffer → score → promote → consol
 - [x] Promotion decisions are published as `memory_lifecycle` runtime events for observability.
 - [x] Exit: a replayed scenario yields the documented storage outcomes deterministically; promotion is covered by replay tests (`tests/test_promotion.py`). See `docs/memory/PROMOTION.md`.
 
-### M1.2 Fact extraction (semanticization)
+### M1.2 Fact extraction (semanticization) — complete (2026-06-12)
 
-- Deterministic extraction of semantic fact candidates from high-salience and repeated/consolidated episodes (entity-predicate-value patterns from structured context first; no LLM).
-- Extracted facts enter through the existing conflict-aware `upsert_fact` path as `model_inferred`, never as confirmed.
-- Exit: repeated episodes produce facts with full provenance chains; conflict rules proven under tests.
+- [x] Deterministic extraction of semantic facts from structured episode context (`statements` entries; no LLM), triggered automatically by semantic-candidate promotions.
+- [x] Extracted facts enter through the existing conflict-aware path as `model_inferred` with capped confidence, never as confirmed.
+- [x] Exit: extracted facts carry full provenance chains; conflict precedence against user-confirmed facts proven under tests (`tests/test_fact_extraction.py`). See `docs/memory/EXTRACTION.md`. Extraction from consolidation summaries remains a future increment.
 
 ### M1.3 Consolidation daemon
 

@@ -63,6 +63,7 @@ Implemented memory code:
 - Runtime event helpers for perception observations, world/state updates, attention updates, memory candidates, executive intents, skill goals/status, and safety events.
 - Scenario replay runner that publishes simulated face/person, speech transcript, sound direction, touch, and body/internal health events through the local runtime bus.
 - Automatic memory promotion (`MemoryPromoter`): bus-driven candidate scoring and storage per salience decision, with `memory_lifecycle` observability events.
+- Deterministic fact extraction (`FactExtractor`): structured episode statements become conflict-aware `model_inferred` facts automatically after semantic-candidate promotions.
 
 ## Partially Implemented
 
@@ -89,7 +90,7 @@ The design documents describe these future capabilities, but the repository does
 - Long-running memory daemon or background process.
 - Working memory lifecycle and active context management.
 - Procedural memory and self model behavior.
-- Semanticization of repeated episodes into facts.
+- Semanticization of consolidation summaries into facts (structured episode statements are implemented).
 - Forgetting, accessibility decay, detail decay, and purge policy beyond current speakability filtering and consolidation decay metadata.
 - Contradiction review or supersession workflow.
 - Structured observability logs for promotion decisions, retrieval rankings, consolidation changes, conflicts, and pruning.

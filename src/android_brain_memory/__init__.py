@@ -58,6 +58,7 @@ from .runtime import (
     skill_status,
     world_state_update,
 )
+from .extraction import FactExtractionReport, FactExtractor, statement_fact_id
 from .promotion import MemoryPromoter, PromotionOutcome
 from .working_memory import EchoFragment, SensoryEchoBuffer, WorkingMemory, WorkingMemorySnapshot
 from .simulation import (
@@ -132,6 +133,9 @@ __all__ = [
     "memory_lifecycle_event",
     "MemoryPromoter",
     "PromotionOutcome",
+    "FactExtractor",
+    "FactExtractionReport",
+    "statement_fact_id",
     "executive_intent",
     "skill_goal",
     "skill_status",
