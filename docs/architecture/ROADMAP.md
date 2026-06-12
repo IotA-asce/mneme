@@ -20,6 +20,7 @@ Already present:
 - Basic text retrieval over facts and episodes.
 - Conservative non-mutating consolidation placeholder.
 - High-level memory facade and JSON CLI for local debug/replay workflows.
+- Local runtime event model and deterministic in-process event bus for ROS-like tests and demos.
 
 Remaining baseline cleanup:
 
@@ -27,6 +28,7 @@ Remaining baseline cleanup:
 - Add raw trace read/list and fact support read APIs before expanding retrieval behavior.
 - Avoid treating interface drafts as runtime ROS integration.
 - Consider a package console-script entry point after CLI command shape settles.
+- Keep local runtime events adapter-free until the event boundaries stabilize.
 
 ## Phase 1 — Storage and Provenance Baseline
 
