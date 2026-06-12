@@ -62,6 +62,7 @@ Implemented memory code:
 - JSON-oriented memory CLI with `init-db`, `remember-candidate`, `add-episode`, `add-fact`, `retrieve`, `consolidate-once`, and `inspect-db` commands.
 - Runtime event helpers for perception observations, world/state updates, attention updates, memory candidates, executive intents, skill goals/status, and safety events.
 - Scenario replay runner that publishes simulated face/person, speech transcript, sound direction, touch, and body/internal health events through the local runtime bus.
+- Automatic memory promotion (`MemoryPromoter`): bus-driven candidate scoring and storage per salience decision, with `memory_lifecycle` observability events.
 
 ## Partially Implemented
 
@@ -86,7 +87,6 @@ The design documents describe these future capabilities, but the repository does
 - Physical actuator control or dry-run hardware backend.
 - Full ROS 2 package/runtime integration.
 - Long-running memory daemon or background process.
-- Promotion pipeline from observation to buffer to scoring to storage.
 - Working memory lifecycle and active context management.
 - Procedural memory and self model behavior.
 - Semanticization of repeated episodes into facts.
