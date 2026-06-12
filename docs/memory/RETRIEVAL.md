@@ -140,6 +140,8 @@ Factor behavior:
 - `source_reliability`: source-type score where available. User-confirmed facts receive the highest value; model-inferred facts receive the lowest current value.
 - `retrieval_history_bonus`: derived from matching `meta_memory` retrieval count when a meta-memory record exists.
 
+After the weighted sum, an accessibility-decay penalty applies: `score = weighted_score × (1 − decay_penalty)`, where the penalty comes from meta-memory decay metadata (explicit `downrank` value, or 0.3 for consolidation's `downrank_candidate` hint). Explanations expose `decay_penalty` and `score_before_decay`. See `docs/memory/DECAY.md`.
+
 Ranking is deterministic. Ties are broken by memory kind and memory ID.
 
 `retrieve_memory()` returns `facts`, `episodes`, and `summaries` as separate lists and preserves the existing per-type `max_results` behavior. Internally it overfetches candidates, reranks them, then returns the top items of each kind.

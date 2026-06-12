@@ -743,6 +743,34 @@ class MemoryStore:
             (status.value, fact_id),
         )
 
+    def set_fact_status(self, fact_id: str, status: MemoryStatus | str) -> None:
+        status_value = parse_memory_status(status, "status")
+        cursor = self.conn.execute(
+            """
+            UPDATE fact
+            SET status = ?
+            WHERE fact_id = ?
+            """,
+            (status_value.value, fact_id),
+        )
+        if cursor.rowcount == 0:
+            raise KeyError(f"fact not found: {fact_id}")
+        self.conn.commit()
+
+    def set_episode_status(self, episode_id: str, status: MemoryStatus | str) -> None:
+        status_value = parse_memory_status(status, "status")
+        cursor = self.conn.execute(
+            """
+            UPDATE episode
+            SET status = ?, updated_ts = ?
+            WHERE episode_id = ?
+            """,
+            (status_value.value, int(time.time()), episode_id),
+        )
+        if cursor.rowcount == 0:
+            raise KeyError(f"episode not found: {episode_id}")
+        self.conn.commit()
+
     def store_memory_summary(
         self,
         summary_type: str,

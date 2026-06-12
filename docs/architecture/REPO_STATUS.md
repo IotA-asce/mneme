@@ -65,6 +65,7 @@ Implemented memory code:
 - Automatic memory promotion (`MemoryPromoter`): bus-driven candidate scoring and storage per salience decision, with `memory_lifecycle` observability events.
 - Deterministic fact extraction (`FactExtractor`): structured episode statements become conflict-aware `model_inferred` facts automatically after semantic-candidate promotions.
 - Schedulable consolidation daemon (`ConsolidationDaemon`): interval-policed, batch-bounded consolidation passes with lifecycle events and cumulative stats, driven by injected-clock ticks (no threads).
+- Staged forgetting (`decay.py`): retrieval-time downranking from decay metadata, deterministic suppression passes for summarized episodes and superseded facts, and explicit provenance-preserving purge tombstones with user-confirmed protection.
 
 ## Partially Implemented
 
@@ -92,7 +93,7 @@ The design documents describe these future capabilities, but the repository does
 - Working memory lifecycle and active context management.
 - Procedural memory and self model behavior.
 - Semanticization of consolidation summaries into facts (structured episode statements are implemented).
-- Forgetting, accessibility decay, detail decay, and purge policy beyond current speakability filtering and consolidation decay metadata.
+- Detail decay (in-place content summarization) and raw trace retention policy (accessibility decay, suppression, and explicit purge are implemented).
 - Contradiction review or supersession workflow.
 - Structured observability logs for promotion decisions, retrieval rankings, consolidation changes, conflicts, and pruning.
 
