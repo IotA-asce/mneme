@@ -38,6 +38,21 @@ from .storage import (
 from .retrieval import retrieve_memory
 from .consolidation import ConsolidationOptions, ConsolidationReport, consolidate_once
 from .engine import FactUpsertResult, MemoryEngine, MnemeMemory, RememberCandidateResult
+from .runtime import (
+    EventBus,
+    RuntimeEvent,
+    RuntimeEventKind,
+    RuntimeTopic,
+    Subscription,
+    attention_update,
+    executive_intent,
+    memory_candidate_event,
+    perception_observation,
+    safety_event,
+    skill_goal,
+    skill_status,
+    world_state_update,
+)
 
 __all__ = [
     "MemoryCandidate",
@@ -77,4 +92,17 @@ __all__ = [
     "MemoryEngine",
     "RememberCandidateResult",
     "FactUpsertResult",
+    "EventBus",
+    "RuntimeEvent",
+    "RuntimeEventKind",
+    "RuntimeTopic",
+    "Subscription",
+    "perception_observation",
+    "world_state_update",
+    "attention_update",
+    "memory_candidate_event",
+    "executive_intent",
+    "skill_goal",
+    "skill_status",
+    "safety_event",
 ]

@@ -124,8 +124,12 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 ## Interfaces and future integration
 
 - [x] Add ROS-style interface drafts
+- [x] Add local runtime event model for ROS-like architecture boundaries
+- [x] Add deterministic in-process event bus for tests and demos
+- [x] Document local runtime boundaries
 - [ ] Align Python models with interface drafts
 - [ ] Add JSON serialization helpers for future wrappers
+- [ ] Add adapters between local runtime events and interface drafts
 - [ ] Document future ROS node boundaries in implementation-facing docs
 - [ ] Keep hardware and actuator control out of V1 memory prototype
 
@@ -134,6 +138,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add V1 memory-first ADR
 - [x] Add current repository status document
 - [x] Add current roadmap document
+- [x] Add local runtime architecture document
 - [x] Add local development runbook
 - [x] Add memory CLI runbook
 - [x] Add memory storage documentation
