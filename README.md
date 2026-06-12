@@ -1,6 +1,6 @@
 # Android Brain Starter Pack
 
-This repository is the starting point for building the **brain software** of a small-scale android robot head inspired by lifelike social androids.
+This repository is the starting point for building the **brain software** of a small-scale android robot head inspired by lifelike social androids. 
 
 The first implementation target is **not** the full body. It is a bench-first brain/memory prototype that can later connect to robot-head perception and motor systems.
 
