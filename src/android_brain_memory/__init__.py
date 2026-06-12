@@ -39,6 +39,7 @@ from .storage import (
 )
 from .retrieval import retrieve_memory
 from .consolidation import ConsolidationOptions, ConsolidationReport, consolidate_once
+from .consolidation_daemon import ConsolidationDaemon
 from .engine import FactUpsertResult, MemoryEngine, MnemeMemory, RememberCandidateResult
 from .attention import AttentionManager, AttentionState, AttentionTarget
 from .executive import Executive, ExecutiveIntent, ExecutiveIntentType, ExecutiveMode
@@ -109,6 +110,7 @@ __all__ = [
     "retrieve_memory",
     "ConsolidationOptions",
     "ConsolidationReport",
+    "ConsolidationDaemon",
     "consolidate_once",
     "MnemeMemory",
     "MemoryEngine",

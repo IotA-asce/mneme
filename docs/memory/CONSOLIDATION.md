@@ -103,6 +103,18 @@ Retrieval does not consume this metadata yet. It is a documented hook for future
 - `summary_ids`
 - `notes`
 
+## Daemon
+
+`ConsolidationDaemon` wraps the one-shot pass with scheduling, bounds, and observability:
+
+- `tick(now_ms=None)` runs a pass only when `min_interval_s` has elapsed since the last pass; otherwise it counts a skipped tick and returns `None`.
+- `run_once(now_ms=None)` forces a pass regardless of interval.
+- Batch size is bounded by the configured `ConsolidationOptions.max_episodes`.
+- Each pass publishes a `memory_lifecycle` event (`lifecycle_stage="consolidation"`) with the report counts and summary IDs.
+- `stats` accumulates passes, skipped ticks, last-run time, and cumulative summary/decay counts.
+
+The daemon is deterministic by construction: time arrives through an injected clock and callers drive `tick()` — no threads, timers, or sleeps. A future runtime loop or ROS timer (Stage 3) simply calls `tick()` periodically. Repeated passes over unchanged episodes update existing summaries rather than duplicating them because summary IDs are content-derived.
+
 ## Testing
 
-Current tests create repeated tagged episodes, run one consolidation pass, verify one summary row is created, verify source episodes remain active, and verify decay metadata is written through meta-memory.
+Current tests create repeated tagged episodes, run one consolidation pass, verify one summary row is created, verify source episodes remain active, and verify decay metadata is written through meta-memory. Daemon tests (`tests/test_consolidation_daemon.py`) cover the interval policy, forced runs, idempotent repeat passes, batch limits, lifecycle events, and stat accumulation under a fixed injected clock.
