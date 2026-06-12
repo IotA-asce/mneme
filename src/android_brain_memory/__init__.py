@@ -38,6 +38,7 @@ from .storage import (
 from .retrieval import retrieve_memory
 from .consolidation import ConsolidationOptions, ConsolidationReport, consolidate_once
 from .engine import FactUpsertResult, MemoryEngine, MnemeMemory, RememberCandidateResult
+from .attention import AttentionManager, AttentionState, AttentionTarget
 from .runtime import (
     EventBus,
     RuntimeEvent,
@@ -105,6 +106,9 @@ __all__ = [
     "MemoryEngine",
     "RememberCandidateResult",
     "FactUpsertResult",
+    "AttentionManager",
+    "AttentionState",
+    "AttentionTarget",
     "EventBus",
     "RuntimeEvent",
     "RuntimeEventKind",
