@@ -69,6 +69,7 @@ Implemented memory code:
 - Full lifecycle observability: `memory_lifecycle` events for promotion, extraction, consolidation, decay, retrieval, and fact conflicts (engine `event_bus` opt-in; content never leaks into events), plus `inspect-provenance` / `inspect-decay` CLI commands.
 - Shared world model (`WorldModel`): typed TTL-bounded fusion of perception events (persons, active speaker, sound, touch, internal state, safety level) publishing `world_state_update` events with deterministic snapshots.
 - Interaction-bounded context windows (`ContextWindowManager`): open on speech/person/touch, close on idle timeout or explicit boundary, persisting working-memory snapshots automatically.
+- Attention v1: habituation, inhibition-of-return, opt-in idle curiosity scanning, and bounded state history on top of the v0 weighted target ranking.
 
 ## Partially Implemented
 

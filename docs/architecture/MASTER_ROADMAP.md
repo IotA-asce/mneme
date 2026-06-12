@@ -100,10 +100,10 @@ Goal: the cognition layers behave as one mind on simulated input — still no RO
 - [x] Snapshots persist at the close boundary automatically; transitions published as `world_state_update` events.
 - [x] Exit: conversation-shaped replay produces correct context windows and persisted snapshots (`tests/test_context_windows.py`). Window→episode bridging noted as future work in `docs/memory/WORKING_MEMORY.md`.
 
-### M2.3 Attention manager v1
+### M2.3 Attention manager v1 — complete (2026-06-12)
 
-- Habituation (novelty fades), inhibition-of-return, smooth target transitions, curiosity targets during idle; attention state history for explainability.
-- Exit: attention traces over scripted scenarios match documented expectations.
+- [x] Habituation (geometric novelty decay per exposure), inhibition-of-return (windowed priority penalty with explicit factor, safety-immune), opt-in curiosity scan targets during idle, and bounded attention state history.
+- [x] Exit: attention traces over scripted scenarios match documented expectations (`tests/test_attention_v1.py`); v0 behavior preserved (existing tests unchanged). See `docs/attention/ATTENTION_MANAGER.md`.
 
 ### M2.4 Executive v1
 
