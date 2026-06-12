@@ -1,11 +1,13 @@
 # Mneme Master Roadmap
 
-Date: 2026-06-13 (revision 3)
+Date: 2026-06-13 (revision 4)
 Status: Long-term implementation roadmap from the V1 memory core to the complete android head brain
 
 This roadmap covers every implementation milestone between the current bench-only memory prototype and the end goal: a safe, debuggable, expressive, memory-centered robot head with lifelike attention, timing, memory continuity, and transparent reasoning.
 
 **Revision 2 (2026-06-12), by owner decision:** motor/actuator work is deferred. The near-term embodiment is a *virtual head* — a cross-platform app that perceives through the host machine's camera/microphone and talks back on screen/speakers. Mneme targets **Windows, macOS, and Linux** equally (primary dev machine is an Apple Silicon Mac), so the ROS 2 bridge moved into the deferred physical-embodiment track and a cross-platform runtime replaced it. Perception must **discover attached peripherals at startup/runtime** rather than assuming configured devices. Recorded privacy decisions live in `docs/safety/MEMORY_PRIVACY.md`.
+
+**Revision 4 (2026-06-13), by owner decision:** the next active stage is **Stage 6 — Local Living Lab**, not physical embodiment. Mneme should become useful as a daily local brain loop on the current computer first: microphone, speaker, camera, local models, memory, attention, virtual presence, and evaluation. Physical motors, GPIO, serial, PWM, ROS control, and actuator hardware remain deferred until the brain loop is stable.
 
 Ordering rules:
 
@@ -22,8 +24,10 @@ Stage 2  Cognitive integration on the bench        [complete]
 Stage 3  Cross-platform runtime and virtual head   [complete]
 Stage 4  Real perception (camera + microphone)     [complete]
 Stage 5  Conversational presence                   [complete]
-Stage 6  Physical embodiment                       [deferred: ROS, skills, actuators, hardware]
-Stage 7  Lifelike presence and long-term continuity
+Stage 6  Local Living Lab                          [foundation implemented; opt-in live validation next]
+Stage 7  Evolving brain evaluation                 [planned]
+Stage 8  Physical embodiment                       [deferred: ROS, skills, actuators, hardware]
+Stage 9  Lifelike embodied continuity              [planned]
 ```
 
 ---
@@ -168,7 +172,7 @@ Goal: Mneme becomes a runnable, interactive program on Windows, macOS, and Linux
 
 ## Stage 4 — Real Perception (Camera + Microphone)
 
-Goal: replace simulated workers with the host machine's real camera and microphone, behind the same event shapes, using devices found by the Stage 3 discovery service. Simulated workers remain forever for CI. Touch and body-state sensors are deferred to the physical-embodiment track (Stage 6) — a virtual head has neither.
+Goal: replace simulated workers with the host machine's real camera and microphone, behind the same event shapes, using devices found by the Stage 3 discovery service. Simulated workers remain forever for CI. Touch and body-state sensors are deferred to the physical-embodiment track (Stage 8) — a virtual head has neither.
 
 Privacy (owner-decided, recorded in `docs/safety/MEMORY_PRIVACY.md`): raw frames **are** stored, transcripts persist, and everyone seen or heard is remembered — no enrollment gate. Storage growth therefore needs hygiene (M4.4).
 
@@ -249,62 +253,133 @@ Goal: the virtual head becomes a convincing conversational partner — full spok
 - [x] Completion returns avatar state to listening; safety events cancel active virtual skills.
 - [x] Idle and gaze goals remain virtual status events, ready for future GUI/physical skill consumers.
 
-Exit criteria met for the repository-owned architecture: a local interaction can be typed or supplied by a Stage 4 transcript adapter, remembered, answered from memory, routed through virtual speech and avatar state, and interrupted through deterministic virtual skill preemption. The base package still does not ship native ASR/TTS engines or a graphical avatar renderer.
+Exit criteria met for the repository-owned architecture: a local interaction can be typed or supplied by a Stage 4 transcript adapter, remembered, answered from memory, routed through virtual speech and avatar state, and interrupted through deterministic virtual skill preemption. At Stage 5 completion, native ASR/TTS engines and graphical avatar rendering were intentionally deferred to Stage 6.
 
-**Stage 5 status: complete (2026-06-13).** Conversational presence is implemented as virtual state and local command adapters. Physical embodiment remains deferred to Stage 6.
+**Stage 5 status: complete (2026-06-13).** Conversational presence is implemented as virtual state and local command adapters. Physical embodiment remains deferred behind the Local Living Lab.
 
-**Gate to Stage 7:** sustained daily-driver use of the virtual head without memory corruption, unbounded growth, or stuck states.
-
----
-
-## Stage 6 — Physical Embodiment (deferred)
-
-Deferred by owner decision (2026-06-12) until the virtual head proves itself. This track collects everything motion-related from roadmap revision 1; nothing here starts without an explicit go-ahead, and all original safety gates apply unchanged.
-
-### M6.1 ROS 2 bridge (optional transport step)
-
-- The former Stage 3: interface package generation from the aligned drafts, `mneme_memory_node`, split cognition nodes, launch/diagnostics, replay-over-ROS parity (`docs/architecture/ROS_INTEGRATION_PLAN.md`). Linux-hosted; revisit whether ROS is still the right transport when this track resumes.
-
-### M6.2 Actuator bridge and dry-run actuation
-
-- The former Stage 5 hardware parts: actuator bridge chokepoint with fake backend (limits, rate limiting, validation, neutral-pose fallback), safety supervisor v1 (e-stop, watchdogs, degraded-mode policy, override authority), physical skill controllers reusing the Stage 5 virtual-skill contracts.
-
-### M6.3 Hardware bring-up (gated, human-supervised)
-
-- The former Stage 6 unchanged: bench platform definition under `docs/hardware/`, real servo backend with feedback, one-actuator-at-a-time staged actuation with e-stop verified at every step, integrated live behavior with thermal/duty-cycle limits.
-- Adds the deferred perception hardware: microphone-array sound direction, touch sensors, servo body-state telemetry.
-
-**Hard gate (unchanged):** e-stop end-to-end in dry-run, limits enforced in the bridge with tests, degraded modes proven, and per-actuator safety documentation per `AGENTS.md` §11 — before any live motion.
+**Gate to Stage 6:** local optional backends remain dependency-isolated, fake/model tests stay deterministic, and the base install remains lightweight.
 
 ---
 
-## Stage 7 — Lifelike Presence and Long-Term Continuity
+## Stage 6 — Local Living Lab
 
-Goal: from a working robot head to a convincing, continuous presence. Capabilities here may use learned/model-driven components, but always behind the deterministic safety and provenance machinery.
+Goal: make Mneme usable every day on the current computer before physical embodiment. This stage keeps the architecture brain-first and local-first: optional microphone/speaker/camera/model backends feed the same runtime events, memory, attention, executive, dialogue, and virtual skill contracts that already exist.
 
-### M7.1 Long-term identity and personalization
+The base install remains lightweight. Local media and model packages are optional extras, and tests use fakes rather than real devices/models.
 
-- Person-scoped memory: stable person entities across sessions; preference facts accumulated with provenance; greeting/recall behavior driven by retrieval ("you mentioned tea yesterday").
-- Memory hygiene at scale: consolidation, decay, and contradiction review proven over weeks of accumulated memory.
+### M6A Native local speech loop — foundation implemented (2026-06-13)
 
-### M7.2 LLM-assisted services (optional, guarded)
+- [x] Optional extras are declared for local audio, VAD, ASR, TTS, local-speech bundles, vision, and local-lab bundles.
+- [x] `SoundDeviceMicrophoneRecorder` records bounded local WAV segments through optional `sounddevice`/`numpy`.
+- [x] `WebRtcVadEndpointDetector` wraps optional WebRTC VAD with deterministic fake-device tests.
+- [x] `FasterWhisperSpeechRecognitionBackend` implements microphone → local ASR → `speech_transcript` observation behind the existing speech worker contract.
+- [x] `KokoroSpeechOutputBackend` implements local TTS behind the existing speech-output backend contract, with the existing simulated and command backends preserved.
+- [x] `mneme run --profile local-speech` wires native ASR/TTS defaults while keeping command adapters and JSON mode working.
+- [x] Missing optional dependencies, capture errors, no transcript, ASR failures, and TTS failures surface as explicit worker/skill failures rather than hidden success.
+- [x] Barge-in behavior still preempts active virtual speech through the Stage 5 virtual skill coordinator.
 
-- LLM adapters for summarization, fact extraction proposals, and dialogue realization — each behind the same interfaces as the deterministic versions, marked `model_inferred`, never writing confirmed facts, never commanding actuators, degradable to deterministic fallbacks when offline.
+Manual real-device validation and latency tuning remain local runbook work; CI does not install or run real ASR/TTS models.
 
-### M7.3 Procedural learning (bounded)
+### M6B Local model management — foundation implemented (2026-06-13)
 
-- Slow, bounded adaptation of procedural parameters (timing, gaze dynamics) from interaction statistics, with version history, rollback, and hard parameter ranges enforced by the bridge.
+- [x] Model files live under `.local/models/` and are not tracked by git.
+- [x] `config/models.yaml` records model IDs, backend, path, license notes, source URL, checksum if known, and enabled profiles.
+- [x] `mneme models list`, `mneme models verify`, and guarded `mneme models download` commands are available.
+- [x] Downloads are disabled unless a registry entry explicitly documents a URL; tests use fake model records.
 
-### M7.4 Contradiction and review workflows
+### M6C Native camera and person presence — foundation implemented (2026-06-13)
 
-- Interactive review of conflicted facts ("did you say X or Y?"); supersession through conversation; meta-memory contradiction scores driving review priority.
+- [x] Optional `vision-local` dependencies are declared for OpenCV capture and MediaPipe face detection.
+- [x] `OpenCVCameraCaptureBackend` captures bounded local camera frames behind the existing live-vision worker contract.
+- [x] `MediaPipeFaceDetectionBackend` emits anonymous session person observations with bounding boxes, keypoints, confidence, and an attention-facing signal.
+- [x] Identity recognition is intentionally absent: no unrestricted face recognition, no embeddings, and no emotion-as-truth behavior.
+- [x] `mneme run --profile local-vision` and `mneme run --camera-backend opencv --face-backend mediapipe` can opt into native vision.
 
-### M7.5 Evaluation and presence quality
+Manual camera permission checks and real MediaPipe model validation remain local runbook work.
 
-- A repeatable evaluation suite for the qualities that define the project: attention naturalness, response timing, memory continuity across sessions, expression coherence, safety behavior under injected failures.
-- Long-running unattended-cognition soak (perception + memory live, actuation supervised) measured for stability.
+### M6D Graphical virtual head UI — foundation implemented (2026-06-13)
 
-- Exit criteria: a returning visitor is recognized, remembered, and engaged with appropriate continuity and timing; the robot can explain what it remembers and why it trusts it; every safety property still holds.
+- [x] `mneme ui` starts a stdlib-served local browser UI.
+- [x] The UI reads runtime snapshot state: avatar mode, gaze target, mouth/speaking state, blink pattern, recent response, and raw debug JSON.
+- [x] The UI can submit typed user input back into the runtime.
+- [x] Cognition remains owned by the runtime; the UI only visualizes state and sends user-input events.
+- [x] Terminal and JSON runtime modes remain supported.
+
+This is a lightweight local dashboard, not a polished avatar renderer.
+
+### M6E Evolving brain evaluation — foundation implemented (2026-06-13)
+
+- [x] `EvaluationLogger` appends local JSONL daily-driver metrics.
+- [x] Metrics include response generation, memory recall signal, skill-status count, safety-event count, and barge-in count.
+- [x] `mneme eval summarize` summarizes local evaluation logs.
+- [x] Runtime `--evaluation-log` records scripted or interactive turns without changing cognition.
+
+Future work: redaction workflows, replayable soak scenarios from real logs, response-latency histograms, contradiction/correction metrics, repeated-visitor continuity scoring, and bounded procedural adaptation.
+
+**Stage 6 status: foundation implemented (2026-06-13).** The native local speech/vision/model/UI/evaluation seams exist behind optional dependencies and are tested with fakes. The next work is real local validation on the current computer: permissions, model placement, latency, quality, and daily-driver logs.
+
+**Gate to Stage 7:** a sustained local-speech/local-vision daily-driver run should show no memory corruption, no duplicate spoken responses per user turn, bounded latency, explicit failures, and useful evaluation logs.
+
+---
+
+## Stage 7 — Evolving Brain Evaluation
+
+Goal: evaluate whether Mneme's local brain loop improves in continuity and social timing before any physical embodiment. Capabilities here may use learned/model-driven components, but always behind deterministic safety, provenance, replay, and rollback.
+
+### M7.1 Daily-driver metrics
+
+- Response latency, interruption handling, memory recall success, contradiction rate, repeated visitor continuity, user correction rate, and stuck-state count.
+- Private-content redaction before logs become replay fixtures.
+
+### M7.2 Soak replay
+
+- Replayable scenarios generated from real logs after redaction.
+- Regression checks for duplicate responses, forgotten confirmations, stale attention, stuck listening/speaking states, and memory overgrowth.
+
+### M7.3 Bounded procedural adaptation
+
+- Adapt timing, gaze dwell, response delay, salience thresholds, and retrieval preferences only within documented ranges.
+- Learned/model-generated memory remains `model_inferred` unless confirmed by the user.
+- Every parameter update carries provenance, version history, and rollback.
+
+### M7.4 Local model improvements
+
+- Improve ASR/VAD/TTS/vision model choices only after license/source checks.
+- Keep cloud models optional, never hard requirements.
+
+### M7.5 Continuity and review workflows
+
+- Person-scoped continuity through anonymous session IDs, user-confirmed labels, and speaker/person fusion before face embeddings.
+- Interactive review of conflicted facts and user corrections.
+
+Exit criteria: Mneme can be used locally over repeated sessions, explain what it remembers and why it trusts it, recover from interruptions, avoid stuck states, and produce useful evaluation traces.
+
+---
+
+## Stage 8 — Physical Embodiment (deferred)
+
+Deferred by owner decision until the Local Living Lab proves itself. This track collects everything motion-related from earlier roadmap revisions; nothing here starts without an explicit go-ahead, and all original safety gates apply unchanged.
+
+### M8.1 ROS 2 bridge (optional transport step)
+
+- Interface package generation from the aligned drafts, `mneme_memory_node`, split cognition nodes, launch/diagnostics, replay-over-ROS parity (`docs/architecture/ROS_INTEGRATION_PLAN.md`). Linux-hosted; revisit whether ROS is still the right transport when this track resumes.
+
+### M8.2 Actuator bridge and dry-run actuation
+
+- Actuator bridge chokepoint with fake backend (limits, rate limiting, validation, neutral-pose fallback), safety supervisor v1 (e-stop, watchdogs, degraded-mode policy, override authority), physical skill controllers reusing the virtual-skill contracts.
+
+### M8.3 Hardware bring-up (gated, human-supervised)
+
+- Bench platform definition under `docs/hardware/`, real servo backend with feedback, one-actuator-at-a-time staged actuation with e-stop verified at every step, integrated live behavior with thermal/duty-cycle limits.
+- Adds deferred physical sensors: microphone-array sound direction, touch sensors, and servo body-state telemetry.
+
+**Hard gate:** e-stop end-to-end in dry-run, limits enforced in the bridge with tests, degraded modes proven, and per-actuator safety documentation per `AGENTS.md` §11 before any live motion.
+
+---
+
+## Stage 9 — Lifelike Embodied Continuity
+
+Goal: from a working local brain and safe robot head to a convincing, continuous embodied presence. Stage 9 depends on Stage 7 evaluation and Stage 8 hardware safety.
 
 ---
 

@@ -7,7 +7,7 @@ This audit records what the repository actually implements today versus what the
 
 ## Current Implementation
 
-The repository currently implements a local Python virtual-head prototype with deterministic memory, cognition, live-perception adapter contracts, and virtual conversational presence. It does not control physical hardware, run ROS 2 nodes, use a vector database, call LLM services, or bundle native media/AI model backends.
+The repository currently implements a local Python virtual-head prototype with deterministic memory, cognition, live-perception adapter contracts, virtual conversational presence, and the Stage 6 Local Living Lab foundation. It does not control physical hardware, run ROS 2 nodes, use a vector database, call LLM services, or bundle local model files as required assets.
 
 Implemented foundations:
 
@@ -80,6 +80,11 @@ Implemented memory code:
 - Stage 4 live perception: `LiveVisionWorker` and `LiveSpeechWorker` select discovered devices, run configured local command adapters, publish standard perception events, store raw frame/transcript traces, create memory candidates, and enforce bounded frame archive retention.
 - Perception fusion and calibration: `PerceptionFusionCalibrator` publishes speaker/person match diagnostics with latency and confidence as world-state updates.
 - Stage 5 conversational presence: dialogue plans become virtual speech skill goals; simulated speech output is recorded in JSON; optional local TTS command adapters can play speech through host tools; selected speech voice labels persist as procedural memory; `VirtualAvatarController` exposes listening/thinking/speaking/idle/safety avatar state; `VirtualSkillRunner` publishes accepted/running/completed/failed/preempted/canceled status events; barge-in preempts active virtual speech on user speech.
+- Stage 6 optional local backends: `SoundDeviceMicrophoneRecorder`, `WebRtcVadEndpointDetector`, `FasterWhisperSpeechRecognitionBackend`, `KokoroSpeechOutputBackend`, `OpenCVCameraCaptureBackend`, and `MediaPipeFaceDetectionBackend` sit behind the existing speech/vision/output contracts and are dependency-isolated behind optional extras.
+- Stage 6 model hygiene: `config/models.yaml` describes local model IDs, backend, path, license/source notes, checksum if known, and enabled profiles. `mneme models list`, `mneme models verify`, and guarded `mneme models download` inspect those records. Model files belong under `.local/models/` and are ignored by git.
+- Stage 6 Local Living Lab CLI: `mneme run --profile local-speech`, `mneme run --profile local-vision`, and `mneme run --profile local-lab` opt into native local backends when optional dependencies and local models are present, while command adapters, fake devices, terminal mode, and JSON mode remain supported.
+- Stage 6 browser UI: `mneme ui` serves a stdlib local dashboard that reads runtime/avatar snapshots, renders state, and submits typed user input without owning cognition.
+- Stage 6 evaluation logging: `EvaluationLogger`, `mneme run --evaluation-log`, and `mneme eval summarize` record JSONL daily-driver metrics for response generation, memory recall signal, skill-status count, safety-event count, and barge-in count.
 
 ## Partially Implemented
 
@@ -94,18 +99,22 @@ The following areas exist but are not complete enough to count as full phase com
 - Consolidation: one-shot and tick-driven daemon paths can create repeated-episode summaries, emit lifecycle events, and write meta-memory decay hints consumed by retrieval. Semanticization of consolidation summaries, contradiction review, and a supervised long-running service process remain future work.
 - Meta-memory: typed storage methods exist for records, provenance JSON, speakability, and retrieval history updates.
 - Config: `config/memory.yaml` records salience defaults that can be loaded when requested.
-- Conversational presence: virtual speech, avatar state, virtual skill status, and local TTS command integration are implemented. Graphical avatar rendering, native TTS/ASR engines, speaker device routing, and physical skills remain outside the repo-owned Stage 5 implementation.
+- Conversational presence: virtual speech, avatar state, virtual skill status, local TTS command integration, and a lightweight local browser UI are implemented. Polished graphical avatar rendering, speaker device routing, and physical skills remain outside the repo-owned implementation.
+- Native local speech and vision: optional wrappers exist and are unit-tested with fake devices/models. Real microphone permissions, faster-whisper model placement, Kokoro compatibility, camera permissions, MediaPipe model quality, and end-to-end latency are manual/local validation tasks rather than CI-verified behavior.
+- Local model management: the registry and verification CLI exist, but default entries intentionally do not auto-download model files until exact sources/licenses/checksums are documented.
 
 ## Documented But Not Implemented
 
 The design documents describe these future capabilities, but the repository does not yet implement them:
 
-- Built-in native media/model backends for camera capture, face detection, VAD, ASR, and TTS. Stage 4/5 currently support local command adapters and deterministic scripted/simulated backends.
-- Graphical avatar UI rendering. Stage 5 exposes virtual avatar state for a future GUI.
+- Bundled native model files for face detection, VAD, ASR, or TTS. Stage 6 provides optional wrappers and a model registry, but real files live outside git under `.local/models/`.
+- Polished graphical avatar rendering. Stage 6 provides a local browser dashboard; it is not an expressive avatar renderer.
 - Physical skill controllers, actuator bridge, and safety supervisor (virtual skills and safety-state reactions are implemented; physical command paths are not).
 - Physical actuator control or dry-run hardware backend.
 - Full ROS 2 package/runtime integration.
 - Long-running memory daemon or background process.
+- Private-log redaction and replayable soak scenarios from real daily-driver logs.
+- Bounded procedural adaptation from evaluation metrics.
 - Procedural learning behavior (self model and procedural parameter storage are implemented; autonomous learning is deferred).
 - Semanticization of consolidation summaries into facts (structured episode statements are implemented).
 - Detail decay (in-place content summarization) and raw trace retention policy (accessibility decay, suppression, and explicit purge are implemented).
@@ -160,8 +169,12 @@ The test suite currently contains focused model, salience, storage, and retrieva
 - `tests/test_conversational_presence.py::test_runtime_barge_in_preempts_active_speech`
 - `tests/test_conversational_presence.py::test_virtual_avatar_tracks_attention_and_safety`
 - `tests/test_conversational_presence.py::test_mneme_run_tts_command_json_output`
+- `tests/test_stage6_local_living_lab.py::test_model_registry_verifies_existing_and_missing_models`
+- `tests/test_stage6_local_living_lab.py::test_faster_whisper_backend_uses_injected_recorder_and_model`
+- `tests/test_stage6_local_living_lab.py::test_opencv_camera_backend_uses_injected_cv2_and_face_detector`
+- `tests/test_stage6_local_living_lab.py::test_evaluation_logger_records_and_summarizes_turn`
 
-Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, bounded sensory echo/working-memory behavior, deterministic scenario replay, fake peripheral discovery, injected-output real peripheral discovery parsing, command-adapter live perception workers, perception fusion diagnostics, bounded frame archive retention, typed virtual-head runtime, and virtual conversational presence. There are no tests yet for bundled native media/model backends, graphical avatar rendering, physical skill controllers, actuator bridges, ROS adapters, or cross-process runtime behavior.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, bounded sensory echo/working-memory behavior, deterministic scenario replay, fake peripheral discovery, injected-output real peripheral discovery parsing, command-adapter live perception workers, perception fusion diagnostics, bounded frame archive retention, typed virtual-head runtime, virtual conversational presence, Stage 6 fake local audio/vision/model backends, local model CLI, browser UI rendering, and evaluation logging. There are no CI tests for real microphone/camera devices, real ASR/TTS/vision models, physical skill controllers, actuator bridges, ROS adapters, or cross-process runtime behavior.
 
 ## Verification Commands
 
@@ -190,14 +203,15 @@ There is no configured lint, typecheck, formatter, or build command beyond packa
 
 ## Safest Next Tasks
 
-The safest next tasks should stay inside the virtual-head prototype and avoid hardware, ROS runtime, new dependencies, and broad refactors:
+The safest next tasks should stay inside the Local Living Lab and avoid physical hardware, ROS runtime, required heavyweight dependencies, and broad refactors:
 
-1. Add a simple graphical avatar front end that consumes the Stage 5 avatar snapshot without changing cognition layers.
-2. Add optional native ASR/TTS adapter packages only after dependency choices are documented.
-3. Add long-running soak tests for the virtual-head loop with bounded memory growth.
-4. Add review/debug tools for conflicted facts and person-scoped continuity.
-5. Keep physical embodiment work in Stage 6 until explicit hardware safety planning resumes.
+1. Manually validate `local-speech` on the current Mac: microphone permissions, faster-whisper model placement, local TTS playback, barge-in, and no duplicate spoken responses.
+2. Manually validate `local-vision`: camera permissions, OpenCV frame capture, MediaPipe face/person observations, and anonymous-session person continuity.
+3. Improve the local browser UI from dashboard to expressive virtual head while keeping cognition outside the UI.
+4. Add redacted daily-driver logs and soak replay fixtures from real local runs.
+5. Add review/debug tools for conflicted facts and person-scoped continuity.
+6. Keep physical embodiment work deferred until explicit hardware safety planning resumes.
 
 ## Current Risk
 
-The main project risk is assuming virtual-stage completion implies physical safety. The current code has a useful local virtual-head stack, but native media quality, graphical presence, long-running supervision, ROS integration, and any physical actuator behavior remain future work.
+The main project risk is assuming local-brain progress implies physical safety. The current code has a useful local virtual-head stack and Stage 6 optional local backend seams, but real media quality, model performance, polished graphical presence, long-running supervision, ROS integration, and any physical actuator behavior remain future work.

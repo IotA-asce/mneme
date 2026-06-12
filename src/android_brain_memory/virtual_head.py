@@ -8,14 +8,27 @@ from pathlib import Path
 from typing import Any
 
 from .engine import DEFAULT_DB, DEFAULT_MIGRATIONS, to_jsonable
+from .evaluation import DEFAULT_EVALUATION_LOG, EvaluationLogger
 from .live_perception import (
     CommandFrameCaptureBackend,
     CommandSpeechRecognitionBackend,
     PerceptionRetentionPolicy,
 )
+from .local_audio import (
+    DEFAULT_AUDIO_DIR,
+    FasterWhisperSpeechRecognitionBackend,
+    KokoroSpeechOutputBackend,
+    SoundDeviceMicrophoneRecorder,
+)
+from .local_models import DEFAULT_MODEL_REGISTRY, LocalModelRegistry
+from .local_ui import serve_ui
+from .local_vision import MediaPipeFaceDetectionBackend, OpenCVCameraCaptureBackend
 from .peripherals import PeripheralDiscoveryService, RealPeripheralBackend, default_virtual_head_devices
 from .presence import CommandSpeechOutputBackend
 from .runtime_loop import MnemeRuntime, RuntimeClock
+
+
+LOCAL_PROFILES = {"local-speech", "local-vision", "local-lab"}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -30,6 +43,12 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     run = subparsers.add_parser("run", help="Run the terminal virtual head.")
+    run.add_argument(
+        "--profile",
+        choices=["default", "local-speech", "local-vision", "local-lab"],
+        default="default",
+        help="Runtime profile. Local profiles use optional native backends when configured.",
+    )
     run.add_argument("--json", action="store_true", help="Emit JSON instead of terminal text.")
     run.add_argument(
         "--input",
@@ -71,9 +90,32 @@ def build_parser() -> argparse.ArgumentParser:
         help="Local command template that writes one camera frame to {output}. Enables live vision.",
     )
     run.add_argument(
+        "--camera-backend",
+        choices=["auto", "command", "opencv", "none"],
+        default="auto",
+        help="Camera backend. OpenCV requires the vision-local optional extra.",
+    )
+    run.add_argument("--camera-index", type=int, help="OpenCV camera index override.")
+    run.add_argument(
+        "--face-backend",
+        choices=["none", "mediapipe"],
+        default="none",
+        help="Optional face detector for OpenCV frames.",
+    )
+    run.add_argument(
         "--speech-command",
         help="Local command template that prints transcript text or JSON. Enables live speech.",
     )
+    run.add_argument(
+        "--asr-model",
+        default=".local/models/faster-whisper-base",
+        help="faster-whisper model name or local path for local-speech profile.",
+    )
+    run.add_argument("--asr-device", default="cpu", help="faster-whisper device name.")
+    run.add_argument("--asr-compute-type", default="int8", help="faster-whisper compute type.")
+    run.add_argument("--asr-language", help="Optional ASR language code.")
+    run.add_argument("--record-ms", type=int, default=3_000, help="Bounded microphone segment length.")
+    run.add_argument("--audio-dir", type=Path, default=DEFAULT_AUDIO_DIR, help="Local audio segment directory.")
     run.add_argument(
         "--frame-archive-dir",
         type=Path,
@@ -88,6 +130,12 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument(
         "--tts-command",
         help="Local command template for spoken output. Supports {text}, {voice}, and {device_id}.",
+    )
+    run.add_argument(
+        "--tts-backend",
+        choices=["auto", "simulated", "command", "kokoro"],
+        default="auto",
+        help="Speech output backend. Kokoro requires the tts-local optional extra.",
     )
     run.add_argument(
         "--voice",
@@ -110,6 +158,34 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable virtual avatar, virtual skills, and speech-output simulation.",
     )
+    run.add_argument(
+        "--evaluation-log",
+        type=Path,
+        help="Append local living-lab conversation metrics to a JSONL file.",
+    )
+
+    ui = subparsers.add_parser("ui", help="Serve the local browser virtual-head UI.")
+    ui.add_argument("--host", default="127.0.0.1")
+    ui.add_argument("--port", type=int, default=8765)
+
+    models = subparsers.add_parser("models", help="Inspect local model registry.")
+    models.add_argument("--registry", type=Path, default=DEFAULT_MODEL_REGISTRY)
+    model_subparsers = models.add_subparsers(dest="models_command", required=True)
+    models_list = model_subparsers.add_parser("list", help="List configured local models.")
+    models_list.add_argument("--profile")
+    models_list.add_argument("--json", action="store_true")
+    models_verify = model_subparsers.add_parser("verify", help="Verify local model files/checksums.")
+    models_verify.add_argument("model_id", nargs="?")
+    models_verify.add_argument("--json", action="store_true")
+    models_download = model_subparsers.add_parser("download", help="Download a configured model when allowed.")
+    models_download.add_argument("model_id")
+    models_download.add_argument("--overwrite", action="store_true")
+
+    evaluation = subparsers.add_parser("eval", help="Inspect local living-lab evaluation logs.")
+    eval_subparsers = evaluation.add_subparsers(dest="eval_command", required=True)
+    eval_summary = eval_subparsers.add_parser("summarize", help="Summarize a JSONL evaluation log.")
+    eval_summary.add_argument("--path", type=Path, default=DEFAULT_EVALUATION_LOG)
+    eval_summary.add_argument("--json", action="store_true")
 
     return parser
 
@@ -119,12 +195,54 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "run":
         return _run(args)
+    if args.command == "ui":
+        return _ui(args)
+    if args.command == "models":
+        return _models(args)
+    if args.command == "eval":
+        return _eval(args)
     parser.error(f"unsupported command: {args.command}")
     return 2
 
 
 def _run(args: argparse.Namespace) -> int:
+    try:
+        runtime = _build_runtime(args)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    evaluation_logger = EvaluationLogger(args.evaluation_log) if args.evaluation_log else None
+    outputs: list[dict[str, Any]] = []
+    try:
+        startup = runtime.start()
+        outputs.append({"type": "startup", "devices": startup.to_dict()})
+        if args.inputs:
+            now = args.start_ms
+            for text in args.inputs:
+                result = runtime.process_user_utterance(text, timestamp=now)
+                result_dict = result.to_dict()
+                outputs.append({"type": "turn", "input": text, "result": result_dict})
+                if evaluation_logger is not None:
+                    evaluation_logger.record_turn(input_text=text, result=result_dict)
+                now += args.step_ms
+                outputs.append({"type": "tick", "result": runtime.tick(advance_ms=args.step_ms).to_dict()})
+        else:
+            outputs.extend(_interactive(runtime, evaluation_logger=evaluation_logger))
+        outputs.append({"type": "shutdown", "snapshot": runtime.snapshot()})
+    finally:
+        runtime.close()
+
+    if args.json:
+        print(json.dumps(to_jsonable(outputs), indent=2, sort_keys=True))
+    else:
+        _print_terminal(outputs)
+    return 0
+
+
+def _build_runtime(args: argparse.Namespace) -> MnemeRuntime:
     device_backend = "none" if args.no_fake_devices else args.device_backend
+    if args.profile in LOCAL_PROFILES and args.device_backend == "fake" and not args.no_fake_devices:
+        device_backend = "real"
     discovery_service = None
     fake_devices = None
     if device_backend == "real":
@@ -141,26 +259,10 @@ def _run(args: argparse.Namespace) -> int:
         max_frame_archive_bytes=args.max_frame_archive_bytes,
         max_frame_age_ms=args.max_frame_age_ms,
     )
-    camera_backend = (
-        CommandFrameCaptureBackend(shlex.split(args.camera_command))
-        if args.camera_command
-        else None
-    )
-    speech_backend = (
-        CommandSpeechRecognitionBackend(shlex.split(args.speech_command))
-        if args.speech_command
-        else None
-    )
-    speech_output_backend = (
-        CommandSpeechOutputBackend(
-            shlex.split(args.tts_command),
-            timeout_ms=args.tts_timeout_ms,
-            default_voice=args.voice,
-        )
-        if args.tts_command
-        else None
-    )
-    runtime = MnemeRuntime(
+    camera_backend = _camera_backend(args)
+    speech_backend = _speech_backend(args)
+    speech_output_backend = _speech_output_backend(args)
+    return MnemeRuntime(
         db_path=args.db,
         migrations_dir=args.migrations,
         clock=RuntimeClock(args.start_ms),
@@ -177,31 +279,117 @@ def _run(args: argparse.Namespace) -> int:
         enable_virtual_presence=not args.no_virtual_presence,
         virtual_speech_duration_ms=args.virtual_speech_duration_ms,
     )
-    outputs: list[dict[str, Any]] = []
+
+
+def _camera_backend(args: argparse.Namespace) -> Any:
+    if args.camera_command:
+        return CommandFrameCaptureBackend(shlex.split(args.camera_command))
+    wants_opencv = (
+        args.camera_backend == "opencv"
+        or (args.camera_backend == "auto" and args.profile in {"local-vision", "local-lab"})
+    )
+    if not wants_opencv:
+        return None
+    face_detector = MediaPipeFaceDetectionBackend() if args.face_backend == "mediapipe" else None
+    return OpenCVCameraCaptureBackend(camera_index=args.camera_index, face_detector=face_detector)
+
+
+def _speech_backend(args: argparse.Namespace) -> Any:
+    if args.speech_command:
+        return CommandSpeechRecognitionBackend(shlex.split(args.speech_command))
+    if args.profile not in {"local-speech", "local-lab"}:
+        return None
+    recorder = SoundDeviceMicrophoneRecorder(
+        audio_dir=args.audio_dir,
+        duration_ms=args.record_ms,
+    )
+    return FasterWhisperSpeechRecognitionBackend(
+        model_name_or_path=args.asr_model,
+        recorder=recorder,
+        language=args.asr_language,
+        device_name=args.asr_device,
+        compute_type=args.asr_compute_type,
+    )
+
+
+def _speech_output_backend(args: argparse.Namespace) -> Any:
+    if args.tts_command:
+        return CommandSpeechOutputBackend(
+            shlex.split(args.tts_command),
+            timeout_ms=args.tts_timeout_ms,
+            default_voice=args.voice,
+        )
+    if args.tts_backend == "command":
+        raise ValueError("--tts-backend command requires --tts-command")
+    wants_kokoro = (
+        args.tts_backend == "kokoro"
+        or (args.tts_backend == "auto" and args.profile in {"local-speech", "local-lab"})
+    )
+    if wants_kokoro:
+        return KokoroSpeechOutputBackend(voice=args.voice or "af_heart")
+    return None
+
+
+def _ui(args: argparse.Namespace) -> int:
+    runtime = MnemeRuntime(db_path=args.db, migrations_dir=args.migrations)
     try:
-        startup = runtime.start()
-        outputs.append({"type": "startup", "devices": startup.to_dict()})
-        if args.inputs:
-            now = args.start_ms
-            for text in args.inputs:
-                result = runtime.process_user_utterance(text, timestamp=now)
-                outputs.append({"type": "turn", "input": text, "result": result.to_dict()})
-                now += args.step_ms
-                outputs.append({"type": "tick", "result": runtime.tick(advance_ms=args.step_ms).to_dict()})
-        else:
-            outputs.extend(_interactive(runtime))
-        outputs.append({"type": "shutdown", "snapshot": runtime.snapshot()})
+        runtime.start()
+        print(f"Mneme UI listening on http://{args.host}:{args.port}", file=sys.stderr)
+        serve_ui(runtime, host=args.host, port=args.port)
     finally:
         runtime.close()
-
-    if args.json:
-        print(json.dumps(to_jsonable(outputs), indent=2, sort_keys=True))
-    else:
-        _print_terminal(outputs)
     return 0
 
 
-def _interactive(runtime: MnemeRuntime) -> list[dict[str, Any]]:
+def _models(args: argparse.Namespace) -> int:
+    registry = LocalModelRegistry(registry_path=args.registry)
+    if args.models_command == "list":
+        payload = registry.to_dict(profile=args.profile)
+        if args.json:
+            print(json.dumps(to_jsonable(payload), indent=2, sort_keys=True))
+        else:
+            for record in registry.list_models(profile=args.profile):
+                print(f"{record.model_id}\t{record.backend}\t{record.license}\t{record.path}")
+        return 0
+    if args.models_command == "verify":
+        payload = [item.to_dict() for item in registry.verify(args.model_id)]
+        if args.json:
+            print(json.dumps(to_jsonable(payload), indent=2, sort_keys=True))
+        else:
+            for item in payload:
+                status = "ok" if item["exists"] and item["checksum_ok"] is not False else "missing"
+                print(f"{item['model_id']}\t{status}\t{item['path']}")
+        return 0
+    if args.models_command == "download":
+        try:
+            record = registry.download(args.model_id, overwrite=args.overwrite)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        print(json.dumps(to_jsonable(record.to_dict()), indent=2, sort_keys=True))
+        return 0
+    return 2
+
+
+def _eval(args: argparse.Namespace) -> int:
+    if args.eval_command == "summarize":
+        summary = EvaluationLogger(args.path).summarize()
+        if args.json:
+            print(json.dumps(to_jsonable(summary), indent=2, sort_keys=True))
+        else:
+            print(
+                f"records={summary['records']} turns={summary.get('conversation_turns', 0)} "
+                f"responses={summary.get('responses_generated', 0)}"
+            )
+        return 0
+    return 2
+
+
+def _interactive(
+    runtime: MnemeRuntime,
+    *,
+    evaluation_logger: EvaluationLogger | None = None,
+) -> list[dict[str, Any]]:
     outputs = []
     print("Mneme virtual head. Type /quit to exit.", file=sys.stderr)
     for raw in sys.stdin:
@@ -211,10 +399,12 @@ def _interactive(runtime: MnemeRuntime) -> list[dict[str, Any]]:
         if text in {"/quit", "/exit"}:
             break
         result = runtime.process_user_utterance(text)
-        outputs.append({"type": "turn", "input": text, "result": result.to_dict()})
+        result_dict = result.to_dict()
+        outputs.append({"type": "turn", "input": text, "result": result_dict})
+        if evaluation_logger is not None:
+            evaluation_logger.record_turn(input_text=text, result=result_dict)
         runtime.tick()
     return outputs
-
 
 def _print_terminal(outputs: list[dict[str, Any]]) -> None:
     for item in outputs:

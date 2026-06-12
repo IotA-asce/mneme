@@ -1,7 +1,7 @@
 # Roadmap
 
-Date: 2026-06-12
-Status: V1 memory prototype roadmap — all phases complete
+Date: 2026-06-13
+Status: V1 memory prototype roadmap — all phases complete; current work moved to Stage 6 Local Living Lab
 
 This document records the V1 memory prototype phases. For the full implementation path from the completed memory core to the finished android head, see `docs/architecture/MASTER_ROADMAP.md`.
 
@@ -138,11 +138,14 @@ Do not start these until the memory core is demonstrably stable:
 
 ## Current Safest Next Task
 
-All V1 roadmap phases (0–5) and the implementation plan's Phase 6 (ROS preparation) are implemented. The safest next work, in dependency order:
+All V1 roadmap phases (0–5) and the implementation plan's Phase 6 (ROS preparation) are implemented. Stages 3–5 of the master roadmap are also complete, and Stage 6 now means **Local Living Lab** rather than physical embodiment.
 
-1. Exercise the memory promotion pipeline end-to-end under scenario replay (perception event → salience → durable storage) so promotion becomes automatic rather than caller-driven.
-2. Fact extraction from consolidated episodes (semanticization), keeping the conservative conflict rules.
-3. Topic-specific episode retrieval and retrieval-time use of consolidation decay hints.
-4. Only after the above remain stable under tests: begin the single-process ROS bridge described in `docs/architecture/ROS_INTEGRATION_PLAN.md`.
+The safest next work, in dependency order:
 
-Hardware, real perception, and actuation remain deferred behind the safety rules in `AGENTS.md`.
+1. Validate `mneme run --profile local-speech` on the current machine with real microphone permission, local ASR model files, local TTS playback, barge-in, and duplicate-response checks.
+2. Validate `mneme run --profile local-vision` with real camera permission, OpenCV frame capture, MediaPipe face/person observations, and anonymous-session continuity.
+3. Improve `mneme ui` from a debug dashboard toward a useful local virtual head while keeping cognition owned by the runtime.
+4. Convert real local runs into redacted soak scenarios and daily-driver evaluation logs.
+5. Continue memory/retrieval polish such as topic-specific episode retrieval and conflict-review tools.
+
+Physical hardware, ROS runtime integration, actuation, GPIO, serial, PWM, firmware flashing, and motors remain deferred behind the safety rules in `AGENTS.md`.

@@ -2,13 +2,13 @@
 
 Mneme is a memory-centered cognition engine for a lifelike android head.
 
-The current repository is a local Python prototype for the virtual-head phase of that architecture. It focuses on safe, testable cognition boundaries: perception workers publish observations, state builders publish state, memory stores and retrieves context, attention chooses what matters, the executive publishes intent, virtual skills consume that intent, and physical actuators remain outside the runtime.
+The current repository is a local Python prototype for the **brain-first Local Living Lab** phase of that architecture. It focuses on safe, testable cognition boundaries: perception workers publish observations, state builders publish state, memory stores and retrieves context, attention chooses what matters, the executive publishes intent, virtual skills consume that intent, and physical actuators remain outside the runtime.
 
 Mneme does not currently control physical hardware.
 
 ## Current Status
 
-As of 2026-06-13, Stages 0-5 of the master roadmap are implemented in the repo-owned architecture:
+As of 2026-06-13, Stages 0-5 of the master roadmap are complete and Stage 6 has its foundation implemented:
 
 - **Stage 0:** V1 memory core.
 - **Stage 1:** autonomous memory lifecycle.
@@ -16,6 +16,9 @@ As of 2026-06-13, Stages 0-5 of the master roadmap are implemented in the repo-o
 - **Stage 3:** cross-platform runtime and terminal virtual head.
 - **Stage 4:** real device discovery and live-perception worker contracts.
 - **Stage 5:** conversational presence with virtual speech, avatar state, virtual skills, and interruption handling.
+- **Stage 6:** Local Living Lab foundation with optional native local speech, model registry, native camera/person-presence backends, a local browser UI, and evaluation logs.
+
+Physical embodiment is now deferred behind the Local Living Lab. ROS, GPIO, serial, PWM, servo control, microcontroller flashing, and physical actuator work are not part of the current runtime.
 
 See `docs/architecture/MASTER_ROADMAP.md` and `docs/architecture/REPO_STATUS.md` for the detailed status record.
 
@@ -65,6 +68,19 @@ Stage 5 adds a virtual presence layer on top of the runtime:
 - Barge-in is handled deterministically: user speech while Mneme is speaking preempts the active speech skill.
 - Virtual skills publish accepted/running/completed/preempted/canceled status events using the same event contracts future physical skills will use.
 
+### Local Living Lab
+
+Stage 6 starts the brain-first local loop:
+
+- Optional local extras are declared for microphone/speaker streaming, WebRTC VAD, faster-whisper ASR, Kokoro TTS, OpenCV camera capture, and MediaPipe face detection.
+- Native local backends sit behind the existing worker/output contracts, so `speech_transcript`, virtual `speech` goals, skill statuses, memory, attention, executive, and dialogue flow stay unchanged.
+- `config/models.yaml` tracks local model metadata; model files live under `.local/models/` and are never committed.
+- `mneme models list`, `mneme models verify`, and guarded `mneme models download` support local model hygiene.
+- `mneme run --profile local-speech` opts into native microphone/ASR/TTS backends when optional packages and local models are available.
+- `mneme run --profile local-vision` opts into OpenCV camera capture and optional MediaPipe face/person observations.
+- `mneme ui` serves a lightweight browser UI that visualizes avatar/runtime state and accepts typed input.
+- `--evaluation-log` and `mneme eval summarize` record local daily-driver metrics for later brain-loop evaluation.
+
 ### Live Perception
 
 Stage 4 live perception is implemented through repo-owned worker contracts and local command adapters:
@@ -75,17 +91,17 @@ Stage 4 live perception is implemented through repo-owned worker contracts and l
 - `PerceptionFusionCalibrator` publishes speaker/person match diagnostics with latency and confidence.
 - Frame archive retention is bounded by count, age, and total bytes.
 
-The base package intentionally does not bundle OpenCV, face models, VAD, or ASR engines. Those can be plugged in behind the command/backend contracts.
+The base package intentionally does not install OpenCV, face models, VAD, ASR, or TTS engines by default. Native backends are optional extras and are tested with fakes in CI.
 
 ## What Is Not Implemented Yet
 
-- Built-in native camera, face detection, VAD, or ASR backends.
-- Built-in native TTS engine. Speech output is available only through a configured local command or the simulated backend.
-- Graphical avatar rendering. The repo currently exposes virtual avatar state in JSON/terminal output.
+- Real local model files are not bundled. You must place or download compatible models under `.local/models/`.
+- Real-device quality has not been tuned in CI; local mic/camera permissions, model speed, and audio playback must be validated on your machine.
+- The browser UI is a lightweight local dashboard, not a polished graphical avatar renderer.
+- Long-running process supervision and private-log redaction workflows are not implemented yet.
 - Physical skill controllers and actuator bridge.
 - Physical hardware control, GPIO, serial, PWM, firmware flashing, or ROS runtime nodes.
 - Cloud LLM integration.
-- Full long-running daemon/process supervision.
 
 ## Install
 
@@ -96,6 +112,28 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install -e '.[dev]'
+```
+
+Optional Local Living Lab extras:
+
+```bash
+# Microphone/speaker streaming
+python -m pip install -e '.[audio-local]'
+
+# WebRTC VAD
+python -m pip install -e '.[vad-local]'
+
+# faster-whisper ASR
+python -m pip install -e '.[asr-local]'
+
+# Kokoro TTS
+python -m pip install -e '.[tts-local]'
+
+# OpenCV + MediaPipe vision
+python -m pip install -e '.[vision-local]'
+
+# All current local speech/vision extras together
+python -m pip install -e '.[local-lab]'
 ```
 
 Initialize the local SQLite database:
@@ -122,7 +160,7 @@ python scripts/smoke_test_memory.py
 python -m pytest
 ```
 
-The current suite covers memory models, storage, migrations, salience, retrieval, provenance, conflicts, consolidation, decay, runtime events, working memory, scenario replay, world model, attention, executive behavior, dialogue planning, device discovery, live-perception adapters, conversational presence, and the virtual-head runtime.
+The current suite covers memory models, storage, migrations, salience, retrieval, provenance, conflicts, consolidation, decay, runtime events, working memory, scenario replay, world model, attention, executive behavior, dialogue planning, device discovery, live-perception adapters, conversational presence, Local Living Lab fake backends/model registry/UI/evaluation logging, and the virtual-head runtime.
 
 ## Memory CLI
 
@@ -200,6 +238,62 @@ mneme run --device-backend none --json --input "hello"
 ```
 
 See `docs/runbooks/VIRTUAL_HEAD.md` and `docs/runbooks/CONVERSATIONAL_PRESENCE.md`.
+
+## Local Living Lab
+
+Inspect local model configuration:
+
+```bash
+mneme models list --json
+mneme models verify --json
+```
+
+Model files belong under `.local/models/`. The default registry documents expected paths, license notes, and profiles, but does not download model files unless a registry entry explicitly includes a `download_url`.
+
+Run native local speech when optional packages and models are installed:
+
+```bash
+python -m pip install -e '.[local-speech]'
+mneme models list --profile local-speech --json
+mneme models verify --json
+mneme run --profile local-speech --json
+```
+
+Useful local speech flags:
+
+```bash
+mneme run \
+  --profile local-speech \
+  --asr-model .local/models/faster-whisper-base \
+  --asr-device cpu \
+  --asr-compute-type int8 \
+  --record-ms 3000 \
+  --json
+```
+
+Run native local vision when optional packages and a camera are available:
+
+```bash
+python -m pip install -e '.[vision-local]'
+mneme run --profile local-vision --face-backend mediapipe --json
+```
+
+Open the local browser UI:
+
+```bash
+mneme ui
+```
+
+Then visit `http://127.0.0.1:8765`. The UI visualizes runtime/avatar state and can submit typed input; cognition still runs inside Mneme.
+
+Record and summarize local daily-driver metrics:
+
+```bash
+mneme run --json --input "hello Mneme" --evaluation-log .local/evaluation/daily_driver.jsonl
+mneme eval summarize --path .local/evaluation/daily_driver.jsonl --json
+```
+
+See `docs/runbooks/LOCAL_LIVING_LAB.md` and `docs/runbooks/LOCAL_MODELS.md`.
 
 ## Live Perception Adapters
 

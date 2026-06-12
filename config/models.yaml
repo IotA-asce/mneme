@@ -1,0 +1,37 @@
+models:
+  - id: faster_whisper_base
+    backend: faster_whisper
+    path: .local/models/faster-whisper-base
+    license: MIT model family; verify selected model card before distribution
+    profiles:
+      - local-speech
+    description: Local ASR model used by the optional faster-whisper backend.
+    source_url: https://github.com/SYSTRAN/faster-whisper
+    download_url:
+    sha256:
+    required: false
+
+  - id: kokoro_default
+    backend: kokoro
+    path: .local/models/kokoro
+    license: Apache-2.0 weights where using the upstream Kokoro open-weight release
+    profiles:
+      - local-speech
+    description: Local TTS model used by the optional Kokoro speech backend.
+    source_url: https://github.com/hexgrad/kokoro
+    download_url:
+    sha256:
+    required: false
+
+  - id: mediapipe_face_detector
+    backend: mediapipe_face_detector
+    path: .local/models/mediapipe/face_detector.task
+    license: Verify Google AI Edge model terms before distribution
+    profiles:
+      - local-vision
+      - local-lab
+    description: Optional face detector model asset for local person presence.
+    source_url: https://developers.google.com/edge/mediapipe/solutions/vision/face_detector
+    download_url:
+    sha256:
+    required: false
