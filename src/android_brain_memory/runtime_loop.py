@@ -19,6 +19,7 @@ from .peripherals import (
     FakePeripheralBackend,
     PeripheralDiscoveryService,
     PeripheralSnapshot,
+    RealPeripheralBackend,
     default_virtual_head_devices,
 )
 from .promotion import MemoryPromoter
@@ -97,6 +98,7 @@ class MnemeRuntime:
         migrations_dir: str | Path = DEFAULT_MIGRATIONS,
         clock: RuntimeClock | Callable[[], int] | None = None,
         discovery_service: PeripheralDiscoveryService | None = None,
+        peripheral_backend: FakePeripheralBackend | RealPeripheralBackend | None = None,
         fake_devices: Sequence[Mapping[str, Any]] | None = None,
         source: str = "mneme_runtime",
         initialize_db: bool = True,
@@ -139,13 +141,11 @@ class MnemeRuntime:
             clock=self.clock,
         )
         if discovery_service is None:
-            devices = (
-                fake_devices
-                if fake_devices is not None
-                else [device.to_dict() for device in default_virtual_head_devices()]
-            )
+            devices = fake_devices if fake_devices is not None else [
+                device.to_dict() for device in default_virtual_head_devices()
+            ]
             discovery_service = PeripheralDiscoveryService(
-                backend=FakePeripheralBackend(devices),
+                backend=peripheral_backend or FakePeripheralBackend(devices),
                 bus=self.bus,
                 clock=self.clock,
             )

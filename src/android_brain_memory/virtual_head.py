@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .engine import DEFAULT_DB, DEFAULT_MIGRATIONS, to_jsonable
-from .peripherals import default_virtual_head_devices
+from .peripherals import PeripheralDiscoveryService, RealPeripheralBackend, default_virtual_head_devices
 from .runtime_loop import MnemeRuntime, RuntimeClock
 
 
@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    run = subparsers.add_parser("run", help="Run the Stage 3 terminal virtual head.")
+    run = subparsers.add_parser("run", help="Run the terminal virtual head.")
     run.add_argument("--json", action="store_true", help="Emit JSON instead of terminal text.")
     run.add_argument(
         "--input",
@@ -45,7 +45,19 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument(
         "--no-fake-devices",
         action="store_true",
-        help="Start with no discovered fake peripherals.",
+        help="Start with no discovered fake peripherals. Equivalent to --device-backend none.",
+    )
+    run.add_argument(
+        "--device-backend",
+        choices=["fake", "real", "none"],
+        default="fake",
+        help="Peripheral discovery backend. Real inventories host devices without opening sensors.",
+    )
+    run.add_argument(
+        "--device-scan-timeout-ms",
+        type=int,
+        default=1_500,
+        help="Timeout for each real device inventory command.",
     )
 
     return parser
@@ -61,11 +73,22 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _run(args: argparse.Namespace) -> int:
-    fake_devices = [] if args.no_fake_devices else [device.to_dict() for device in default_virtual_head_devices()]
+    device_backend = "none" if args.no_fake_devices else args.device_backend
+    discovery_service = None
+    fake_devices = None
+    if device_backend == "real":
+        discovery_service = PeripheralDiscoveryService(
+            backend=RealPeripheralBackend(timeout_ms=args.device_scan_timeout_ms),
+        )
+    else:
+        fake_devices = [] if device_backend == "none" else [
+            device.to_dict() for device in default_virtual_head_devices()
+        ]
     runtime = MnemeRuntime(
         db_path=args.db,
         migrations_dir=args.migrations,
         clock=RuntimeClock(args.start_ms),
+        discovery_service=discovery_service,
         fake_devices=fake_devices,
     )
     outputs: list[dict[str, Any]] = []

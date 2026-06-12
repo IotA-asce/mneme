@@ -20,7 +20,7 @@ Stage 0  V1 memory core                            [complete]
 Stage 1  Autonomous memory lifecycle               [complete]
 Stage 2  Cognitive integration on the bench        [complete]
 Stage 3  Cross-platform runtime and virtual head   [complete]
-Stage 4  Real perception (camera + microphone)     [next]
+Stage 4  Real perception (camera + microphone)     [in progress]
 Stage 5  Conversational presence
 Stage 6  Physical embodiment                       [deferred: ROS, skills, actuators, hardware]
 Stage 7  Lifelike presence and long-term continuity
@@ -171,6 +171,13 @@ Goal: Mneme becomes a runnable, interactive program on Windows, macOS, and Linux
 Goal: replace simulated workers with the host machine's real camera and microphone, behind the same event shapes, using devices found by the Stage 3 discovery service. Simulated workers remain forever for CI. Touch and body-state sensors are deferred to the physical-embodiment track (Stage 6) — a virtual head has neither.
 
 Privacy (owner-decided, recorded in `docs/safety/MEMORY_PRIVACY.md`): raw frames **are** stored, transcripts persist, and everyone seen or heard is remembered — no enrollment gate. Storage growth therefore needs hygiene (M4.4).
+
+### M4.0 Real peripheral inventory — complete (2026-06-12)
+
+- [x] `RealPeripheralBackend` inventories host cameras, microphones, and speakers through best-effort OS commands without opening sensors.
+- [x] `mneme run --device-backend real` exposes real inventory while fake discovery remains the deterministic default.
+- [x] Missing tools, unsupported platforms, malformed output, and command failures produce partial or empty inventories rather than runtime failure.
+- [x] Exit: injected platform-output tests cover macOS, Linux, and Windows parsing (`tests/test_real_peripherals.py`). Live capture remains unimplemented.
 
 ### M4.1 Vision worker
 

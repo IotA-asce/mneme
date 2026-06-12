@@ -70,6 +70,8 @@ from .peripherals import (
     PeripheralDiscoveryService,
     PeripheralKind,
     PeripheralSnapshot,
+    RealPeripheralBackend,
+    default_host_peripheral_backend,
 )
 from .runtime_loop import (
     MnemeRuntime,
@@ -167,7 +169,9 @@ __all__ = [
     "PeripheralDevice",
     "PeripheralSnapshot",
     "FakePeripheralBackend",
+    "RealPeripheralBackend",
     "PeripheralDiscoveryService",
+    "default_host_peripheral_backend",
     "MnemeRuntime",
     "RuntimeClock",
     "RuntimeStepResult",

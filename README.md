@@ -86,17 +86,23 @@ Primary commands:
 
 See `docs/runbooks/MEMORY_CLI.md` for JSON payload examples.
 
-## Stage 3 Virtual Head
+## Virtual Head Runtime
 
-The Stage 3 runtime wires the local cognition stack into one terminal virtual head:
+The runtime wires the local cognition stack into one terminal virtual head:
 
 ```bash
 mneme run --input "hello Mneme"
 mneme run --json --input "remember that I like tea" --input "what do I like"
 ```
 
-It uses typed input and fake deterministic peripherals only. Real camera, microphone, TTS, avatar rendering, ROS, and hardware remain later-stage work.
+It uses typed input. Fake deterministic peripherals remain the default for repeatable tests. Stage 4 adds opt-in real host inventory:
 
-See `docs/runbooks/VIRTUAL_HEAD.md` for the runtime runbook.
+```bash
+mneme run --device-backend real --json --input "hello"
+```
+
+Real inventory lists cameras, microphones, and speakers without opening sensors, recording audio, playing sound, or running perception models. Live camera capture, microphone ASR, TTS, avatar rendering, ROS, and hardware remain later-stage work.
+
+See `docs/runbooks/VIRTUAL_HEAD.md` and `docs/runbooks/REAL_DEVICE_DISCOVERY.md` for runtime runbooks.
 
 This is intentionally small. The goal is to give Codex a precise, well-scoped project foundation before expanding into ROS 2 nodes, perception workers, and motor control.

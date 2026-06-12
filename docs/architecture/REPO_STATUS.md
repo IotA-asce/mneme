@@ -76,6 +76,7 @@ Implemented memory code:
 - Stage 3 runtime and virtual head: `MnemeRuntime` wires the local event bus, memory engine, world model, sensory echo, working memory, context windows, attention, executive, dialogue planner, promotion, extraction, consolidation daemon, and fake peripheral discovery into one deterministic process.
 - Terminal virtual head command: `mneme run` accepts typed input, publishes `speech_transcript` perception events, renders dialogue plans as text, and supports scripted JSON output for deterministic demos.
 - Fake peripheral discovery: deterministic camera/microphone/speaker inventory publication with tests for device appearance, removal, and absence.
+- Real device discovery inventory: `RealPeripheralBackend` can list host cameras, microphones, and speakers through best-effort OS inventory commands, exposed by `mneme run --device-backend real`. It does not open sensors or verify capture permissions.
 
 ## Partially Implemented
 
@@ -88,6 +89,7 @@ The following areas exist but are not complete enough to count as full phase com
 - Semantic facts: facts can be upserted, source typed, tagged, searched by structured fields, linked to supporting episodes, checked for conservative semantic conflicts, marked `superseded`/`conflicted`, and queried through conflict reports.
 - Retrieval manager: retrieval returns reranked facts, episodes, and memory summaries from local SQLite, updates meta-memory retrieval history for returned records, filters internal-only speakability records by default, warns about empty/withheld/conflicting results, and derives the bundle provenance summary from stored support links. It does not search working memory or self model.
 - Consolidation: a one-shot deterministic pass can create repeated-episode summaries and meta-memory decay hints. No long-running daemon, fact extraction, contradiction review, purge behavior, or retrieval downranking is implemented.
+- Stage 4 real perception: host peripheral inventory exists, but live camera frames, microphone audio capture, ASR, face detection, speaker playback, and perception storage hygiene are not implemented.
 - Meta-memory: typed storage methods exist for records, provenance JSON, speakability, and retrieval history updates.
 - Config: `config/memory.yaml` records salience defaults that can be loaded when requested.
 
@@ -151,7 +153,7 @@ The test suite currently contains focused model, salience, storage, and retrieva
 - `tests/test_stage3_runtime.py::test_typed_virtual_head_remembers_and_answers_from_memory`
 - `tests/test_stage3_runtime.py::test_scenario_fixture_runs_through_runtime_stack`
 
-Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, bounded sensory echo/working-memory behavior, deterministic scenario replay, fake peripheral discovery, and the Stage 3 typed virtual-head runtime. There are no tests yet for real OS peripheral discovery, real sensor workers, spoken output, visual avatar rendering, skill controllers, actuator bridges, ROS adapters, or cross-process runtime behavior.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, bounded sensory echo/working-memory behavior, deterministic scenario replay, fake peripheral discovery, injected-output real peripheral discovery parsing, and the typed virtual-head runtime. There are no tests yet for live sensor capture, spoken output, visual avatar rendering, skill controllers, actuator bridges, ROS adapters, or cross-process runtime behavior.
 
 ## Verification Commands
 
