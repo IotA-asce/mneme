@@ -61,10 +61,10 @@ Goal: the memory lifecycle (`observe → buffer → score → promote → consol
 - [x] Extracted facts enter through the existing conflict-aware path as `model_inferred` with capped confidence, never as confirmed.
 - [x] Exit: extracted facts carry full provenance chains; conflict precedence against user-confirmed facts proven under tests (`tests/test_fact_extraction.py`). See `docs/memory/EXTRACTION.md`. Extraction from consolidation summaries remains a future increment.
 
-### M1.3 Consolidation daemon
+### M1.3 Consolidation daemon — complete (2026-06-12)
 
-- Long-running (but locally schedulable and replay-testable) consolidation loop over the one-shot pass: scheduling policy, idle triggers, batch limits, progress reporting.
-- Exit: repeated invocations are idempotent; daemon behavior fully testable without threads in unit tests.
+- [x] Schedulable, replay-testable consolidation wrapper over the one-shot pass: minimum-interval scheduling policy, batch limits, cumulative stats, and `memory_lifecycle` progress events.
+- [x] Exit: repeated invocations are idempotent; daemon behavior fully testable without threads (`tests/test_consolidation_daemon.py`). Idle-detection triggers deferred to Stage 2 (needs executive/world-model integration). See `docs/memory/CONSOLIDATION.md`.
 
 ### M1.4 Forgetting and decay policy
 

@@ -64,6 +64,7 @@ Implemented memory code:
 - Scenario replay runner that publishes simulated face/person, speech transcript, sound direction, touch, and body/internal health events through the local runtime bus.
 - Automatic memory promotion (`MemoryPromoter`): bus-driven candidate scoring and storage per salience decision, with `memory_lifecycle` observability events.
 - Deterministic fact extraction (`FactExtractor`): structured episode statements become conflict-aware `model_inferred` facts automatically after semantic-candidate promotions.
+- Schedulable consolidation daemon (`ConsolidationDaemon`): interval-policed, batch-bounded consolidation passes with lifecycle events and cumulative stats, driven by injected-clock ticks (no threads).
 
 ## Partially Implemented
 
