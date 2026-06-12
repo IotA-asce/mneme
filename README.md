@@ -2,19 +2,20 @@
 
 Mneme is a memory-centered cognition engine for a lifelike android head.
 
-The current repository is a local Python prototype for the virtual-head phase of that architecture. It focuses on safe, testable cognition boundaries: perception workers publish observations, state builders publish state, memory stores and retrieves context, attention chooses what matters, the executive publishes intent, and later skills/actuators can consume those intents through explicit contracts.
+The current repository is a local Python prototype for the virtual-head phase of that architecture. It focuses on safe, testable cognition boundaries: perception workers publish observations, state builders publish state, memory stores and retrieves context, attention chooses what matters, the executive publishes intent, virtual skills consume that intent, and physical actuators remain outside the runtime.
 
 Mneme does not currently control physical hardware.
 
 ## Current Status
 
-As of 2026-06-12, Stages 0-4 of the master roadmap are implemented in the repo-owned architecture:
+As of 2026-06-13, Stages 0-5 of the master roadmap are implemented in the repo-owned architecture:
 
 - **Stage 0:** V1 memory core.
 - **Stage 1:** autonomous memory lifecycle.
 - **Stage 2:** bench cognition integration.
 - **Stage 3:** cross-platform runtime and terminal virtual head.
 - **Stage 4:** real device discovery and live-perception worker contracts.
+- **Stage 5:** conversational presence with virtual speech, avatar state, virtual skills, and interruption handling.
 
 See `docs/architecture/MASTER_ROADMAP.md` and `docs/architecture/REPO_STATUS.md` for the detailed status record.
 
@@ -52,6 +53,18 @@ See `docs/architecture/MASTER_ROADMAP.md` and `docs/architecture/REPO_STATUS.md`
 - Fake camera, microphone, and speaker inventory is the default for tests and CI.
 - Real OS-backed device inventory can list host cameras, microphones, and speakers.
 
+### Conversational Presence
+
+Stage 5 adds a virtual presence layer on top of the runtime:
+
+- Dialogue plans become virtual `speech` skill goals.
+- The default speech backend is simulated and records output in JSON without playing audio.
+- Optional local TTS command adapters can play speech through tools installed on the host.
+- Speech voice selection can be passed with `--voice` and is persisted as procedural memory.
+- A virtual avatar state tracks listening, thinking, speaking, gaze target, idle blink pattern, and safety mode.
+- Barge-in is handled deterministically: user speech while Mneme is speaking preempts the active speech skill.
+- Virtual skills publish accepted/running/completed/preempted/canceled status events using the same event contracts future physical skills will use.
+
 ### Live Perception
 
 Stage 4 live perception is implemented through repo-owned worker contracts and local command adapters:
@@ -67,9 +80,9 @@ The base package intentionally does not bundle OpenCV, face models, VAD, or ASR 
 ## What Is Not Implemented Yet
 
 - Built-in native camera, face detection, VAD, or ASR backends.
-- Spoken TTS output.
-- Visual avatar rendering.
-- Skill controllers and actuator bridge.
+- Built-in native TTS engine. Speech output is available only through a configured local command or the simulated backend.
+- Graphical avatar rendering. The repo currently exposes virtual avatar state in JSON/terminal output.
+- Physical skill controllers and actuator bridge.
 - Physical hardware control, GPIO, serial, PWM, firmware flashing, or ROS runtime nodes.
 - Cloud LLM integration.
 - Full long-running daemon/process supervision.
@@ -109,7 +122,7 @@ python scripts/smoke_test_memory.py
 python -m pytest
 ```
 
-The current suite covers memory models, storage, migrations, salience, retrieval, provenance, conflicts, consolidation, decay, runtime events, working memory, scenario replay, world model, attention, executive behavior, dialogue planning, device discovery, live-perception adapters, and the virtual-head runtime.
+The current suite covers memory models, storage, migrations, salience, retrieval, provenance, conflicts, consolidation, decay, runtime events, working memory, scenario replay, world model, attention, executive behavior, dialogue planning, device discovery, live-perception adapters, conversational presence, and the virtual-head runtime.
 
 ## Memory CLI
 
@@ -150,6 +163,30 @@ mneme run --input "hello Mneme"
 mneme run --json --input "remember that I like tea" --input "what do I like"
 ```
 
+Run with simulated speech output visible in JSON:
+
+```bash
+mneme run --json --virtual-speech-duration-ms 500 --input "hello Mneme"
+```
+
+Use a local TTS command adapter. The base package does not install a TTS engine; the command must already exist on your machine.
+
+```bash
+mneme run --tts-command "say {text}" --voice Samantha --input "hello Mneme"
+```
+
+Command placeholders:
+
+- `{text}`: utterance text from the dialogue planner,
+- `{voice}`: selected voice label,
+- `{device_id}`: optional speaker device ID.
+
+Disable virtual presence if you only want text responses and cognition events:
+
+```bash
+mneme run --no-virtual-presence --input "hello Mneme"
+```
+
 Use real device inventory:
 
 ```bash
@@ -162,7 +199,7 @@ Use an empty inventory for no-device tests:
 mneme run --device-backend none --json --input "hello"
 ```
 
-See `docs/runbooks/VIRTUAL_HEAD.md`.
+See `docs/runbooks/VIRTUAL_HEAD.md` and `docs/runbooks/CONVERSATIONAL_PRESENCE.md`.
 
 ## Live Perception Adapters
 
@@ -213,7 +250,7 @@ See `docs/runbooks/SCENARIO_REPLAY.md`.
 - `tests/` - unit, integration, storage, runtime, and replay tests.
 - `docs/architecture/` - roadmap, status, runtime boundaries, serialization, and ROS plan.
 - `docs/memory/` - memory model, storage, retrieval, salience, provenance, conflicts, consolidation, decay, and self model.
-- `docs/runbooks/` - local development, CLI, virtual head, device discovery, live perception, and scenario replay.
+- `docs/runbooks/` - local development, CLI, virtual head, conversational presence, device discovery, live perception, and scenario replay.
 - `memory/` - durable project memory for completed features, decisions, investigations, and risks.
 - `implement/` - implementation plans and architectural rules for non-trivial changes.
 

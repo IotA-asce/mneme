@@ -1,9 +1,9 @@
 # Stage Prerequisites — What You Need to Provide (Stage 3 → 7)
 
-Date: 2026-06-12 (revision 2 — virtual-head plan, cross-platform, motors deferred)
+Date: 2026-06-13 (revision 3 — Stage 5 virtual presence complete)
 Status: Living checklist for the human side of the master roadmap
 
-Stages 0–2 are complete. Roadmap revision 2 changed the picture dramatically: the near-term target is a **virtual head** — perception and speech on the machines you already own — with all motor/hardware work deferred to the Stage 6 physical-embodiment track. Mneme targets **Windows, macOS, and Linux** equally; your primary dev machine is a **Mac Mini M4**, which is fully sufficient through Stage 5 and 7.
+Stages 0–5 are complete in the repo-owned virtual-head architecture. The near-term target remains a **virtual head** — perception and speech on the machines you already own — with all motor/hardware work deferred to the Stage 6 physical-embodiment track. Mneme targets **Windows, macOS, and Linux** equally; your primary dev machine is a **Mac Mini M4**, which is fully sufficient through Stage 5 and 7.
 
 Almost everything from the previous revision's shopping list is now deferred or unnecessary. Here is what actually remains.
 
@@ -11,11 +11,11 @@ Almost everything from the previous revision's shopping list is now deferred or 
 
 | # | Item | Needed for | Blocking? | Cost |
 |---|---|---|---|---|
-| 1 | Python 3.11+ on the Mac | Stage 3 | Yes | $0 |
+| 1 | Python 3.11+ on the Mac | Stage 3–5 | Yes | $0 |
 | 2 | Camera + microphone (likely already owned) | Stage 4 | Yes for live perception | $0–80 |
-| 3 | Camera/mic OS permissions granted | Stage 4–5 | Yes | $0 |
-| 4 | TTS voice choice (listen to samples) | Stage 5 | No (default works) | $0 |
-| 5 | Approval for perception dependencies (OpenCV etc.) | Stage 4 | Yes (project rule: deps need sign-off) | $0 |
+| 3 | Camera/mic OS permissions granted | Stage 4–5 | Yes for live adapters | $0 |
+| 4 | TTS command/voice choice | Stage 5 | No (simulated output works) | $0 |
+| 5 | Approval for optional native perception/TTS dependencies | Future adapter work | Only if adding deps | $0 |
 | 6 | LLM provider + budget, or local-only | Stage 7 | No (fallbacks exist) | optional |
 | 7 | Repeat visitors for presence evaluation | Stage 7 | Eventually | time |
 | — | ~~ROS 2, mic array, servos, PSU, e-stop, head mechanics~~ | Stage 6 (deferred) | Not until you opt in | — |
@@ -53,20 +53,17 @@ The peripheral discovery service (M3.2) will report whatever the Mac has (built-
 **Actions:**
 
 1. Grant camera/microphone permissions when macOS prompts (System Settings → Privacy & Security → Camera/Microphone → your terminal/Python). Without this, capture silently fails — it's the #1 macOS perception gotcha.
-2. **Dependency approval (decision):** Stage 4 needs the project's first heavyweight dependencies, which per AGENTS.md require sign-off. Proposed set, all local, all cross-platform, all Apple-Silicon native:
-   - `opencv-python` — camera capture + face detection,
-   - `sounddevice` — cross-platform audio capture/playback (PortAudio),
-   - `faster-whisper` — local ASR (CTranslate2, runs well on M4 CPU),
-   - a face-embedding model for re-identification (I'll propose the specific model + license for approval when we get there).
-
-   Reply "approved" (or veto specifics) when Stage 4 starts.
+2. Stage 4 currently uses command adapters, not bundled OpenCV/audio/ASR dependencies. Optional native adapters can be added later only after dependency approval.
 
 Disk note: with raw-frame storage decided, expect the archive to grow — M4.4 adds retention caps you can tune; the Mac Mini's internal storage is fine to start.
 
 ## Stage 5 — Conversational Presence
 
-- **TTS voice (decision, $0):** default is **Piper** (local, MIT, Apple Silicon builds). Listen at https://rhasspy.github.io/piper-samples/ and tell me which voice is Mneme's. On macOS there's also the built-in `say` engine as a zero-dependency fallback — I'll wire both behind one adapter.
-- Nothing else: the avatar is on-screen, skills are virtual, no purchases.
+Stage 5 is implemented with simulated speech by default and optional local TTS command adapters.
+
+- **TTS command:** optional. On macOS, `mneme run --tts-command "say {text}" --input "hello Mneme"` uses the built-in `say` command.
+- **Voice label:** optional. `--voice <name>` persists the selected label as procedural memory and reuses it on later runs.
+- Nothing else is required: avatar state and skills are virtual, and no purchases are needed.
 
 ## Stage 6 — Physical Embodiment (deferred)
 
@@ -81,9 +78,8 @@ Disk note: with raw-frame storage decided, expect the archive to grow — M4.4 a
 
 ## Open Decisions Summary
 
-1. **Stage 4 start:** approve the perception dependency set (§ Stage 4).
-2. **Stage 5:** pick a Piper voice (or accept the default + macOS `say` fallback).
-3. **Stage 7:** LLM provider + budget, or local-only.
-4. **Whenever you choose:** green-light the Stage 6 physical-embodiment track.
+1. **Optional native adapters:** approve any future native perception/TTS dependencies before they are added.
+2. **Stage 7:** LLM provider + budget, or local-only.
+3. **Whenever you choose:** green-light the Stage 6 physical-embodiment track.
 
-Everything in Stage 3 needs nothing from you beyond the Mac setup steps above — it can start immediately.
+Stages 3–5 can run locally with the setup commands above. Future native adapters and physical embodiment remain explicit opt-in work.

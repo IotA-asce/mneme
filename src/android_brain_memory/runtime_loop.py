@@ -30,6 +30,13 @@ from .peripherals import (
     RealPeripheralBackend,
     default_virtual_head_devices,
 )
+from .presence import (
+    ConversationalPresenceCoordinator,
+    SimulatedSpeechOutputBackend,
+    SpeechOutputBackend,
+    VirtualAvatarController,
+    VirtualSkillRunner,
+)
 from .promotion import MemoryPromoter
 from .runtime import (
     EventBus,
@@ -39,6 +46,7 @@ from .runtime import (
     memory_candidate_event,
     perception_observation,
 )
+from .self_model import ProceduralMemory
 from .simulation import ScenarioReplayRunner
 from .working_memory import SensoryEchoBuffer, WorkingMemory
 from .world_model import WorldModel
@@ -46,6 +54,7 @@ from .world_model import WorldModel
 
 DEFAULT_TICK_MS = 100
 DEFAULT_USER_TTL_MS = 5_000
+DEFAULT_SPEECH_VOICE = "default"
 
 
 class RuntimeClock:
@@ -114,6 +123,11 @@ class MnemeRuntime:
         live_camera_interval_ms: int = DEFAULT_TICK_MS * 10,
         live_speech_interval_ms: int = DEFAULT_TICK_MS * 10,
         enable_perception_fusion: bool = False,
+        speech_output_backend: SpeechOutputBackend | None = None,
+        speech_voice: str | None = None,
+        persist_speech_voice: bool = True,
+        enable_virtual_presence: bool = True,
+        virtual_speech_duration_ms: int = 0,
         source: str = "mneme_runtime",
         initialize_db: bool = True,
     ) -> None:
@@ -129,6 +143,15 @@ class MnemeRuntime:
         )
         if initialize_db:
             self.engine.init_db()
+        self.speech_voice = (
+            _resolve_speech_voice(
+                self.engine,
+                speech_voice=speech_voice,
+                persist=persist_speech_voice,
+            )
+            if initialize_db
+            else _optional_text(speech_voice, "speech_voice") or DEFAULT_SPEECH_VOICE
+        )
 
         self.echo = SensoryEchoBuffer(clock=self.clock)
         self.working_memory = WorkingMemory(clock=self.clock)
@@ -197,10 +220,32 @@ class MnemeRuntime:
             if enable_perception_fusion or live_camera_backend is not None or live_speech_backend is not None
             else None
         )
+        self.avatar = VirtualAvatarController(clock=self.clock) if enable_virtual_presence else None
+        self.virtual_skill_runner = (
+            VirtualSkillRunner(
+                bus=None,
+                speech_backend=speech_output_backend or SimulatedSpeechOutputBackend(),
+                clock=self.clock,
+                speech_duration_ms=virtual_speech_duration_ms,
+            )
+            if enable_virtual_presence
+            else None
+        )
+        self.presence = (
+            ConversationalPresenceCoordinator(
+                bus=self.bus,
+                skill_runner=self.virtual_skill_runner,
+                clock=self.clock,
+                default_voice=self.speech_voice,
+            )
+            if enable_virtual_presence and self.virtual_skill_runner is not None
+            else None
+        )
 
         self._event_cursor = 0
         self._utterance_cursor = 0
         self._utterances: list[VirtualHeadOutput] = []
+        self._handled_dialogue_keys: set[str] = set()
         self._subscriptions: list[Subscription] = []
         self._attach_components()
 
@@ -217,6 +262,8 @@ class MnemeRuntime:
             self.vision_worker.tick(now_ms=now)
         if self.speech_worker is not None:
             self.speech_worker.tick(now_ms=now)
+        if self.virtual_skill_runner is not None:
+            self.virtual_skill_runner.tick(now_ms=now)
         self.context_windows.tick(now_ms=now)
         self.attention.idle_tick(now_ms=now)
         self.consolidation_daemon.tick(now_ms=now)
@@ -305,9 +352,17 @@ class MnemeRuntime:
                 "speech": self.speech_worker.stats if self.speech_worker is not None else None,
                 "fusion": self.perception_fusion.stats if self.perception_fusion is not None else None,
             },
+            "presence": {
+                "voice": self.speech_voice,
+                "avatar": self.avatar.state.to_dict() if self.avatar is not None else None,
+                "skills": self.virtual_skill_runner.stats if self.virtual_skill_runner is not None else None,
+                "coordinator": self.presence.stats if self.presence is not None else None,
+            },
         }
 
     def close(self) -> None:
+        if self.virtual_skill_runner is not None:
+            self.virtual_skill_runner.cancel_active(reason="runtime_shutdown", now_ms=self._now_ms())
         self.context_windows.close_now(reason="runtime_shutdown", now_ms=self._now_ms())
         self.engine.close()
 
@@ -321,7 +376,6 @@ class MnemeRuntime:
             kinds=[
                 RuntimeEventKind.PERCEPTION_OBSERVATION,
                 RuntimeEventKind.WORLD_STATE_UPDATE,
-                RuntimeEventKind.SKILL_GOAL,
                 RuntimeEventKind.SAFETY_EVENT,
             ],
         )
@@ -329,6 +383,10 @@ class MnemeRuntime:
         self.extractor.attach_to_bus(self.bus)
         if self.perception_fusion is not None:
             self.perception_fusion.attach_to_bus(self.bus)
+        if self.avatar is not None:
+            self.avatar.attach_to_bus(self.bus)
+        if self.virtual_skill_runner is not None:
+            self.virtual_skill_runner.attach_to_bus(self.bus)
         self.executive.attach_to_bus(self.bus)
         self._subscriptions.append(
             self.bus.subscribe(
@@ -349,10 +407,19 @@ class MnemeRuntime:
             working=self.working_memory.to_dict(created_ts=event.timestamp),
         )
         if plan is None:
+            if self.presence is not None:
+                self.presence.handle_intent(intent, plan=None, timestamp=event.timestamp)
             return
+        dialogue_key = _dialogue_key(intent)
+        if dialogue_key is not None:
+            if dialogue_key in self._handled_dialogue_keys:
+                return
+            self._handled_dialogue_keys.add(dialogue_key)
         self._utterances.append(
             VirtualHeadOutput(timestamp=event.timestamp, text=plan.text, plan=plan)
         )
+        if self.presence is not None:
+            self.presence.handle_intent(intent, plan=plan, timestamp=event.timestamp)
 
     def _step_result(self, now: int) -> RuntimeStepResult:
         return RuntimeStepResult(
@@ -415,6 +482,40 @@ def candidate_from_user_utterance(
         payload=payload,
         provenance_refs=[],
     )
+
+
+def _dialogue_key(intent: ExecutiveIntent) -> str | None:
+    turn = intent.payload.get("dialogue_turn")
+    if not isinstance(turn, Mapping):
+        return None
+    speaker = turn.get("speaker")
+    text = turn.get("text")
+    timestamp = turn.get("timestamp")
+    if not isinstance(speaker, str) or not isinstance(text, str):
+        return None
+    return f"{intent.intent_type.value}:{speaker}:{timestamp}:{_stable_text_id(text)}"
+
+
+def _resolve_speech_voice(
+    engine: MnemeMemory,
+    *,
+    speech_voice: str | None,
+    persist: bool,
+) -> str:
+    requested = _optional_text(speech_voice, "speech_voice")
+    procedures = ProceduralMemory(engine)
+    stored = procedures.get_parameter("speech", "voice")
+    stored_voice = stored.strip() if isinstance(stored, str) and stored.strip() else None
+    if requested is None:
+        return stored_voice or DEFAULT_SPEECH_VOICE
+    if persist and stored_voice != requested:
+        procedures.set_parameter(
+            "speech",
+            "voice",
+            requested,
+            reason="Stage 5 virtual speech voice selection",
+        )
+    return requested
 
 
 def _statement_from_memory_text(text: str) -> dict[str, Any] | None:
@@ -491,7 +592,15 @@ def _stable_text_id(text: str) -> str:
 def _required_text(value: Any, field_name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field_name} must be a non-empty string")
-    return value
+    return value.strip()
+
+
+def _optional_text(value: Any, field_name: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    return value.strip() or None
 
 
 def _timestamp(value: Any, field_name: str) -> int:
