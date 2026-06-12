@@ -110,6 +110,8 @@ This satisfies the Phase 1 exit criterion that a stored candidate can be traced 
 
 See `docs/memory/STORAGE.md` for the read API surface (`get_raw_trace`, `get_recent_raw_traces`, `get_fact_support`, `get_facts_for_episode`, `get_episodes_in_window`).
 
+Chains are inspectable from the shell via `python scripts/mneme_memory.py inspect-provenance --memory-id <id> --memory-kind <kind>`, and decay-bearing meta-memory via `inspect-decay`. All memory state changes (promotion, extraction, consolidation, decay, retrieval, conflicts) are published as `memory_lifecycle` runtime events — see `docs/architecture/RUNTIME.md`.
+
 ## Testing
 
 Current tests cover:

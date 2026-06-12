@@ -9,6 +9,7 @@ from typing import Any
 from .consolidation import ConsolidationOptions
 from .engine import DEFAULT_DB, DEFAULT_MIGRATIONS, MnemeMemory, to_jsonable
 from .models import MemoryQuery, MemoryStatus, SourceType, Speakability
+from .storage import PROVENANCE_MEMORY_KINDS
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -100,6 +101,23 @@ def build_parser() -> argparse.ArgumentParser:
     consolidate.add_argument("--no-decay-metadata", action="store_true")
 
     subparsers.add_parser("inspect-db", help="Return database counts and recent summary metadata.")
+
+    inspect_provenance = subparsers.add_parser(
+        "inspect-provenance",
+        help="Return the stored provenance chain for a memory.",
+    )
+    inspect_provenance.add_argument("--memory-id", required=True)
+    inspect_provenance.add_argument(
+        "--memory-kind",
+        required=True,
+        choices=list(PROVENANCE_MEMORY_KINDS),
+    )
+
+    inspect_decay = subparsers.add_parser(
+        "inspect-decay",
+        help="List meta-memory records carrying decay metadata.",
+    )
+    inspect_decay.add_argument("--limit", type=int, default=50)
     return parser
 
 
@@ -186,6 +204,16 @@ def main(argv: list[str] | None = None) -> int:
                     "inspection": memory.inspect_db(),
                 }
             )
+            return 0
+
+        if args.command == "inspect-provenance":
+            chain = memory.store.get_provenance_chain(args.memory_id, args.memory_kind)
+            _emit({"command": args.command, "migrations_applied": applied, "chain": chain})
+            return 0
+
+        if args.command == "inspect-decay":
+            records = memory.store.get_meta_memory_with_decay(limit=args.limit)
+            _emit({"command": args.command, "migrations_applied": applied, "records": records})
             return 0
 
     parser.error(f"unsupported command: {args.command}")

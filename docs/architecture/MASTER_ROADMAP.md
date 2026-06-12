@@ -73,10 +73,13 @@ Goal: the memory lifecycle (`observe → buffer → score → promote → consol
 - [x] User-confirmed facts never auto-suppressed; purging one requires `force=True` with a reason.
 - [x] Exit: decay outcomes deterministic and explainable; purge requires explicit invocation (`tests/test_decay.py`). Detail decay (in-place summarization) and raw-trace retention remain documented future work. See `docs/memory/DECAY.md`.
 
-### M1.5 Memory observability
+### M1.5 Memory observability — complete (2026-06-12)
 
-- Structured logs/events for promotion decisions, retrieval rankings, consolidation changes, conflicts, and decay actions; CLI inspection commands (`inspect-provenance`, `inspect-decay`).
-- Exit: every memory state change is traceable from logs alone.
+- [x] `memory_lifecycle` events for promotion decisions (M1.1), extraction results (M1.2), consolidation passes (M1.3), decay actions (M1.4), retrievals, and fact conflicts (engine-level, opt-in `event_bus`). Retrieval events carry IDs/counts/warnings only — never memory content.
+- [x] CLI inspection commands: `inspect-provenance` (chain JSON) and `inspect-decay` (decay-bearing meta-memory).
+- [x] Exit: every memory state change is traceable from the event stream alone (`tests/test_observability.py`).
+
+**Stage 1 status: complete (2026-06-12).** The memory lifecycle (`observe → buffer → score → promote → consolidate → semanticize → retrieve → decay/suppress/purge`) runs end-to-end, deterministically, with full observability.
 
 **Safety gate to Stage 2:** the full lifecycle runs under replay with deterministic results across three runs; no memory layer regression.
 
