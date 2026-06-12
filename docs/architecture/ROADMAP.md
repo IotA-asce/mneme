@@ -1,6 +1,6 @@
 # Roadmap
 
-Date: 2026-06-11
+Date: 2026-06-12
 Status: V1 memory prototype roadmap
 
 This roadmap orders the next work by safety and dependency. Mneme should remain bench-only and memory-first until the storage, retrieval, provenance, and consolidation contracts are testable.
@@ -19,12 +19,14 @@ Already present:
 - Fact and episode ID lookups.
 - Basic text retrieval over facts and episodes.
 - Conservative non-mutating consolidation placeholder.
+- High-level memory facade and JSON CLI for local debug/replay workflows.
 
 Remaining baseline cleanup:
 
 - Keep status documents and backlog aligned with implemented behavior.
 - Add raw trace read/list and fact support read APIs before expanding retrieval behavior.
 - Avoid treating interface drafts as runtime ROS integration.
+- Consider a package console-script entry point after CLI command shape settles.
 
 ## Phase 1 — Storage and Provenance Baseline
 

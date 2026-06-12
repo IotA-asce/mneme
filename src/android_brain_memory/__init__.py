@@ -37,6 +37,7 @@ from .storage import (
 )
 from .retrieval import retrieve_memory
 from .consolidation import ConsolidationOptions, ConsolidationReport, consolidate_once
+from .engine import FactUpsertResult, MemoryEngine, MnemeMemory, RememberCandidateResult
 
 __all__ = [
     "MemoryCandidate",
@@ -72,4 +73,8 @@ __all__ = [
     "ConsolidationOptions",
     "ConsolidationReport",
     "consolidate_once",
+    "MnemeMemory",
+    "MemoryEngine",
+    "RememberCandidateResult",
+    "FactUpsertResult",
 ]

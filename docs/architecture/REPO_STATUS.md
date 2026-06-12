@@ -1,6 +1,6 @@
 # Repository Status
 
-Date: 2026-06-11
+Date: 2026-06-12
 Status: V1 starter memory prototype audit
 
 This audit records what the repository actually implements today versus what the design documents describe for the broader Mneme architecture.
@@ -47,6 +47,8 @@ Implemented memory code:
 - `MemoryBundle.ranking_explanations` debug output for returned ranked items.
 - A deterministic `consolidate_once()` skeleton that groups repeated episodes, creates summaries, preserves episodes, and writes decay/downranking metadata to meta-memory.
 - `open_default_store()` helper pointing at `.local/android_brain_memory.sqlite3`.
+- High-level `MnemeMemory` / `MemoryEngine` facade for migration initialization, candidate scoring, raw trace storage, episode encoding/storage, fact upsert, retrieval, one-shot consolidation, and database inspection.
+- JSON-oriented memory CLI with `init-db`, `remember-candidate`, `add-episode`, `add-fact`, `retrieve`, `consolidate-once`, and `inspect-db` commands.
 
 ## Partially Implemented
 
@@ -105,8 +107,10 @@ The test suite currently contains focused model, salience, storage, and retrieva
 - `tests/test_storage_migrations.py::test_same_semantic_fact_duplicate_is_not_a_conflict`
 - `tests/test_storage_migrations.py::test_context_preserving_fact_difference_is_not_a_conflict`
 - `tests/test_consolidation.py::test_consolidate_once_creates_summary_for_repeated_episodes`
+- `tests/test_memory_engine_cli.py::test_mneme_memory_facade_conversation_like_flow`
+- `tests/test_memory_engine_cli.py::test_memory_cli_conversation_like_flow_outputs_json`
 
-Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, and retrieval include flags. There are no tests yet for full provenance traversal, fact extraction from consolidation, retrieval use of decay/downranking, raw trace read APIs, or time-window episode queries.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, and the high-level memory API/CLI conversation-like flow. There are no tests yet for full provenance traversal, fact extraction from consolidation, retrieval use of decay/downranking, raw trace read APIs, or time-window episode queries.
 
 ## Verification Commands
 
@@ -118,6 +122,7 @@ source .venv/bin/activate
 python -m pip install -e '.[dev]'
 python scripts/init_db.py
 python scripts/smoke_test_memory.py
+python scripts/mneme_memory.py inspect-db
 python -m pytest
 ```
 
@@ -126,6 +131,7 @@ When the package is not installed but dependencies are already present, scripts 
 ```bash
 PYTHONPATH=src python3 scripts/init_db.py
 PYTHONPATH=src python3 scripts/smoke_test_memory.py
+PYTHONPATH=src python3 scripts/mneme_memory.py inspect-db
 PYTHONPATH=src python3 -m pytest
 ```
 

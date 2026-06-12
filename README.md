@@ -56,4 +56,34 @@ python -m pytest
 
 See `docs/runbooks/DEVELOPMENT.md` for the full development runbook.
 
+## Memory API and CLI
+
+The high-level memory facade is `android_brain_memory.MnemeMemory`. It wraps the current local memory path: migrations, salience scoring, raw trace storage, episode encoding/storage, fact upsert, retrieval, consolidation, and database inspection. Lower-level modules remain available for focused tests and direct use.
+
+Use the CLI for JSON-oriented local runs:
+
+```bash
+python scripts/mneme_memory.py init-db
+python scripts/mneme_memory.py inspect-db
+python scripts/mneme_memory.py retrieve --query-text memory --max-results 3
+```
+
+The same CLI is available as a module:
+
+```bash
+python -m android_brain_memory.cli retrieve --query-text calibration
+```
+
+Primary commands:
+
+- `init-db`
+- `remember-candidate`
+- `add-episode`
+- `add-fact`
+- `retrieve`
+- `consolidate-once`
+- `inspect-db`
+
+See `docs/runbooks/MEMORY_CLI.md` for JSON payload examples.
+
 This is intentionally small. The goal is to give Codex a precise, well-scoped project foundation before expanding into ROS 2 nodes, perception workers, and motor control.
