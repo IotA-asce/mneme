@@ -2,7 +2,7 @@
 
 Stage 3 adds a local terminal virtual head. It runs the existing deterministic cognition stack in one process and uses typed input instead of real camera or microphone input.
 
-No real sensors, speakers, actuators, ROS nodes, GPIO, serial devices, or hardware libraries are used in this stage.
+Stage 4 adds optional live perception command adapters. Stage 5 adds virtual speech output, avatar state, virtual skills, and barge-in handling. No physical actuators, ROS nodes, GPIO, serial devices, or hardware libraries are used by the virtual-head runtime.
 
 ## Setup
 
@@ -93,6 +93,28 @@ mneme run --device-backend real --speech-command "your-local-asr --device {devic
 
 See `docs/runbooks/LIVE_PERCEPTION.md` for command contracts, retention controls, and limitations.
 
+## Conversational Presence
+
+Stage 5 virtual presence is enabled by default. Dialogue plans become virtual speech skill goals, and the JSON snapshot exposes avatar state plus virtual skill status:
+
+```bash
+mneme run --json --virtual-speech-duration-ms 500 --input "hello Mneme"
+```
+
+Use a local TTS command already installed on the host:
+
+```bash
+mneme run --tts-command "say {text}" --voice Samantha --input "hello Mneme"
+```
+
+Disable virtual presence when only text responses are needed:
+
+```bash
+mneme run --no-virtual-presence --input "hello Mneme"
+```
+
+See `docs/runbooks/CONVERSATIONAL_PRESENCE.md` for voice persistence, local TTS placeholders, and barge-in behavior.
+
 ## Verification
 
 Run:
@@ -105,4 +127,10 @@ Stage 3 focused coverage is in:
 
 ```bash
 python -m pytest tests/test_stage3_runtime.py
+```
+
+Stage 5 focused coverage is in:
+
+```bash
+python -m pytest tests/test_conversational_presence.py
 ```

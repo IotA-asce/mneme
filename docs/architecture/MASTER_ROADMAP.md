@@ -1,6 +1,6 @@
 # Mneme Master Roadmap
 
-Date: 2026-06-12 (revision 2)
+Date: 2026-06-13 (revision 3)
 Status: Long-term implementation roadmap from the V1 memory core to the complete android head brain
 
 This roadmap covers every implementation milestone between the current bench-only memory prototype and the end goal: a safe, debuggable, expressive, memory-centered robot head with lifelike attention, timing, memory continuity, and transparent reasoning.
@@ -21,7 +21,7 @@ Stage 1  Autonomous memory lifecycle               [complete]
 Stage 2  Cognitive integration on the bench        [complete]
 Stage 3  Cross-platform runtime and virtual head   [complete]
 Stage 4  Real perception (camera + microphone)     [complete]
-Stage 5  Conversational presence
+Stage 5  Conversational presence                   [complete]
 Stage 6  Physical embodiment                       [deferred: ROS, skills, actuators, hardware]
 Stage 7  Lifelike presence and long-term continuity
 ```
@@ -211,31 +211,47 @@ Exit criteria met for the local architecture: vision/speech observations update 
 
 ---
 
-## Stage 5 — Conversational Presence
+## Stage 5 — Conversational Presence (complete, 2026-06-13)
 
 Goal: the virtual head becomes a convincing conversational partner — full spoken loop, expressive on-screen behavior, and social timing, on whatever machine it runs on.
 
 ### M5.1 Speech output
 
-- Cross-platform local TTS adapter behind the dialogue planner (utterance plans → audio out through discovered speakers); voice selection persisted as a self-model fact.
+- [x] Dialogue plans become virtual `speech` skill goals.
+- [x] Simulated speech backend records output deterministically for JSON/replay use.
+- [x] Optional local TTS command adapter supports `{text}`, `{voice}`, and `{device_id}` placeholders without bundling a speech engine.
+- [x] Voice selection is persisted as procedural memory under the `speech` skill and reused by later runs.
 
 ### M5.2 Live spoken loop
 
-- Microphone ASR (Stage 4) → cognition → spoken reply, with the executive's response timing gate tuned against real speech endpointing; barge-in handling (user speaks while Mneme talks → interruption through the executive).
+- [x] Stage 4 speech-transcript events and typed input enter the same cognition path.
+- [x] Runtime responses flow through executive intent, dialogue planning, virtual speech goals, and skill status events.
+- [x] Barge-in handling preempts active virtual speech when user speech arrives while Mneme is speaking.
+- [x] Real endpointing quality remains dependent on the configured local ASR adapter.
 
 ### M5.3 Expressive virtual avatar
 
-- The on-screen head visualizes attention (gaze direction toward the active target), blink/idle behaviors from the executive's idle rotation, listening/speaking/thinking states, and safety states. Procedural memory parameters drive timing/style values.
+- [x] `VirtualAvatarController` tracks attention target, listening/thinking/speaking/idle/safety mode, blink pattern, expression, mouth state, and last skill status.
+- [x] Avatar state is JSON-friendly and exposed in the runtime snapshot for terminal demos and future GUI rendering.
+- [x] Graphical rendering is intentionally not implemented yet; Stage 5 owns the state contract.
 
 ### M5.4 Virtual skill controllers
 
-- The skill-controller framework (accept/reject, progress, cancellation, timeout, preemption semantics) implemented against *virtual* skills (speak, express, gaze-on-screen) publishing `skill_goal`/`skill_status` events — the same contracts physical skills will use later, proven without motors.
+- [x] `VirtualSkillRunner` accepts virtual speech, gaze, and idle-presence goals.
+- [x] Virtual skills publish accepted, running, completed, failed, preempted, and canceled statuses.
+- [x] Cancellation/preemption works through event contracts and is used for barge-in and safety events.
+- [x] No hardware command path exists in this stage.
 
 ### M5.5 Social timing integration
 
-- Turn-taking between listening and speaking; interruption handling down through virtual skills; idle presence that feels attentive rather than frozen.
+- [x] Turn-taking flows from perception/working memory through executive/dialogue to virtual speech.
+- [x] Duplicate response intents do not duplicate spoken output.
+- [x] Completion returns avatar state to listening; safety events cancel active virtual skills.
+- [x] Idle and gaze goals remain virtual status events, ready for future GUI/physical skill consumers.
 
-- Exit criteria: a walk-up spoken conversation works end-to-end — Mneme listens, looks (on screen), remembers, answers from memory, and can be interrupted — repeatedly, with the full suite still green.
+Exit criteria met for the repository-owned architecture: a local interaction can be typed or supplied by a Stage 4 transcript adapter, remembered, answered from memory, routed through virtual speech and avatar state, and interrupted through deterministic virtual skill preemption. The base package still does not ship native ASR/TTS engines or a graphical avatar renderer.
+
+**Stage 5 status: complete (2026-06-13).** Conversational presence is implemented as virtual state and local command adapters. Physical embodiment remains deferred to Stage 6.
 
 **Gate to Stage 7:** sustained daily-driver use of the virtual head without memory corruption, unbounded growth, or stuck states.
 

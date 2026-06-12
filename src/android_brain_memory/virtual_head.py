@@ -14,6 +14,7 @@ from .live_perception import (
     PerceptionRetentionPolicy,
 )
 from .peripherals import PeripheralDiscoveryService, RealPeripheralBackend, default_virtual_head_devices
+from .presence import CommandSpeechOutputBackend
 from .runtime_loop import MnemeRuntime, RuntimeClock
 
 
@@ -84,6 +85,31 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--max-archived-frames", type=int, default=1_000)
     run.add_argument("--max-frame-archive-bytes", type=int, default=512 * 1024 * 1024)
     run.add_argument("--max-frame-age-ms", type=int, default=7 * 24 * 60 * 60 * 1000)
+    run.add_argument(
+        "--tts-command",
+        help="Local command template for spoken output. Supports {text}, {voice}, and {device_id}.",
+    )
+    run.add_argument(
+        "--voice",
+        help="Speech voice label to use and persist in procedural memory.",
+    )
+    run.add_argument(
+        "--tts-timeout-ms",
+        type=int,
+        default=10_000,
+        help="Timeout for local TTS command.",
+    )
+    run.add_argument(
+        "--virtual-speech-duration-ms",
+        type=int,
+        default=0,
+        help="Simulated speech skill duration before completion.",
+    )
+    run.add_argument(
+        "--no-virtual-presence",
+        action="store_true",
+        help="Disable virtual avatar, virtual skills, and speech-output simulation.",
+    )
 
     return parser
 
@@ -125,6 +151,15 @@ def _run(args: argparse.Namespace) -> int:
         if args.speech_command
         else None
     )
+    speech_output_backend = (
+        CommandSpeechOutputBackend(
+            shlex.split(args.tts_command),
+            timeout_ms=args.tts_timeout_ms,
+            default_voice=args.voice,
+        )
+        if args.tts_command
+        else None
+    )
     runtime = MnemeRuntime(
         db_path=args.db,
         migrations_dir=args.migrations,
@@ -137,6 +172,10 @@ def _run(args: argparse.Namespace) -> int:
         live_camera_interval_ms=args.live_camera_interval_ms,
         live_speech_interval_ms=args.live_speech_interval_ms,
         enable_perception_fusion=bool(camera_backend or speech_backend),
+        speech_output_backend=speech_output_backend,
+        speech_voice=args.voice,
+        enable_virtual_presence=not args.no_virtual_presence,
+        virtual_speech_duration_ms=args.virtual_speech_duration_ms,
     )
     outputs: list[dict[str, Any]] = []
     try:

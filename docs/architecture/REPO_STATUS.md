@@ -1,13 +1,13 @@
 # Repository Status
 
-Date: 2026-06-12
-Status: V1 starter memory prototype audit
+Date: 2026-06-13
+Status: Current repository capability audit
 
 This audit records what the repository actually implements today versus what the design documents describe for the broader Mneme architecture.
 
 ## Current Implementation
 
-The repository currently implements a local, bench-only Python memory prototype. It does not control hardware, run ROS 2 nodes, use a vector database, call LLM services, or process real camera/audio streams.
+The repository currently implements a local Python virtual-head prototype with deterministic memory, cognition, live-perception adapter contracts, and virtual conversational presence. It does not control physical hardware, run ROS 2 nodes, use a vector database, call LLM services, or bundle native media/AI model backends.
 
 Implemented foundations:
 
@@ -79,6 +79,7 @@ Implemented memory code:
 - Real device discovery inventory: `RealPeripheralBackend` can list host cameras, microphones, and speakers through best-effort OS inventory commands, exposed by `mneme run --device-backend real`. It does not open sensors or verify capture permissions.
 - Stage 4 live perception: `LiveVisionWorker` and `LiveSpeechWorker` select discovered devices, run configured local command adapters, publish standard perception events, store raw frame/transcript traces, create memory candidates, and enforce bounded frame archive retention.
 - Perception fusion and calibration: `PerceptionFusionCalibrator` publishes speaker/person match diagnostics with latency and confidence as world-state updates.
+- Stage 5 conversational presence: dialogue plans become virtual speech skill goals; simulated speech output is recorded in JSON; optional local TTS command adapters can play speech through host tools; selected speech voice labels persist as procedural memory; `VirtualAvatarController` exposes listening/thinking/speaking/idle/safety avatar state; `VirtualSkillRunner` publishes accepted/running/completed/failed/preempted/canceled status events; barge-in preempts active virtual speech on user speech.
 
 ## Partially Implemented
 
@@ -90,19 +91,20 @@ The following areas exist but are not complete enough to count as full phase com
 - Provenance: source type, confidence, fact support links, normalized meta-memory provenance JSON, retrieval counters, and speakability are stored, and `get_provenance_chain()` traverses fact → episode → raw trace derivations end-to-end with missing-reference reporting. There is still no version history or persisted episode provenance list.
 - Semantic facts: facts can be upserted, source typed, tagged, searched by structured fields, linked to supporting episodes, checked for conservative semantic conflicts, marked `superseded`/`conflicted`, and queried through conflict reports.
 - Retrieval manager: retrieval returns reranked facts, episodes, and memory summaries from local SQLite, updates meta-memory retrieval history for returned records, filters internal-only speakability records by default, warns about empty/withheld/conflicting results, and derives the bundle provenance summary from stored support links. It does not search working memory or self model.
-- Consolidation: a one-shot deterministic pass can create repeated-episode summaries and meta-memory decay hints. No long-running daemon, fact extraction, contradiction review, purge behavior, or retrieval downranking is implemented.
+- Consolidation: one-shot and tick-driven daemon paths can create repeated-episode summaries, emit lifecycle events, and write meta-memory decay hints consumed by retrieval. Semanticization of consolidation summaries, contradiction review, and a supervised long-running service process remain future work.
 - Meta-memory: typed storage methods exist for records, provenance JSON, speakability, and retrieval history updates.
 - Config: `config/memory.yaml` records salience defaults that can be loaded when requested.
+- Conversational presence: virtual speech, avatar state, virtual skill status, and local TTS command integration are implemented. Graphical avatar rendering, native TTS/ASR engines, speaker device routing, and physical skills remain outside the repo-owned Stage 5 implementation.
 
 ## Documented But Not Implemented
 
 The design documents describe these future capabilities, but the repository does not yet implement them:
 
-- Built-in native media/model backends for camera capture, face detection, VAD, and ASR. Stage 4 currently supports local command adapters and deterministic scripted backends.
-- Skill controllers, actuator bridge, and safety supervisor (the shared world model, attention manager v0, and executive arbiter v0 are implemented).
+- Built-in native media/model backends for camera capture, face detection, VAD, ASR, and TTS. Stage 4/5 currently support local command adapters and deterministic scripted/simulated backends.
+- Graphical avatar UI rendering. Stage 5 exposes virtual avatar state for a future GUI.
+- Physical skill controllers, actuator bridge, and safety supervisor (virtual skills and safety-state reactions are implemented; physical command paths are not).
 - Physical actuator control or dry-run hardware backend.
 - Full ROS 2 package/runtime integration.
-- Spoken TTS and visual avatar rendering.
 - Long-running memory daemon or background process.
 - Procedural learning behavior (self model and procedural parameter storage are implemented; autonomous learning is deferred).
 - Semanticization of consolidation summaries into facts (structured episode statements are implemented).
@@ -152,8 +154,14 @@ The test suite currently contains focused model, salience, storage, and retrieva
 - `tests/test_stage3_runtime.py::test_runtime_starts_with_fake_peripherals_and_publishes_inventory`
 - `tests/test_stage3_runtime.py::test_typed_virtual_head_remembers_and_answers_from_memory`
 - `tests/test_stage3_runtime.py::test_scenario_fixture_runs_through_runtime_stack`
+- `tests/test_conversational_presence.py::test_virtual_skill_runner_emits_speech_statuses_and_records_output`
+- `tests/test_conversational_presence.py::test_runtime_speaks_dialogue_plan_and_updates_avatar`
+- `tests/test_conversational_presence.py::test_runtime_persists_speech_voice_in_procedural_memory`
+- `tests/test_conversational_presence.py::test_runtime_barge_in_preempts_active_speech`
+- `tests/test_conversational_presence.py::test_virtual_avatar_tracks_attention_and_safety`
+- `tests/test_conversational_presence.py::test_mneme_run_tts_command_json_output`
 
-Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, bounded sensory echo/working-memory behavior, deterministic scenario replay, fake peripheral discovery, injected-output real peripheral discovery parsing, command-adapter live perception workers, perception fusion diagnostics, bounded frame archive retention, and the typed virtual-head runtime. There are no tests yet for bundled native media/model backends, spoken output, visual avatar rendering, skill controllers, actuator bridges, ROS adapters, or cross-process runtime behavior.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, bounded sensory echo/working-memory behavior, deterministic scenario replay, fake peripheral discovery, injected-output real peripheral discovery parsing, command-adapter live perception workers, perception fusion diagnostics, bounded frame archive retention, typed virtual-head runtime, and virtual conversational presence. There are no tests yet for bundled native media/model backends, graphical avatar rendering, physical skill controllers, actuator bridges, ROS adapters, or cross-process runtime behavior.
 
 ## Verification Commands
 
@@ -182,15 +190,14 @@ There is no configured lint, typecheck, formatter, or build command beyond packa
 
 ## Safest Next Tasks
 
-The safest next tasks should stay inside the memory prototype and avoid hardware, ROS runtime, new dependencies, and broad refactors:
+The safest next tasks should stay inside the virtual-head prototype and avoid hardware, ROS runtime, new dependencies, and broad refactors:
 
-1. Add raw trace read/list APIs and fact support read APIs.
-2. Add episode time-window retrieval.
-3. Add summary retrieval behind tests now that summary writes and consolidation summaries exist.
-4. Add provenance traversal across raw traces, episodes, facts, and summaries.
-5. Add richer episode time/topic retrieval.
-6. Add retrieval use of consolidation decay/downranking metadata after summary retrieval exists.
+1. Add a simple graphical avatar front end that consumes the Stage 5 avatar snapshot without changing cognition layers.
+2. Add optional native ASR/TTS adapter packages only after dependency choices are documented.
+3. Add long-running soak tests for the virtual-head loop with bounded memory growth.
+4. Add review/debug tools for conflicted facts and person-scoped continuity.
+5. Keep physical embodiment work in Stage 6 until explicit hardware safety planning resumes.
 
 ## Current Risk
 
-The main project risk is assuming the documented architecture is already implemented. The current code is a useful starter memory core, but most lifecycle, provenance, conflict, consolidation, and embodied cognition behavior remains design-only.
+The main project risk is assuming virtual-stage completion implies physical safety. The current code has a useful local virtual-head stack, but native media quality, graphical presence, long-running supervision, ROS integration, and any physical actuator behavior remain future work.

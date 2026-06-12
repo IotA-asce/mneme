@@ -1,6 +1,6 @@
 # Backlog
 
-Last audited: 2026-06-12
+Last audited: 2026-06-13
 
 This backlog tracks implementation status against the V1 memory prototype. Checked items are implemented and have at least basic verification. Unchecked items may be documented, drafted in schema/interfaces, or planned, but should not be treated as complete.
 
@@ -31,7 +31,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Support JSON input/output for Codex, replay, and debug use
 - [x] Add integration tests for candidate -> score -> episode/fact -> retrieve -> consolidate flow
 - [x] Add memory CLI runbook
-- [ ] Add package console-script entry point after CLI command shape settles
+- [x] Add package console-script entry point after CLI command shape settles
 - [ ] Add optional raw trace inspection commands after raw trace read/list APIs exist
 
 ## Memory models
@@ -71,9 +71,9 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add episode read-by-id API
 - [x] Add fact read-by-id API
 - [x] Add fact tag persistence
-- [ ] Add raw trace read/list APIs
-- [ ] Add episode time-window APIs
-- [ ] Add fact support read APIs
+- [x] Add raw trace read/list APIs
+- [x] Add episode time-window APIs
+- [x] Add fact support read APIs
 - [x] Persist episode object entities
 - [x] Add working context snapshot writes/reads
 - [x] Add meta-memory writes
@@ -87,16 +87,17 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Retrieve facts by structured subject/predicate/object query
 - [x] Retrieve facts by source type and status filters
 - [x] Retrieve episodes by text query
-- [ ] Retrieve episodes by id/time/topic
+- [x] Retrieve episodes by id/time window
+- [ ] Retrieve episodes by topic
 - [x] Use `MemoryQuery.entities` for retrieval ranking
 - [x] Use `MemoryQuery.tags` for fact retrieval
-- [ ] Retrieve summaries when `include_summaries` is enabled
+- [x] Retrieve summaries when `include_summaries` is enabled
 - [x] Rank user-confirmed facts ahead of inferred facts when relevance is similar
 - [x] Exclude non-active facts from ordinary retrieval
 - [x] Add deterministic retrieval reranking
 - [x] Return retrieval ranking explanations
 - [x] Return provenance summary
-- [ ] Return provenance summary derived from stored support links
+- [x] Return provenance summary derived from stored support links
 - [x] Add retrieval warnings for explicitly requested non-active fact results
 - [x] Update meta-memory retrieval counters for returned memories
 - [x] Filter `never_say` and `internal_only` memories from ordinary retrieval
@@ -109,7 +110,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Normalize provenance JSON with source, derivation path, supporting memory IDs, and notes
 - [x] Add speakability values: `normal`, `restricted`, `never_say`, `internal_only`
 - [ ] Preserve episode `provenance_refs` as first-class stored data
-- [ ] Traverse raw trace -> episode -> fact support provenance
+- [x] Traverse raw trace -> episode -> fact support provenance
 - [x] Implement user-confirmed fact precedence over inferred facts
 - [x] Mark conflicting facts instead of silently overwriting
 
@@ -136,6 +137,13 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [ ] Add optional built-in VAD/ASR backend after dependency choice
 - [x] Add terminal virtual head command `mneme run`
 - [x] Add scripted JSON mode for deterministic virtual-head demos
+- [x] Add virtual conversational presence coordinator
+- [x] Add simulated speech output backend
+- [x] Add optional local TTS command adapter for speech output
+- [x] Persist speech voice selection as procedural memory
+- [x] Add virtual avatar state for listening, thinking, speaking, idle, gaze, and safety
+- [x] Add virtual skill runner with accepted/running/completed/failed/preempted/canceled statuses
+- [x] Add deterministic barge-in preemption for active virtual speech
 - [x] Add ROS-style interface drafts
 - [x] Add local runtime event model for ROS-like architecture boundaries
 - [x] Add deterministic in-process event bus for tests and demos
@@ -151,8 +159,8 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [ ] Align Python models with interface drafts
 - [ ] Add JSON serialization helpers for future wrappers
 - [ ] Add adapters between local runtime events and interface drafts
-- [ ] Add skill-level gaze consumer for attention state
-- [ ] Add skill dispatcher that consumes executive intents through explicit skill interfaces
+- [x] Add virtual skill-level gaze consumer for attention state
+- [x] Add virtual skill dispatcher that consumes executive intents through explicit skill interfaces
 - [ ] Document future ROS node boundaries in implementation-facing docs
 - [ ] Keep hardware and actuator control out of V1 memory prototype
 
@@ -168,6 +176,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add memory CLI runbook
 - [x] Add scenario replay runbook
 - [x] Add Stage 3 virtual head runbook
+- [x] Add Stage 5 conversational presence runbook
 - [x] Add sensory echo and working memory documentation
 - [x] Add memory storage documentation
 - [x] Add salience scoring documentation
