@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import platform
+import re
+import subprocess
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -120,6 +124,217 @@ class FakePeripheralBackend(PeripheralDiscoveryBackend):
         return [PeripheralDevice.from_dict(device.to_dict()) for device in self._devices]
 
 
+class RealPeripheralBackend(PeripheralDiscoveryBackend):
+    """Best-effort host peripheral discovery without optional runtime dependencies.
+
+    The backend inventories devices only. It does not open cameras, record audio,
+    play audio, or request sensor streams.
+    """
+
+    def __init__(
+        self,
+        *,
+        platform_name: str | None = None,
+        command_runner: Callable[[Sequence[str], int], str] | None = None,
+        timeout_ms: int = 1_500,
+    ) -> None:
+        self.platform_name = platform_name or platform.system()
+        self.command_runner = command_runner or _run_command
+        self.timeout_ms = _positive_int(timeout_ms, "timeout_ms")
+
+    def scan(self) -> list[PeripheralDevice]:
+        system = self.platform_name.lower()
+        if system == "darwin":
+            devices = self._scan_macos()
+        elif system == "linux":
+            devices = self._scan_linux()
+        elif system == "windows":
+            devices = self._scan_windows()
+        else:
+            devices = []
+        return _dedupe_devices(devices)
+
+    def _scan_macos(self) -> list[PeripheralDevice]:
+        output = self._try_command([
+            "system_profiler",
+            "-json",
+            "SPCameraDataType",
+            "SPAudioDataType",
+        ])
+        if not output:
+            return []
+        try:
+            data = json.loads(output)
+        except json.JSONDecodeError:
+            return []
+
+        devices: list[PeripheralDevice] = []
+        for item in _as_list(data.get("SPCameraDataType")):
+            label = _label_from_mapping(item)
+            if label:
+                devices.append(self._device(PeripheralKind.CAMERA, label, item, "system_profiler"))
+
+        for item in _walk_mappings(data.get("SPAudioDataType")):
+            label = _label_from_mapping(item)
+            if not label:
+                continue
+            text = " ".join(str(value).lower() for value in item.values())
+            keys = " ".join(str(key).lower() for key in item)
+            if "input" in text or "microphone" in text or "input" in keys:
+                devices.append(self._device(PeripheralKind.MICROPHONE, label, item, "system_profiler"))
+            if "output" in text or "speaker" in text or "output" in keys:
+                devices.append(self._device(PeripheralKind.SPEAKER, label, item, "system_profiler"))
+        return devices
+
+    def _scan_linux(self) -> list[PeripheralDevice]:
+        devices: list[PeripheralDevice] = []
+        devices.extend(self._linux_cameras())
+        devices.extend(self._linux_audio(["arecord", "-l"], PeripheralKind.MICROPHONE, "arecord"))
+        devices.extend(self._linux_audio(["aplay", "-l"], PeripheralKind.SPEAKER, "aplay"))
+        devices.extend(self._linux_pactl(["pactl", "list", "short", "sources"], PeripheralKind.MICROPHONE))
+        devices.extend(self._linux_pactl(["pactl", "list", "short", "sinks"], PeripheralKind.SPEAKER))
+        return devices
+
+    def _scan_windows(self) -> list[PeripheralDevice]:
+        script = (
+            "Get-CimInstance Win32_PnPEntity | "
+            "Where-Object { $_.PNPClass -in @('Camera','Image','AudioEndpoint','Media') } | "
+            "Select-Object Name,DeviceID,PNPClass,Status | ConvertTo-Json -Depth 3"
+        )
+        output = self._try_command([
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            script,
+        ])
+        if not output:
+            return []
+        try:
+            rows = _as_list(json.loads(output))
+        except json.JSONDecodeError:
+            return []
+
+        devices: list[PeripheralDevice] = []
+        for row in rows:
+            if not isinstance(row, Mapping):
+                continue
+            label = _label_from_mapping(row)
+            if not label:
+                continue
+            pnp_class = str(row.get("PNPClass", "")).lower()
+            lowered = label.lower()
+            if pnp_class in {"camera", "image"} or "camera" in lowered or "webcam" in lowered:
+                devices.append(self._device(PeripheralKind.CAMERA, label, row, "powershell"))
+            elif "microphone" in lowered or "input" in lowered:
+                devices.append(self._device(PeripheralKind.MICROPHONE, label, row, "powershell"))
+            elif "speaker" in lowered or "output" in lowered or "audio" in lowered:
+                devices.append(self._device(PeripheralKind.SPEAKER, label, row, "powershell"))
+        return devices
+
+    def _linux_cameras(self) -> list[PeripheralDevice]:
+        output = self._try_command(["v4l2-ctl", "--list-devices"])
+        if not output:
+            return []
+        devices: list[PeripheralDevice] = []
+        current_label: str | None = None
+        current_paths: list[str] = []
+        for raw in output.splitlines() + [""]:
+            line = raw.rstrip()
+            if not line:
+                if current_label:
+                    metadata = {"paths": list(current_paths), "source": "v4l2-ctl"}
+                    devices.append(self._device(PeripheralKind.CAMERA, current_label, metadata, "v4l2-ctl"))
+                current_label = None
+                current_paths = []
+                continue
+            if line.startswith("\t") or line.startswith(" "):
+                path = line.strip()
+                if path:
+                    current_paths.append(path)
+            else:
+                current_label = line.rstrip(":")
+        return devices
+
+    def _linux_audio(
+        self,
+        command: Sequence[str],
+        kind: PeripheralKind,
+        source: str,
+    ) -> list[PeripheralDevice]:
+        output = self._try_command(command)
+        if not output:
+            return []
+        devices: list[PeripheralDevice] = []
+        pattern = re.compile(r"card\s+(?P<card>\d+):\s*(?P<card_name>[^,]+),\s*device\s+(?P<device>\d+):\s*(?P<label>.+)")
+        for line in output.splitlines():
+            match = pattern.search(line)
+            if not match:
+                continue
+            label = match.group("label").strip()
+            metadata = {
+                "card": match.group("card"),
+                "card_name": match.group("card_name").strip(),
+                "device": match.group("device"),
+                "source": source,
+            }
+            devices.append(self._device(kind, label, metadata, source))
+        return devices
+
+    def _linux_pactl(self, command: Sequence[str], kind: PeripheralKind) -> list[PeripheralDevice]:
+        output = self._try_command(command)
+        if not output:
+            return []
+        devices: list[PeripheralDevice] = []
+        for line in output.splitlines():
+            parts = line.split("\t")
+            if len(parts) < 2:
+                continue
+            label = parts[1].strip()
+            if label.endswith(".monitor"):
+                continue
+            devices.append(
+                self._device(
+                    kind,
+                    label,
+                    {"index": parts[0].strip(), "source": "pactl"},
+                    "pactl",
+                )
+            )
+        return devices
+
+    def _try_command(self, command: Sequence[str]) -> str | None:
+        try:
+            return self.command_runner(command, self.timeout_ms)
+        except (FileNotFoundError, OSError, subprocess.SubprocessError):
+            return None
+
+    def _device(
+        self,
+        kind: PeripheralKind,
+        label: str,
+        raw: Mapping[str, Any],
+        source: str,
+    ) -> PeripheralDevice:
+        metadata = {
+            "backend": "real",
+            "platform": self.platform_name,
+            "source": source,
+        }
+        raw_id = raw.get("device_id") or raw.get("DeviceID") or raw.get("unique_id")
+        if raw_id:
+            metadata["native_id"] = str(raw_id)
+        return PeripheralDevice(
+            device_id=_fingerprint(kind.value, str(raw_id or label)),
+            kind=kind,
+            label=label,
+            available=True,
+            confidence=0.8,
+            metadata=metadata,
+        )
+
+
 class PeripheralDiscoveryService:
     """Publishes discovered host peripherals as world state.
 
@@ -193,6 +408,64 @@ def default_virtual_head_devices() -> list[PeripheralDevice]:
         PeripheralDevice(device_id="fake_mic_001", kind=PeripheralKind.MICROPHONE, label="Fake Microphone"),
         PeripheralDevice(device_id="fake_speaker_001", kind=PeripheralKind.SPEAKER, label="Fake Speaker"),
     ]
+
+
+def default_host_peripheral_backend() -> RealPeripheralBackend:
+    return RealPeripheralBackend()
+
+
+def _run_command(command: Sequence[str], timeout_ms: int) -> str:
+    completed = subprocess.run(
+        list(command),
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=timeout_ms / 1000,
+    )
+    return completed.stdout
+
+
+def _dedupe_devices(devices: Sequence[PeripheralDevice]) -> list[PeripheralDevice]:
+    seen: set[tuple[str, str]] = set()
+    unique: list[PeripheralDevice] = []
+    for device in devices:
+        key = (device.kind.value, device.device_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(device)
+    return sorted(unique, key=lambda item: (item.kind.value, item.label, item.device_id))
+
+
+def _as_list(value: Any) -> list[Any]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]
+
+
+def _walk_mappings(value: Any) -> list[Mapping[str, Any]]:
+    found: list[Mapping[str, Any]] = []
+    if isinstance(value, Mapping):
+        found.append(value)
+        for child in value.values():
+            found.extend(_walk_mappings(child))
+    elif isinstance(value, list):
+        for item in value:
+            found.extend(_walk_mappings(item))
+    return found
+
+
+def _label_from_mapping(value: Mapping[str, Any]) -> str | None:
+    for key in ("_name", "Name", "name", "label", "device_name"):
+        label = value.get(key)
+        if isinstance(label, str) and label.strip():
+            clean = label.strip()
+            if clean.lower() in {"coreaudio_device"}:
+                continue
+            return clean
+    return None
 
 
 def _fingerprint(kind: str, label: str) -> str:

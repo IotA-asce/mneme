@@ -64,7 +64,7 @@ Type `/quit` or `/exit` to stop.
 
 ## Peripheral Discovery
 
-Stage 3 ships a deterministic fake backend. By default it reports:
+The deterministic fake backend remains the default. By default it reports:
 
 - one fake camera,
 - one fake microphone,
@@ -76,7 +76,13 @@ Use this to test no-device behavior:
 mneme run --no-fake-devices --json --input "hello"
 ```
 
-Real platform discovery belongs to Stage 4.
+Stage 4 adds an opt-in real inventory backend:
+
+```bash
+mneme run --device-backend real --json --input "hello"
+```
+
+Real discovery lists host devices only. It does not open camera streams, record microphone audio, play audio, or run perception models. See `docs/runbooks/REAL_DEVICE_DISCOVERY.md`.
 
 ## Verification
 

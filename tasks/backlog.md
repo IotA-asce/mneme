@@ -126,6 +126,11 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 
 - [x] Add Stage 3 `MnemeRuntime` one-process wiring loop
 - [x] Add fake peripheral discovery for camera, microphone, and speaker inventory
+- [x] Add real OS-backed camera, microphone, and speaker inventory backend
+- [x] Add `mneme run --device-backend real`
+- [ ] Add live camera capture worker
+- [ ] Add live microphone capture and local ASR worker
+- [ ] Add perception-scale raw frame/transcript retention controls
 - [x] Add terminal virtual head command `mneme run`
 - [x] Add scripted JSON mode for deterministic virtual-head demos
 - [x] Add ROS-style interface drafts
