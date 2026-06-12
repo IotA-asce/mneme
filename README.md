@@ -1,35 +1,82 @@
-# Android Brain Starter Pack
+# Mneme
 
-This repository is the starting point for building the **brain software** of a small-scale android robot head inspired by lifelike social androids.
+Mneme is a memory-centered cognition engine for a lifelike android head.
 
-The first implementation target is **not** the full body. It is a bench-first brain/memory prototype that can later connect to robot-head perception and motor systems.
+The current repository is a local Python prototype for the virtual-head phase of that architecture. It focuses on safe, testable cognition boundaries: perception workers publish observations, state builders publish state, memory stores and retrieves context, attention chooses what matters, the executive publishes intent, and later skills/actuators can consume those intents through explicit contracts.
 
-## What is included
+Mneme does not currently control physical hardware.
 
-- `docs/DESIGN_DOCUMENT.md` — the comprehensive design document Codex should read first.
-- `docs/IMPLEMENTATION_PLAN.md` — staged build plan and milestones.
-- `AGENTS.md` — project-specific instructions for coding agents.
-- `CODEX_CONTEXT.md` — concise context to paste into Codex or keep open during project setup.
-- `prompts/codex/` — ready-to-use Codex task prompts.
-- `src/android_brain_memory/` — starter Python package for the memory subsystem.
-- `storage/migrations/001_init.sql` — initial SQLite schema.
-- `interfaces/` — ROS-style `.msg`, `.srv`, and `.action` interface drafts.
-- `config/memory.yaml` — default memory policy and thresholds.
-- `tasks/backlog.md` — initial task backlog.
+## Current Status
 
-## Suggested first workflow
+As of 2026-06-12, Stages 0-4 of the master roadmap are implemented in the repo-owned architecture:
 
-1. Create/open this folder locally.
-2. Import/select the folder as a Codex project.
-3. Ask Codex to read:
-   - `AGENTS.md`
-   - `CODEX_CONTEXT.md`
-   - `docs/DESIGN_DOCUMENT.md`
-   - `docs/IMPLEMENTATION_PLAN.md`
-4. Start with the prompt in `prompts/codex/00_project_intake.md`.
-5. Then implement Phase 1 from `docs/IMPLEMENTATION_PLAN.md`.
+- **Stage 0:** V1 memory core.
+- **Stage 1:** autonomous memory lifecycle.
+- **Stage 2:** bench cognition integration.
+- **Stage 3:** cross-platform runtime and terminal virtual head.
+- **Stage 4:** real device discovery and live-perception worker contracts.
 
-## Local development setup
+See `docs/architecture/MASTER_ROADMAP.md` and `docs/architecture/REPO_STATUS.md` for the detailed status record.
+
+## What Works Now
+
+### Memory Core
+
+- SQLite storage with tracked, checksummed migrations.
+- Dataclass domain models for candidates, salience, episodes, facts, queries, and bundles.
+- Configurable salience scoring with explanations and explicit-remember override.
+- Raw traces, episodes, facts, summaries, meta-memory, and working-context snapshots.
+- Provenance chains across raw traces, episodes, facts, and summaries.
+- Speakability filtering for memories that should not be spoken.
+- Conflict-aware semantic facts: confirmed facts outrank inferred facts, and contradictions are not silently overwritten.
+- Deterministic retrieval over facts, episodes, and summaries with ranking explanations.
+- Decay/downranking, suppression, and explicit purge workflows.
+- Deterministic consolidation summaries for repeated episodes.
+
+### Runtime Cognition
+
+- Local ROS-like event model and deterministic in-process event bus.
+- Bounded sensory echo and explicit working memory.
+- Scenario replay from YAML/JSON fixtures.
+- Shared world model for persons, active speaker, sound, touch, internal state, and safety level.
+- Attention manager with dwell/lock, habituation, inhibition-of-return, curiosity scanning, and ranking explanations.
+- Executive intent generation with safety priority, goal stack, response timing, memory-informed responses, and deterministic idle rotation.
+- Deterministic dialogue planner with provenance-aware phrasing and speakability filtering.
+- Self model and versioned procedural-memory parameters.
+
+### Virtual Head Runtime
+
+- `mneme run` starts a one-process terminal virtual head.
+- Typed input becomes `speech_transcript` perception events.
+- Scripted JSON mode supports deterministic demos and replay/debug use.
+- Fake camera, microphone, and speaker inventory is the default for tests and CI.
+- Real OS-backed device inventory can list host cameras, microphones, and speakers.
+
+### Live Perception
+
+Stage 4 live perception is implemented through repo-owned worker contracts and local command adapters:
+
+- `LiveVisionWorker` selects a discovered camera, captures bounded keyframes through a configured command adapter, stores raw frame traces, and publishes `camera_frame` / `person_seen` events.
+- `LiveSpeechWorker` selects a discovered microphone, accepts local transcript output through a configured command adapter, stores transcript traces, and publishes `speech_transcript` events.
+- Explicit "remember" phrases in live transcripts can become memory candidates and semantic facts through the existing promotion/extraction pipeline.
+- `PerceptionFusionCalibrator` publishes speaker/person match diagnostics with latency and confidence.
+- Frame archive retention is bounded by count, age, and total bytes.
+
+The base package intentionally does not bundle OpenCV, face models, VAD, or ASR engines. Those can be plugged in behind the command/backend contracts.
+
+## What Is Not Implemented Yet
+
+- Built-in native camera, face detection, VAD, or ASR backends.
+- Spoken TTS output.
+- Visual avatar rendering.
+- Skill controllers and actuator bridge.
+- Physical hardware control, GPIO, serial, PWM, firmware flashing, or ROS runtime nodes.
+- Cloud LLM integration.
+- Full long-running daemon/process supervision.
+
+## Install
+
+Mneme targets Python 3.11.
 
 ```bash
 python3 -m venv .venv
@@ -38,9 +85,17 @@ python -m pip install --upgrade pip setuptools wheel
 python -m pip install -e '.[dev]'
 ```
 
-## Canonical verification
+Initialize the local SQLite database:
 
-Run the full local check:
+```bash
+mneme-memory init-db
+```
+
+The default database path is `.local/android_brain_memory.sqlite3`.
+
+## Verify
+
+Run the canonical local check:
 
 ```bash
 python scripts/dev_check.py
@@ -54,24 +109,16 @@ python scripts/smoke_test_memory.py
 python -m pytest
 ```
 
-See `docs/runbooks/DEVELOPMENT.md` for the full development runbook.
+The current suite covers memory models, storage, migrations, salience, retrieval, provenance, conflicts, consolidation, decay, runtime events, working memory, scenario replay, world model, attention, executive behavior, dialogue planning, device discovery, live-perception adapters, and the virtual-head runtime.
 
-## Memory API and CLI
+## Memory CLI
 
-The high-level memory facade is `android_brain_memory.MnemeMemory`. It wraps the current local memory path: migrations, salience scoring, raw trace storage, episode encoding/storage, fact upsert, retrieval, consolidation, and database inspection. Lower-level modules remain available for focused tests and direct use.
-
-Use the CLI for JSON-oriented local runs:
+Use the high-level CLI for JSON-oriented memory work:
 
 ```bash
-python scripts/mneme_memory.py init-db
-python scripts/mneme_memory.py inspect-db
-python scripts/mneme_memory.py retrieve --query-text memory --max-results 3
-```
-
-The same CLI is available as a module:
-
-```bash
-python -m android_brain_memory.cli retrieve --query-text calibration
+mneme-memory inspect-db
+mneme-memory retrieve --query-text memory --max-results 3
+mneme-memory consolidate-once
 ```
 
 Primary commands:
@@ -83,33 +130,99 @@ Primary commands:
 - `retrieve`
 - `consolidate-once`
 - `inspect-db`
+- `inspect-provenance`
+- `inspect-decay`
 
-See `docs/runbooks/MEMORY_CLI.md` for JSON payload examples.
+The older script entry point remains available:
 
-## Virtual Head Runtime
+```bash
+python scripts/mneme_memory.py inspect-db
+```
 
-The runtime wires the local cognition stack into one terminal virtual head:
+See `docs/runbooks/MEMORY_CLI.md` for payload examples.
+
+## Virtual Head
+
+Run a typed terminal interaction:
 
 ```bash
 mneme run --input "hello Mneme"
 mneme run --json --input "remember that I like tea" --input "what do I like"
 ```
 
-It uses typed input. Fake deterministic peripherals remain the default for repeatable tests. Stage 4 adds opt-in real host inventory:
+Use real device inventory:
 
 ```bash
 mneme run --device-backend real --json --input "hello"
 ```
 
-Real inventory lists cameras, microphones, and speakers without opening sensors, recording audio, playing sound, or running perception models. Live camera capture and speech transcription are available through configured local commands; built-in media/model backends, TTS, avatar rendering, ROS, and hardware remain later-stage work.
-
-Stage 4 live perception is available through local command adapters:
+Use an empty inventory for no-device tests:
 
 ```bash
-mneme run --device-backend real --camera-command "your-camera-tool --output {output}" --json
-mneme run --device-backend real --speech-command "your-local-asr --device {device_id}" --json
+mneme run --device-backend none --json --input "hello"
 ```
 
-The base install still avoids heavyweight camera, audio, and ASR dependencies. See `docs/runbooks/VIRTUAL_HEAD.md`, `docs/runbooks/REAL_DEVICE_DISCOVERY.md`, and `docs/runbooks/LIVE_PERCEPTION.md` for runtime runbooks.
+See `docs/runbooks/VIRTUAL_HEAD.md`.
 
-This is intentionally small. The goal is to give Codex a precise, well-scoped project foundation before expanding into ROS 2 nodes, perception workers, and motor control.
+## Live Perception Adapters
+
+Camera frame command:
+
+```bash
+mneme run \
+  --device-backend real \
+  --camera-command "your-camera-tool --output {output}" \
+  --json
+```
+
+Speech transcript command:
+
+```bash
+mneme run \
+  --device-backend real \
+  --speech-command "your-local-asr --device {device_id}" \
+  --json
+```
+
+Available placeholders include:
+
+- `{output}` for the frame archive path,
+- `{device_id}` for the Mneme device ID,
+- `{label}` for the OS-reported device label.
+
+See `docs/runbooks/REAL_DEVICE_DISCOVERY.md` and `docs/runbooks/LIVE_PERCEPTION.md`.
+
+## Scenario Replay
+
+Run deterministic perception scenarios:
+
+```bash
+python scripts/replay_scenario.py tests/fixtures/basic_conversation.yaml
+```
+
+The script prints JSON containing the replay result, sensory echo snapshot, and working-memory snapshot.
+
+See `docs/runbooks/SCENARIO_REPLAY.md`.
+
+## Project Map
+
+- `src/android_brain_memory/` - Python package.
+- `storage/migrations/` - SQLite migrations.
+- `config/memory.yaml` - salience, retention, privacy, and storage defaults.
+- `interfaces/` - ROS-style draft contracts, aligned with Python models.
+- `tests/` - unit, integration, storage, runtime, and replay tests.
+- `docs/architecture/` - roadmap, status, runtime boundaries, serialization, and ROS plan.
+- `docs/memory/` - memory model, storage, retrieval, salience, provenance, conflicts, consolidation, decay, and self model.
+- `docs/runbooks/` - local development, CLI, virtual head, device discovery, live perception, and scenario replay.
+- `memory/` - durable project memory for completed features, decisions, investigations, and risks.
+- `implement/` - implementation plans and architectural rules for non-trivial changes.
+
+## Safety Notes
+
+- Mneme must remain debuggable and safe.
+- Real hardware control is not present in this repository today.
+- Perception workers publish observations only; they do not command behavior.
+- Nothing should bypass the executive/skill/actuator separation when those layers are added.
+- Do not store secrets, private credentials, or API tokens in memory provenance or repository files.
+
+For contributor rules, read `AGENTS.md` before making changes.
