@@ -89,10 +89,10 @@ Goal: the memory lifecycle (`observe → buffer → score → promote → consol
 
 Goal: the cognition layers behave as one mind on simulated input — still no ROS, no hardware.
 
-### M2.1 Shared world model
+### M2.1 Shared world model — complete (2026-06-12)
 
-- A state builder that fuses perception events into typed world state: persons present, active speaker, objects, ambient sound, robot internal state; published as `world_state_update` events with confidence and TTL.
-- Exit: world state queryable and snapshot-testable under replay.
+- [x] `WorldModel` state builder fusing perception events into typed state: persons present (TTL), active speaker (TTL), last speech, ambient sound (TTL), last touch, internal/body state, safety level — published as `world_state_update` events.
+- [x] Exit: world state queryable and snapshot-testable under replay (`tests/test_world_model.py`). See `docs/architecture/WORLD_MODEL.md`. Object tracking deferred to Stage 4 (real perception).
 
 ### M2.2 Working memory lifecycle v1
 
