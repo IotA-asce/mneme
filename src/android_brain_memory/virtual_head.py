@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import shlex
 import sys
 from pathlib import Path
 from typing import Any
 
 from .engine import DEFAULT_DB, DEFAULT_MIGRATIONS, to_jsonable
+from .live_perception import (
+    CommandFrameCaptureBackend,
+    CommandSpeechRecognitionBackend,
+    PerceptionRetentionPolicy,
+)
 from .peripherals import PeripheralDiscoveryService, RealPeripheralBackend, default_virtual_head_devices
 from .runtime_loop import MnemeRuntime, RuntimeClock
 
@@ -59,6 +65,25 @@ def build_parser() -> argparse.ArgumentParser:
         default=1_500,
         help="Timeout for each real device inventory command.",
     )
+    run.add_argument(
+        "--camera-command",
+        help="Local command template that writes one camera frame to {output}. Enables live vision.",
+    )
+    run.add_argument(
+        "--speech-command",
+        help="Local command template that prints transcript text or JSON. Enables live speech.",
+    )
+    run.add_argument(
+        "--frame-archive-dir",
+        type=Path,
+        default=Path(".local/perception_frames"),
+        help="Directory for bounded Stage 4 camera keyframe archive.",
+    )
+    run.add_argument("--live-camera-interval-ms", type=int, default=1_000)
+    run.add_argument("--live-speech-interval-ms", type=int, default=1_000)
+    run.add_argument("--max-archived-frames", type=int, default=1_000)
+    run.add_argument("--max-frame-archive-bytes", type=int, default=512 * 1024 * 1024)
+    run.add_argument("--max-frame-age-ms", type=int, default=7 * 24 * 60 * 60 * 1000)
 
     return parser
 
@@ -84,12 +109,34 @@ def _run(args: argparse.Namespace) -> int:
         fake_devices = [] if device_backend == "none" else [
             device.to_dict() for device in default_virtual_head_devices()
         ]
+    retention = PerceptionRetentionPolicy(
+        frame_archive_dir=args.frame_archive_dir,
+        max_archived_frames=args.max_archived_frames,
+        max_frame_archive_bytes=args.max_frame_archive_bytes,
+        max_frame_age_ms=args.max_frame_age_ms,
+    )
+    camera_backend = (
+        CommandFrameCaptureBackend(shlex.split(args.camera_command))
+        if args.camera_command
+        else None
+    )
+    speech_backend = (
+        CommandSpeechRecognitionBackend(shlex.split(args.speech_command))
+        if args.speech_command
+        else None
+    )
     runtime = MnemeRuntime(
         db_path=args.db,
         migrations_dir=args.migrations,
         clock=RuntimeClock(args.start_ms),
         discovery_service=discovery_service,
         fake_devices=fake_devices,
+        live_camera_backend=camera_backend,
+        live_speech_backend=speech_backend,
+        perception_retention=retention,
+        live_camera_interval_ms=args.live_camera_interval_ms,
+        live_speech_interval_ms=args.live_speech_interval_ms,
+        enable_perception_fusion=bool(camera_backend or speech_backend),
     )
     outputs: list[dict[str, Any]] = []
     try:

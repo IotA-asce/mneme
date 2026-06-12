@@ -101,8 +101,15 @@ It uses typed input. Fake deterministic peripherals remain the default for repea
 mneme run --device-backend real --json --input "hello"
 ```
 
-Real inventory lists cameras, microphones, and speakers without opening sensors, recording audio, playing sound, or running perception models. Live camera capture, microphone ASR, TTS, avatar rendering, ROS, and hardware remain later-stage work.
+Real inventory lists cameras, microphones, and speakers without opening sensors, recording audio, playing sound, or running perception models. Live camera capture and speech transcription are available through configured local commands; built-in media/model backends, TTS, avatar rendering, ROS, and hardware remain later-stage work.
 
-See `docs/runbooks/VIRTUAL_HEAD.md` and `docs/runbooks/REAL_DEVICE_DISCOVERY.md` for runtime runbooks.
+Stage 4 live perception is available through local command adapters:
+
+```bash
+mneme run --device-backend real --camera-command "your-camera-tool --output {output}" --json
+mneme run --device-backend real --speech-command "your-local-asr --device {device_id}" --json
+```
+
+The base install still avoids heavyweight camera, audio, and ASR dependencies. See `docs/runbooks/VIRTUAL_HEAD.md`, `docs/runbooks/REAL_DEVICE_DISCOVERY.md`, and `docs/runbooks/LIVE_PERCEPTION.md` for runtime runbooks.
 
 This is intentionally small. The goal is to give Codex a precise, well-scoped project foundation before expanding into ROS 2 nodes, perception workers, and motor control.

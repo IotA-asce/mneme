@@ -14,6 +14,14 @@ from .dialogue import DialoguePlanner, UtterancePlan
 from .engine import DEFAULT_DB, DEFAULT_MIGRATIONS, MnemeMemory, to_jsonable
 from .executive import Executive, ExecutiveIntent
 from .extraction import FactExtractor
+from .live_perception import (
+    CameraCaptureBackend,
+    LiveSpeechWorker,
+    LiveVisionWorker,
+    PerceptionFusionCalibrator,
+    PerceptionRetentionPolicy,
+    SpeechRecognitionBackend,
+)
 from .models import MemoryCandidate, SalienceFeatures, SourceType
 from .peripherals import (
     FakePeripheralBackend,
@@ -100,6 +108,12 @@ class MnemeRuntime:
         discovery_service: PeripheralDiscoveryService | None = None,
         peripheral_backend: FakePeripheralBackend | RealPeripheralBackend | None = None,
         fake_devices: Sequence[Mapping[str, Any]] | None = None,
+        live_camera_backend: CameraCaptureBackend | None = None,
+        live_speech_backend: SpeechRecognitionBackend | None = None,
+        perception_retention: PerceptionRetentionPolicy | None = None,
+        live_camera_interval_ms: int = DEFAULT_TICK_MS * 10,
+        live_speech_interval_ms: int = DEFAULT_TICK_MS * 10,
+        enable_perception_fusion: bool = False,
         source: str = "mneme_runtime",
         initialize_db: bool = True,
     ) -> None:
@@ -152,6 +166,37 @@ class MnemeRuntime:
         else:
             discovery_service.bus = self.bus
         self.discovery = discovery_service
+        self.vision_worker = (
+            LiveVisionWorker(
+                discovery=self.discovery,
+                backend=live_camera_backend,
+                bus=self.bus,
+                store=self.engine.store,
+                retention=perception_retention,
+                capture_interval_ms=live_camera_interval_ms,
+                clock=self.clock,
+            )
+            if live_camera_backend is not None
+            else None
+        )
+        self.speech_worker = (
+            LiveSpeechWorker(
+                discovery=self.discovery,
+                backend=live_speech_backend,
+                bus=self.bus,
+                store=self.engine.store,
+                retention=perception_retention,
+                capture_interval_ms=live_speech_interval_ms,
+                clock=self.clock,
+            )
+            if live_speech_backend is not None
+            else None
+        )
+        self.perception_fusion = (
+            PerceptionFusionCalibrator(clock=self.clock)
+            if enable_perception_fusion or live_camera_backend is not None or live_speech_backend is not None
+            else None
+        )
 
         self._event_cursor = 0
         self._utterance_cursor = 0
@@ -168,6 +213,10 @@ class MnemeRuntime:
         else:
             now = self._now_ms()
         self.discovery.tick(now_ms=now)
+        if self.vision_worker is not None:
+            self.vision_worker.tick(now_ms=now)
+        if self.speech_worker is not None:
+            self.speech_worker.tick(now_ms=now)
         self.context_windows.tick(now_ms=now)
         self.attention.idle_tick(now_ms=now)
         self.consolidation_daemon.tick(now_ms=now)
@@ -251,6 +300,11 @@ class MnemeRuntime:
             "promoter": self.promoter.stats,
             "extractor": self.extractor.stats,
             "consolidation": self.consolidation_daemon.stats,
+            "perception": {
+                "vision": self.vision_worker.stats if self.vision_worker is not None else None,
+                "speech": self.speech_worker.stats if self.speech_worker is not None else None,
+                "fusion": self.perception_fusion.stats if self.perception_fusion is not None else None,
+            },
         }
 
     def close(self) -> None:
@@ -273,6 +327,8 @@ class MnemeRuntime:
         )
         self.promoter.attach_to_bus(self.bus)
         self.extractor.attach_to_bus(self.bus)
+        if self.perception_fusion is not None:
+            self.perception_fusion.attach_to_bus(self.bus)
         self.executive.attach_to_bus(self.bus)
         self._subscriptions.append(
             self.bus.subscribe(

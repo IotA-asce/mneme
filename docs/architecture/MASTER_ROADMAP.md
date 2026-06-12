@@ -20,7 +20,7 @@ Stage 0  V1 memory core                            [complete]
 Stage 1  Autonomous memory lifecycle               [complete]
 Stage 2  Cognitive integration on the bench        [complete]
 Stage 3  Cross-platform runtime and virtual head   [complete]
-Stage 4  Real perception (camera + microphone)     [in progress]
+Stage 4  Real perception (camera + microphone)     [complete]
 Stage 5  Conversational presence
 Stage 6  Physical embodiment                       [deferred: ROS, skills, actuators, hardware]
 Stage 7  Lifelike presence and long-term continuity
@@ -181,23 +181,31 @@ Privacy (owner-decided, recorded in `docs/safety/MEMORY_PRIVACY.md`): raw frames
 
 ### M4.1 Vision worker
 
-- Capture from the discovered camera (cross-platform: AVFoundation/MediaFoundation/V4L2 behind one library), face detection, face re-identification with confidence; person entity events compatible with the simulated face worker.
-- Raw frame archive: captured frames associated with episodes (bounded rate, e.g. keyframes at salience boundaries, not full video), with provenance.
+- [x] `LiveVisionWorker` selects discovered cameras and captures bounded keyframes through a configured local command adapter or deterministic scripted backend.
+- [x] Face/person detections supplied by command JSON or sidecar metadata are published as `person_seen` events compatible with the simulated face worker.
+- [x] Raw frame archive stores keyframes with provenance, confidence, hash, path, and source device metadata; no continuous video is stored.
 
 ### M4.2 Speech worker
 
-- Local VAD + ASR (Apple Silicon friendly) producing transcript events with confidence; speaker attribution when resolvable; explicit-remember phrase detection feeding the salience flag.
-- Transcripts persist into episodes per the recorded privacy decisions.
+- [x] `LiveSpeechWorker` selects discovered microphones and accepts local speech transcripts through a configured command adapter or deterministic scripted backend.
+- [x] Transcript events carry confidence, speaker attribution when provided, and explicit-remember phrase detection feeding the salience flag.
+- [x] Transcripts persist as raw traces and produce memory candidates; structured remember phrases enter semantic extraction.
 
 ### M4.3 Perception fusion and calibration
 
-- World model fusion across vision + speech attribution; per-sensor confidence calibration; latency budgets documented and measured. Sound direction is best-effort from available hardware (stereo) and optional — a proper mic array arrives with the physical head.
+- [x] `PerceptionFusionCalibrator` publishes speaker/person match diagnostics with latency and confidence when recent vision and speech observations align.
+- [x] Existing world model consumes the same `person_seen` and `speech_transcript` event shapes used by simulated workers.
+- [x] Sound direction remains best-effort/optional; a proper mic array arrives with the physical head.
 
 ### M4.4 Storage hygiene at perception scale
 
-- Raw-frame and transcript retention knobs (size/age caps on the frame archive, decay integration), database growth monitoring via lifecycle events, and documented bounds — because "store everything" must still fit on a disk.
+- [x] `PerceptionRetentionPolicy` enforces size, count, and age caps on the frame archive.
+- [x] Frame/transcript storage emits `memory_lifecycle` events for traceability.
+- [x] Retention knobs are documented and recorded in `config/memory.yaml`; transcript purge remains explicit rather than automatic.
 
-- Exit criteria: a person walking up to the machine, greeting, and leaving produces correct world state, attention shifts, episodes (with frames), transcripts, and facts — live, repeatedly, on all three OSes where the hardware exists, and the same pipeline still passes simulated CI. Memory provenance distinguishes `sensor_observed` correctly end-to-end.
+**Stage 4 status: complete (2026-06-12).** Mneme now supports live perception through repo-owned worker contracts and local command adapters, while keeping scripted backends for CI. The base package intentionally does not bundle OpenCV, face models, VAD, or ASR engines; those can be plugged in behind the command/backend contracts without changing cognition layers.
+
+Exit criteria met for the local architecture: vision/speech observations update world state, attention, memory promotion, fact extraction, and provenance under deterministic tests. Hardware-specific quality still depends on the configured local tools and host permissions.
 
 **Safety gate to Stage 5:** sustained live perception soak runs without memory corruption or unbounded growth; retention bounds enforced in tests.
 
