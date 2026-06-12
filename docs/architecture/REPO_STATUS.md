@@ -72,6 +72,7 @@ Implemented memory code:
 - Attention v1: habituation, inhibition-of-return, opt-in idle curiosity scanning, and bounded state history on top of the v0 weighted target ranking.
 - Executive v1: goal stack with safety suspension/resumption, opt-in response timing, memory-informed intents with conflict-driven clarification flags, and deterministic idle behavior rotation.
 - Dialogue planner v0: deterministic act selection (answer/clarify/acknowledge/greet or safety silence) producing structured, speakability-filtered utterance plans from executive intent and memory bundles.
+- Self model v0 and procedural memory v0: reserved-subject identity facts with deliberate in-place updates, and versioned skill parameters with supersession chains and provenance notes.
 
 ## Partially Implemented
 
@@ -96,7 +97,7 @@ The design documents describe these future capabilities, but the repository does
 - Physical actuator control or dry-run hardware backend.
 - Full ROS 2 package/runtime integration.
 - Long-running memory daemon or background process.
-- Procedural memory and self model behavior.
+- Procedural learning behavior (self model and procedural parameter storage are implemented; autonomous learning is deferred).
 - Semanticization of consolidation summaries into facts (structured episode statements are implemented).
 - Detail decay (in-place content summarization) and raw trace retention policy (accessibility decay, suppression, and explicit purge are implemented).
 - Contradiction review or supersession workflow.
