@@ -41,6 +41,10 @@ Implemented memory code:
 - Active working-memory context tracking for current speaker, topic, attention target, recent dialogue turns, active goal, safety state, and pending response intent.
 - Memory summary writes.
 - Fact and episode lookup by ID.
+- Raw trace lookup by ID and recent raw trace listing with source-type filtering.
+- Direct fact support link reads in both directions (`get_fact_support`, `get_facts_for_episode`).
+- Episode retrieval by overlapping time window.
+- Read-only provenance chain traversal (`get_provenance_chain`) over raw traces, episodes, facts, and summaries with missing-reference reporting.
 - Free-text and structured fact search over subject, predicate, object text, source type, status, and tags.
 - Basic free-text episode search over summary and JSON context.
 - Basic `retrieve_memory()` bundle creation over facts and episodes.
@@ -60,10 +64,10 @@ Implemented memory code:
 
 The following areas exist but are not complete enough to count as full phase completion:
 
-- Sensory echo: `raw_trace` exists and can be written, but there is no read-by-id/list API, no retention policy, and no promotion pipeline that starts from raw traces.
+- Sensory echo: `raw_trace` rows can be written, read by ID, and listed newest-first with a source-type filter. There is still no retention policy and no promotion pipeline that starts from raw traces.
 - Working memory: `WorkingMemory` maintains a bounded active context and can export/persist snapshots. There is no autonomous promotion pipeline or long-running working-memory daemon yet.
-- Episodic memory: episodes can be written, found by text, and retrieved by ID. Participant and object entities are persisted through `episode_entity`. There is no time-window query, topic-specific query API, first-class persisted episode provenance list, or dedicated episode debug output.
-- Provenance: source type, confidence, fact support links, normalized meta-memory provenance JSON, retrieval counters, speakability, and caller-provided trace references exist in pieces. There is no end-to-end provenance traversal, version history, or persisted episode provenance list.
+- Episodic memory: episodes can be written, found by text, retrieved by ID, and queried by overlapping time window. Participant and object entities are persisted through `episode_entity`. There is no topic-specific query API, first-class persisted episode provenance list, or dedicated episode debug output.
+- Provenance: source type, confidence, fact support links, normalized meta-memory provenance JSON, retrieval counters, and speakability are stored, and `get_provenance_chain()` traverses fact → episode → raw trace derivations end-to-end with missing-reference reporting. There is still no version history or persisted episode provenance list.
 - Semantic facts: facts can be upserted, source typed, tagged, searched by structured fields, linked to supporting episodes, checked for conservative semantic conflicts, marked `superseded`/`conflicted`, and queried through conflict reports.
 - Retrieval manager: retrieval returns reranked facts and episodes from local SQLite, updates meta-memory retrieval history for returned records, and filters internal-only speakability records by default. It does not search working memory, summaries, or self model.
 - Consolidation: a one-shot deterministic pass can create repeated-episode summaries and meta-memory decay hints. No long-running daemon, fact extraction, contradiction review, purge behavior, or retrieval downranking is implemented.

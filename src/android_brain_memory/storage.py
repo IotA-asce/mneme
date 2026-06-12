@@ -26,6 +26,7 @@ from .models import (
 
 SENSITIVE_PROVENANCE_KEY_PARTS = ("password", "secret", "token", "credential", "private_key", "api_key")
 CONFLICT_AWARE_SOURCE_TYPES = {SourceType.USER_CONFIRMED, SourceType.MODEL_INFERRED}
+PROVENANCE_MEMORY_KINDS = ("raw_trace", "episode", "fact", "summary")
 
 
 @dataclass(slots=True)
@@ -114,6 +115,43 @@ class FactConflictReport:
             for key, value in self.supersession_edges.items()
         }
         self.reason = _required_text(self.reason, "reason")
+
+
+@dataclass(slots=True)
+class RawTraceRecord:
+    trace_id: str
+    created_ts: int
+    source_type: SourceType
+    summary: str
+    payload: dict[str, Any]
+    confidence: float
+    salience: float
+    source_id: str | None = None
+
+    def __post_init__(self) -> None:
+        self.trace_id = _required_text(self.trace_id, "trace_id")
+        self.created_ts = validate_timestamp(self.created_ts, "created_ts")
+        self.source_type = parse_source_type(self.source_type)
+        self.summary = _required_text(self.summary, "summary")
+        self.payload = _json_mapping(self.payload, "payload")
+        self.confidence = validate_confidence(self.confidence)
+        self.salience = validate_salience(self.salience)
+        if self.source_id is not None:
+            self.source_id = _required_text(self.source_id, "source_id")
+
+
+@dataclass(slots=True)
+class FactSupportRecord:
+    fact_id: str
+    episode_id: str
+    weight: float
+
+    def __post_init__(self) -> None:
+        self.fact_id = _required_text(self.fact_id, "fact_id")
+        self.episode_id = _required_text(self.episode_id, "episode_id")
+        if isinstance(self.weight, bool) or not isinstance(self.weight, (int, float)):
+            raise ValueError("weight must be a number")
+        self.weight = float(self.weight)
 
 
 @dataclass(slots=True)
@@ -407,10 +445,15 @@ class MemoryStore:
         notes: str | None = None,
         speakability: Speakability | str = Speakability.NORMAL,
         write_meta: bool = True,
+        created_ts: int | None = None,
     ) -> str:
         source = parse_source_type(source_type)
         trace_id = f"trace_{uuid.uuid4().hex[:12]}"
-        now = int(time.time())
+        now = (
+            validate_timestamp(created_ts, "created_ts")
+            if created_ts is not None
+            else int(time.time())
+        )
         meta_record = (
             self._build_meta_memory_record(
                 memory_id=trace_id,
@@ -1056,6 +1099,232 @@ class MemoryStore:
         ).fetchall()
         return [self._episode_from_row(row) for row in rows]
 
+    def get_episodes_in_window(
+        self,
+        start_ts: int,
+        end_ts: int,
+        *,
+        limit: int = 100,
+        status: MemoryStatus | str | None = MemoryStatus.ACTIVE,
+    ) -> list[Episode]:
+        window_start = validate_timestamp(start_ts, "start_ts")
+        window_end = validate_timestamp(end_ts, "end_ts")
+        if window_end < window_start:
+            raise ValueError("end_ts must be greater than or equal to start_ts")
+        limit = _positive_int(limit, "limit")
+        status_filter = parse_memory_status(status, "status") if status is not None else None
+        where_clauses = ["start_ts <= ?", "end_ts >= ?"]
+        params: list[Any] = [window_end, window_start]
+        if status_filter is not None:
+            where_clauses.append("status = ?")
+            params.append(status_filter.value)
+        rows = self.conn.execute(
+            f"""
+            SELECT *
+            FROM episode
+            WHERE {" AND ".join(where_clauses)}
+            ORDER BY start_ts ASC, episode_id ASC
+            LIMIT ?
+            """,
+            (*params, limit),
+        ).fetchall()
+        return [self._episode_from_row(row) for row in rows]
+
+    def get_raw_trace(self, trace_id: str) -> RawTraceRecord | None:
+        row = self.conn.execute(
+            """
+            SELECT *
+            FROM raw_trace
+            WHERE trace_id = ?
+            """,
+            (trace_id,),
+        ).fetchone()
+        return self._raw_trace_from_row(row) if row else None
+
+    def get_recent_raw_traces(
+        self,
+        *,
+        limit: int = 50,
+        source_type: SourceType | str | None = None,
+    ) -> list[RawTraceRecord]:
+        limit = _positive_int(limit, "limit")
+        source = parse_source_type(source_type, "source_type") if source_type is not None else None
+        where_clauses = []
+        params: list[Any] = []
+        if source is not None:
+            where_clauses.append("source_type = ?")
+            params.append(source.value)
+        where_sql = " AND ".join(where_clauses) if where_clauses else "1 = 1"
+        rows = self.conn.execute(
+            f"""
+            SELECT *
+            FROM raw_trace
+            WHERE {where_sql}
+            ORDER BY created_ts DESC, trace_id DESC
+            LIMIT ?
+            """,
+            (*params, limit),
+        ).fetchall()
+        return [self._raw_trace_from_row(row) for row in rows]
+
+    def get_fact_support(self, fact_id: str) -> list[FactSupportRecord]:
+        rows = self.conn.execute(
+            """
+            SELECT fact_id, episode_id, weight
+            FROM fact_support
+            WHERE fact_id = ?
+            ORDER BY episode_id ASC
+            """,
+            (fact_id,),
+        ).fetchall()
+        return [
+            FactSupportRecord(
+                fact_id=row["fact_id"],
+                episode_id=row["episode_id"],
+                weight=row["weight"],
+            )
+            for row in rows
+        ]
+
+    def get_facts_for_episode(self, episode_id: str) -> list[Fact]:
+        rows = self.conn.execute(
+            """
+            SELECT fact.*
+            FROM fact
+            JOIN fact_support ON fact_support.fact_id = fact.fact_id
+            WHERE fact_support.episode_id = ?
+            ORDER BY fact.fact_id ASC
+            """,
+            (episode_id,),
+        ).fetchall()
+        return [self._fact_from_row(row) for row in rows]
+
+    def get_provenance_chain(self, memory_id: str, memory_kind: str) -> dict[str, Any]:
+        memory_id = _required_text(memory_id, "memory_id")
+        kind = _required_text(memory_kind, "memory_kind")
+        if kind not in PROVENANCE_MEMORY_KINDS:
+            allowed = ", ".join(PROVENANCE_MEMORY_KINDS)
+            raise ValueError(f"memory_kind must be one of: {allowed}")
+        root = self._provenance_node(memory_id, kind)
+        if root is None:
+            raise KeyError(f"memory not found: {kind}/{memory_id}")
+
+        nodes: list[dict[str, Any]] = []
+        edges: list[dict[str, Any]] = []
+        missing: list[str] = []
+        visited: set[tuple[str, str]] = set()
+        seen_edges: set[tuple[str, str, str, str]] = set()
+        queue: list[tuple[str, str, dict[str, Any]]] = [(memory_id, kind, root)]
+
+        while queue:
+            node_id, node_kind, node = queue.pop(0)
+            if (node_kind, node_id) in visited:
+                continue
+            visited.add((node_kind, node_id))
+            nodes.append(node)
+
+            references: list[tuple[str, str]] = []
+            if node_kind == "fact":
+                references.extend(
+                    ("supported_by", link.episode_id)
+                    for link in self.get_fact_support(node_id)
+                )
+            meta = self.get_meta_memory(node_id, node_kind)
+            if meta is not None:
+                references.extend(
+                    ("derived_from", ref)
+                    for ref in sorted(meta.provenance.get("supporting_memory_ids", []))
+                )
+
+            for relation, ref_id in references:
+                resolved = self._resolve_provenance_reference(ref_id)
+                if resolved is None:
+                    if ref_id not in missing:
+                        missing.append(ref_id)
+                    continue
+                ref_kind, ref_node = resolved
+                edge_key = (node_kind, node_id, ref_kind, ref_id)
+                if edge_key in seen_edges:
+                    continue
+                seen_edges.add(edge_key)
+                edges.append(
+                    {
+                        "from_kind": node_kind,
+                        "from_id": node_id,
+                        "relation": relation,
+                        "to_kind": ref_kind,
+                        "to_id": ref_id,
+                    }
+                )
+                queue.append((ref_id, ref_kind, ref_node))
+
+        if edges:
+            summary = "; ".join(
+                f"{edge['from_kind']} {edge['from_id']} {edge['relation']} "
+                f"{edge['to_kind']} {edge['to_id']}"
+                for edge in edges
+            )
+        else:
+            summary = f"{kind} {memory_id} has no stored provenance links"
+        return {
+            "memory_id": memory_id,
+            "memory_kind": kind,
+            "nodes": nodes,
+            "edges": edges,
+            "missing": sorted(missing),
+            "summary": summary,
+        }
+
+    def _provenance_node(self, memory_id: str, memory_kind: str) -> dict[str, Any] | None:
+        if memory_kind == "raw_trace":
+            trace = self.get_raw_trace(memory_id)
+            if trace is None:
+                return None
+            return {
+                "memory_id": trace.trace_id,
+                "memory_kind": "raw_trace",
+                "summary": trace.summary,
+                "source_type": trace.source_type.value,
+            }
+        if memory_kind == "episode":
+            episode = self.get_episode(memory_id)
+            if episode is None:
+                return None
+            return {
+                "memory_id": episode.episode_id,
+                "memory_kind": "episode",
+                "summary": episode.summary,
+                "source_type": None,
+            }
+        if memory_kind == "fact":
+            fact = self.get_fact(memory_id)
+            if fact is None:
+                return None
+            return {
+                "memory_id": fact.fact_id,
+                "memory_kind": "fact",
+                "summary": f"{fact.subject} {fact.predicate} {_canonical_json(fact.object_value)}",
+                "source_type": fact.source_type.value,
+            }
+        if memory_kind == "summary":
+            record = self.get_memory_summary(memory_id)
+            if record is None:
+                return None
+            return {
+                "memory_id": record.summary_id,
+                "memory_kind": "summary",
+                "summary": record.summary,
+                "source_type": None,
+            }
+        return None
+
+    def _resolve_provenance_reference(self, memory_id: str) -> tuple[str, dict[str, Any]] | None:
+        for kind in PROVENANCE_MEMORY_KINDS:
+            node = self._provenance_node(memory_id, kind)
+            if node is not None:
+                return kind, node
+        return None
+
     def get_fact(self, fact_id: str) -> Fact | None:
         row = self.conn.execute(
             """
@@ -1301,6 +1570,19 @@ class MemoryStore:
             (table_name,),
         ).fetchone()
         return row is not None
+
+    @staticmethod
+    def _raw_trace_from_row(row: sqlite3.Row) -> RawTraceRecord:
+        return RawTraceRecord(
+            trace_id=row["trace_id"],
+            created_ts=row["created_ts"],
+            source_type=SourceType(row["source_type"]),
+            source_id=row["source_id"],
+            summary=row["summary"],
+            payload=json.loads(row["payload_json"]),
+            confidence=row["confidence"],
+            salience=row["salience"],
+        )
 
     @staticmethod
     def _meta_memory_from_row(row: sqlite3.Row) -> MetaMemoryRecord:
