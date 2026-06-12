@@ -48,12 +48,12 @@ See `docs/architecture/ROADMAP.md` for the detailed V1 phase record.
 
 Goal: the memory lifecycle (`observe → buffer → score → promote → consolidate → semanticize → retrieve → decay`) runs end-to-end without caller intervention. This is the largest functional gap today: all pieces exist, nothing connects them autonomously.
 
-### M1.1 Automatic promotion pipeline
+### M1.1 Automatic promotion pipeline — complete (2026-06-12)
 
-- A promotion component subscribes to `memory_candidate` events on the runtime bus and drives `remember_candidate` automatically: echo-only, working-memory, episode, or episode-plus-semantic-candidate per the salience decision.
-- Scenario replay produces durable traces/episodes with no manual storage calls.
-- Promotion decisions are published as runtime events for observability.
-- Exit: a replayed scenario yields the documented storage outcomes deterministically; promotion is covered by replay tests.
+- [x] `MemoryPromoter` subscribes to `memory_candidate` events and drives `remember_candidate` automatically: echo-only, working-memory (trace only), episode, or episode-plus-semantic-candidate per the salience decision.
+- [x] Scenario replay produces durable traces/episodes with no manual storage calls.
+- [x] Promotion decisions are published as `memory_lifecycle` runtime events for observability.
+- [x] Exit: a replayed scenario yields the documented storage outcomes deterministically; promotion is covered by replay tests (`tests/test_promotion.py`). See `docs/memory/PROMOTION.md`.
 
 ### M1.2 Fact extraction (semanticization)
 

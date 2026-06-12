@@ -15,6 +15,7 @@ class RuntimeEventKind(StrEnum):
     WORLD_STATE_UPDATE = "world_state_update"
     ATTENTION_UPDATE = "attention_update"
     MEMORY_CANDIDATE = "memory_candidate"
+    MEMORY_LIFECYCLE = "memory_lifecycle"
     EXECUTIVE_INTENT = "executive_intent"
     SKILL_GOAL = "skill_goal"
     SKILL_STATUS = "skill_status"
@@ -36,6 +37,7 @@ EVENT_KIND_TOPICS = {
     RuntimeEventKind.WORLD_STATE_UPDATE: RuntimeTopic.WORLD_STATE,
     RuntimeEventKind.ATTENTION_UPDATE: RuntimeTopic.ATTENTION,
     RuntimeEventKind.MEMORY_CANDIDATE: RuntimeTopic.MEMORY,
+    RuntimeEventKind.MEMORY_LIFECYCLE: RuntimeTopic.MEMORY,
     RuntimeEventKind.EXECUTIVE_INTENT: RuntimeTopic.EXECUTIVE,
     RuntimeEventKind.SKILL_GOAL: RuntimeTopic.SKILL,
     RuntimeEventKind.SKILL_STATUS: RuntimeTopic.SKILL,
@@ -323,6 +325,30 @@ def memory_candidate_event(
         confidence=memory_candidate.confidence,
         ttl_ms=ttl_ms,
         payload={"candidate": memory_candidate.to_dict()},
+    )
+
+
+def memory_lifecycle_event(
+    *,
+    source: str,
+    lifecycle_stage: str,
+    payload: Mapping[str, Any],
+    timestamp: int,
+    confidence: float | None = None,
+    ttl_ms: int | None = None,
+    event_id: str | None = None,
+) -> RuntimeEvent:
+    return RuntimeEvent(
+        event_id=event_id or f"evt_{uuid.uuid4().hex[:12]}",
+        kind=RuntimeEventKind.MEMORY_LIFECYCLE,
+        timestamp=timestamp,
+        source=source,
+        confidence=confidence,
+        ttl_ms=ttl_ms,
+        payload={
+            "lifecycle_stage": _required_text(lifecycle_stage, "lifecycle_stage"),
+            **dict(payload),
+        },
     )
 
 

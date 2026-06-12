@@ -57,6 +57,7 @@ Event payloads are intentionally dictionaries for V1. Stable future interfaces c
 - `world_state_update`
 - `attention_update`
 - `memory_candidate`
+- `memory_lifecycle`
 - `executive_intent`
 - `skill_goal`
 - `skill_status`
@@ -68,10 +69,13 @@ Helper constructors exist for each category:
 - `world_state_update(...)`
 - `attention_update(...)`
 - `memory_candidate_event(...)`
+- `memory_lifecycle_event(...)`
 - `executive_intent(...)`
 - `skill_goal(...)`
 - `skill_status(...)`
 - `safety_event(...)`
+
+`memory_lifecycle` events (topic `memory`) carry observability metadata about memory state changes — promotion decisions, extraction results, consolidation passes, decay actions — with a required `lifecycle_stage` payload field. They describe what the memory system did; they are not commands and carry decision metadata rather than raw perception payloads.
 
 ## Event Bus
 
@@ -93,6 +97,7 @@ The bus must not become a shortcut around the architecture:
 
 - Perception events must not command skills or actuators.
 - Memory candidate events must not represent executive decisions.
+- Memory lifecycle events are observability output only; nothing may treat them as commands.
 - Executive intent is not an actuator command.
 - Skill goal/status events are not final actuator bridge commands.
 - Safety events are local coordination signals, not a certified hardware safety supervisor.

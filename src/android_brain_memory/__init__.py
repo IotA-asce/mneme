@@ -51,12 +51,14 @@ from .runtime import (
     attention_update,
     executive_intent,
     memory_candidate_event,
+    memory_lifecycle_event,
     perception_observation,
     safety_event,
     skill_goal,
     skill_status,
     world_state_update,
 )
+from .promotion import MemoryPromoter, PromotionOutcome
 from .working_memory import EchoFragment, SensoryEchoBuffer, WorkingMemory, WorkingMemorySnapshot
 from .simulation import (
     BodyHealthWorker,
@@ -127,6 +129,9 @@ __all__ = [
     "world_state_update",
     "attention_update",
     "memory_candidate_event",
+    "memory_lifecycle_event",
+    "MemoryPromoter",
+    "PromotionOutcome",
     "executive_intent",
     "skill_goal",
     "skill_status",
