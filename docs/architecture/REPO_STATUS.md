@@ -71,6 +71,7 @@ Implemented memory code:
 - Interaction-bounded context windows (`ContextWindowManager`): open on speech/person/touch, close on idle timeout or explicit boundary, persisting working-memory snapshots automatically.
 - Attention v1: habituation, inhibition-of-return, opt-in idle curiosity scanning, and bounded state history on top of the v0 weighted target ranking.
 - Executive v1: goal stack with safety suspension/resumption, opt-in response timing, memory-informed intents with conflict-driven clarification flags, and deterministic idle behavior rotation.
+- Dialogue planner v0: deterministic act selection (answer/clarify/acknowledge/greet or safety silence) producing structured, speakability-filtered utterance plans from executive intent and memory bundles.
 
 ## Partially Implemented
 
