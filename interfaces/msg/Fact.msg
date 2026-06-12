@@ -1,3 +1,5 @@
+# Mirrors android_brain_memory.models.Fact; object_value maps to object_json.
+# Empty supersedes_fact_id means no supersession link.
 std_msgs/Header header
 string fact_id
 string subject
@@ -6,5 +8,6 @@ string object_json
 float32 confidence
 string source_type
 string status
+string[] tags
 string[] supporting_episode_ids
-builtin_interfaces/Time last_confirmed_at
+string supersedes_fact_id

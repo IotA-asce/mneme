@@ -136,4 +136,11 @@ Do not start these until the memory core is demonstrably stable:
 
 ## Current Safest Next Task
 
-Start with the remaining Phase 1 storage/provenance read APIs: raw trace reads, fact support reads, and episode time-window retrieval. This keeps the next implementation narrow before retrieval ranking, conflict handling, or consolidation changes.
+All V1 roadmap phases (0–5) and the implementation plan's Phase 6 (ROS preparation) are implemented. The safest next work, in dependency order:
+
+1. Exercise the memory promotion pipeline end-to-end under scenario replay (perception event → salience → durable storage) so promotion becomes automatic rather than caller-driven.
+2. Fact extraction from consolidated episodes (semanticization), keeping the conservative conflict rules.
+3. Topic-specific episode retrieval and retrieval-time use of consolidation decay hints.
+4. Only after the above remain stable under tests: begin the single-process ROS bridge described in `docs/architecture/ROS_INTEGRATION_PLAN.md`.
+
+Hardware, real perception, and actuation remain deferred behind the safety rules in `AGENTS.md`.

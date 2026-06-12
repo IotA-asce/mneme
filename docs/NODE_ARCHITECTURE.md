@@ -2,6 +2,8 @@
 
 This document describes the future robot-head node graph. V1 does not implement these nodes yet.
 
+See `docs/architecture/ROS_INTEGRATION_PLAN.md` for the module-to-node boundary mapping, interface drafts per node, and the phased launch plan, and `docs/architecture/SERIALIZATION.md` for the wire contract.
+
 ## Memory nodes
 
 ```text
