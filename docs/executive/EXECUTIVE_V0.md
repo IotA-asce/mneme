@@ -93,3 +93,15 @@ Tests cover:
 - look/listen/idle fallback intents
 - JSON serialization
 - runtime publication of intent events without skill events
+
+## v1 Behaviors (Stage 2 / M2.4)
+
+Additive and deterministic; default parameters reproduce v0 exactly:
+
+- **Goal stack**: `push_goal(goal_type, payload)` / `complete_goal(goal_id)` / `current_goal`. Normal-mode intents carry `active_goal_id`/`active_goal_type`.
+- **Interruption/resumption**: safety freeze/degraded intents suspend active goals (`suspended_goal_ids` in the intent payload); the first normal-mode intent after recovery reactivates them and carries `resumed_goal` once. Goals never delay or weaken safety intents.
+- **Response timing** (`min_response_delay_ms`, default 0): a user turn younger than the delay yields LISTEN with reason `awaiting_turn_completion` and `response_due_in_ms`, approximating turn-completion before speaking.
+- **Memory-informed responses** (optional `engine`): RESPOND_TO_USER retrieves against the user turn (full text, then deterministic cue-token fallback, longest tokens first) and carries `payload["memory"]` with fact/episode/summary IDs, retrieval warnings, and `needs_clarification=True` when warnings report conflicting fact records. The full `MemoryBundle` stays on `executive.last_memory_bundle` for the dialogue planner — intent payloads never carry memory content.
+- **Idle rotation**: IDLE_PRESENCE intents rotate `idle_behavior` through `ambient_scan` → `rest_pose` → `micro_motion`.
+
+v1 verification (`tests/test_executive_v1.py`) covers goal context, suspend/resume across a safety freeze, the timing gate, memory-informed payloads (IDs only), the clarification flag on conflicting memory, idle rotation, and v0 default preservation.
