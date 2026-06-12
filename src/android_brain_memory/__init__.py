@@ -61,6 +61,7 @@ from .runtime import (
 )
 from .context_windows import ContextWindow, ContextWindowManager
 from .decay import DecayOptions, DecayReport, purge_memory, run_decay_once
+from .dialogue import DialogueActType, DialoguePlanner, UtterancePlan
 from .extraction import FactExtractionReport, FactExtractor, statement_fact_id
 from .promotion import MemoryPromoter, PromotionOutcome
 from .working_memory import EchoFragment, SensoryEchoBuffer, WorkingMemory, WorkingMemorySnapshot
@@ -158,6 +159,9 @@ __all__ = [
     "WorldModelSnapshot",
     "ContextWindow",
     "ContextWindowManager",
+    "DialogueActType",
+    "DialoguePlanner",
+    "UtterancePlan",
     "PersonPresence",
     "SpeechActivity",
     "SoundState",

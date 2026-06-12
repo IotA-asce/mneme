@@ -113,10 +113,10 @@ Goal: the cognition layers behave as one mind on simulated input — still no RO
 - [x] Deterministic idle behavior rotation.
 - [x] Exit: preemption, resumption, timing, and memory-informed behavior covered by deterministic tests (`tests/test_executive_v1.py`); v0 defaults preserved.
 
-### M2.5 Dialogue planner v0 (intent-level)
+### M2.5 Dialogue planner v0 (intent-level) — complete (2026-06-12)
 
-- Deterministic dialogue act planner: given executive intent + memory bundle + working context, produce a structured utterance plan (act type, content slots, speakability-filtered memory references). Text realization may remain template-based; no LLM dependency yet.
-- Exit: utterance plans never reference `never_say`/`internal_only` memory; covered by tests.
+- [x] Deterministic act planner (`answer`/`clarify`/`acknowledge`/`greet` or silence) over executive intent + memory bundle, with content slots, template text, and speakability-filtered memory references; silent in safety modes.
+- [x] Exit: utterance plans never reference `never_say`/`internal_only` memory (retrieval excludes them; the planner additionally drops `restricted` from spoken refs); covered by tests (`tests/test_dialogue.py`). See `docs/executive/DIALOGUE_PLANNER.md`.
 
 ### M2.6 Self model v0 and procedural memory v0
 
