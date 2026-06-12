@@ -96,13 +96,15 @@ Exit criteria:
 
 ## Phase 6 — Prepare for ROS integration
 
+Status: Implemented as preparation only. Interface drafts are aligned with the Python models and enforced by `tests/test_interface_alignment.py`; the serialization contract is documented in `docs/architecture/SERIALIZATION.md`; node boundaries and the phased launch plan are documented in `docs/architecture/ROS_INTEGRATION_PLAN.md`. No ROS packages or runtime bindings were added.
+
 Deliverables:
 
-- align Python models with `interfaces/`
-- event serialization format
-- node boundary notes
-- future launch plan
+- [x] align Python models with `interfaces/`
+- [x] event serialization format
+- [x] node boundary notes
+- [x] future launch plan
 
 Exit criteria:
 
-- memory core can be wrapped by future ROS nodes without changing domain models
+- [x] memory core can be wrapped by future ROS nodes without changing domain models

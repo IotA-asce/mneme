@@ -14,7 +14,8 @@ Implemented foundations:
 - Python package metadata in `pyproject.toml` for `android-brain-memory`.
 - SQLite schema migration in `storage/migrations/001_init.sql`.
 - Developer scripts for database initialization and a memory smoke path.
-- ROS-style interface drafts under `interfaces/`; these are documentation/contract drafts, not generated runtime bindings.
+- ROS-style interface drafts under `interfaces/`, aligned field-for-field with the Python domain models and enforced by `tests/test_interface_alignment.py`; these are documentation/contract drafts, not generated runtime bindings.
+- A documented JSON serialization contract (`docs/architecture/SERIALIZATION.md`) and a phased ROS integration plan with node boundary notes (`docs/architecture/ROS_INTEGRATION_PLAN.md`).
 - Project documentation, starter prompts, configuration, and architecture diagrams.
 - Local runtime event types and an in-process event bus for ROS-like test/demo boundaries without requiring ROS.
 - Bounded sensory echo and working-memory runtime components that can subscribe to local runtime events.
@@ -92,7 +93,6 @@ The design documents describe these future capabilities, but the repository does
 - Forgetting, accessibility decay, detail decay, and purge policy beyond current speakability filtering and consolidation decay metadata.
 - Contradiction review or supersession workflow.
 - Structured observability logs for promotion decisions, retrieval rankings, consolidation changes, conflicts, and pruning.
-- Full JSON-friendly serialization contract for future ROS wrappers.
 
 ## Current Tests
 

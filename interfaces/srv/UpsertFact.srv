@@ -5,3 +5,5 @@ bool success
 string fact_id
 string status
 string message
+# JSON-encoded FactConflictReport when the upsert detected a conflict, else empty.
+string conflict_report_json
