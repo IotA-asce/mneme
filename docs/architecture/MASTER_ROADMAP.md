@@ -94,10 +94,11 @@ Goal: the cognition layers behave as one mind on simulated input — still no RO
 - [x] `WorldModel` state builder fusing perception events into typed state: persons present (TTL), active speaker (TTL), last speech, ambient sound (TTL), last touch, internal/body state, safety level — published as `world_state_update` events.
 - [x] Exit: world state queryable and snapshot-testable under replay (`tests/test_world_model.py`). See `docs/architecture/WORLD_MODEL.md`. Object tracking deferred to Stage 4 (real perception).
 
-### M2.2 Working memory lifecycle v1
+### M2.2 Working memory lifecycle v1 — complete (2026-06-12)
 
-- Working memory consumes the world model; context windows open/close around interactions; snapshots persist at episode boundaries automatically.
-- Exit: conversation-shaped replay produces correct context windows and snapshots.
+- [x] Context windows open/close around interactions (`ContextWindowManager`): speech/person/touch events open and extend windows, idle timeout or explicit close bounds them.
+- [x] Snapshots persist at the close boundary automatically; transitions published as `world_state_update` events.
+- [x] Exit: conversation-shaped replay produces correct context windows and persisted snapshots (`tests/test_context_windows.py`). Window→episode bridging noted as future work in `docs/memory/WORKING_MEMORY.md`.
 
 ### M2.3 Attention manager v1
 

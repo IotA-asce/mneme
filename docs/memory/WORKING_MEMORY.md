@@ -133,9 +133,20 @@ The tests cover:
 - snapshot export,
 - snapshot persistence to SQLite.
 
+## Context Windows (Lifecycle v1)
+
+`ContextWindowManager` bounds interactions into context windows:
+
+- a window **opens** when an interaction-relevant perception event arrives (`speech_transcript`, `person_seen`, `touch`) and no window is open,
+- continued interaction events refresh the window's last-activity time and event count,
+- `tick(now_ms)` **closes** the window after `idle_timeout_ms` (default 8s) of inactivity; `close_now(reason=...)` closes it explicitly (e.g. on safety freeze),
+- at the close boundary a working-memory snapshot is **persisted automatically** through `WorkingMemory.persist_snapshot()` and the window records its `snapshot_id`,
+- closed windows are kept in a bounded history; transitions publish `world_state_update` events with `state_key="context_window"` and `status` of `opened`/`closed`.
+
+One window at a time in V1; overlapping interactions extend the current window. The manager owns lifecycle only — content updates remain in `WorkingMemory`. Like the consolidation daemon, `tick()` is caller-driven with an injected clock (no threads).
+
 ## Future Work
 
-- Add raw trace read/list APIs and optional inspection commands.
 - Add explicit adapters from runtime events to future ROS messages.
-- Add promotion logic from echo/working memory into durable candidate scoring.
-- Add replay tooling that feeds runtime events into echo and working memory.
+- Bridge closed context windows into episodic encoding (window → episode candidate).
+- Multi-party concurrent windows.

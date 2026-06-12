@@ -59,6 +59,7 @@ from .runtime import (
     skill_status,
     world_state_update,
 )
+from .context_windows import ContextWindow, ContextWindowManager
 from .decay import DecayOptions, DecayReport, purge_memory, run_decay_once
 from .extraction import FactExtractionReport, FactExtractor, statement_fact_id
 from .promotion import MemoryPromoter, PromotionOutcome
@@ -154,6 +155,8 @@ __all__ = [
     "purge_memory",
     "WorldModel",
     "WorldModelSnapshot",
+    "ContextWindow",
+    "ContextWindowManager",
     "PersonPresence",
     "SpeechActivity",
     "SoundState",
