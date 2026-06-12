@@ -1,9 +1,11 @@
 # Mneme Master Roadmap
 
-Date: 2026-06-12
+Date: 2026-06-12 (revision 2)
 Status: Long-term implementation roadmap from the V1 memory core to the complete android head brain
 
 This roadmap covers every implementation milestone between the current bench-only memory prototype and the end goal: a safe, debuggable, expressive, memory-centered robot head with lifelike attention, timing, memory continuity, and transparent reasoning.
+
+**Revision 2 (2026-06-12), by owner decision:** motor/actuator work is deferred. The near-term embodiment is a *virtual head* — a cross-platform app that perceives through the host machine's camera/microphone and talks back on screen/speakers. Mneme targets **Windows, macOS, and Linux** equally (primary dev machine is an Apple Silicon Mac), so the ROS 2 bridge moved into the deferred physical-embodiment track and a cross-platform runtime replaced it. Perception must **discover attached peripherals at startup/runtime** rather than assuming configured devices. Recorded privacy decisions live in `docs/safety/MEMORY_PRIVACY.md`.
 
 Ordering rules:
 
@@ -14,13 +16,13 @@ Ordering rules:
 - The V1 architecture rule holds at every stage: workers publish observations, state builders publish state, the executive publishes intent, skills publish actuator goals, the actuator bridge sends final commands, safety may override any stage.
 
 ```text
-Stage 0  V1 memory core                      [complete]
-Stage 1  Autonomous memory lifecycle         [next]
-Stage 2  Cognitive integration on the bench
-Stage 3  ROS 2 runtime bridge
-Stage 4  Real perception
-Stage 5  Expressive skills and dry-run actuation
-Stage 6  Hardware bring-up (gated)
+Stage 0  V1 memory core                            [complete]
+Stage 1  Autonomous memory lifecycle               [complete]
+Stage 2  Cognitive integration on the bench        [complete]
+Stage 3  Cross-platform runtime and virtual head   [next]
+Stage 4  Real perception (camera + microphone)
+Stage 5  Conversational presence
+Stage 6  Physical embodiment                       [deferred: ROS, skills, actuators, hardware]
 Stage 7  Lifelike presence and long-term continuity
 ```
 
@@ -130,116 +132,115 @@ Goal: the cognition layers behave as one mind on simulated input — still no RO
 
 ---
 
-## Stage 3 — ROS 2 Runtime Bridge
+## Stage 3 — Cross-Platform Runtime and Virtual Head
 
-Goal: the same behavior, over ROS 2 transport, with zero domain model changes. Follows `docs/architecture/ROS_INTEGRATION_PLAN.md`.
+Goal: Mneme becomes a runnable, interactive program on Windows, macOS, and Linux — one process that wires the whole Stage 0–2 stack together, discovers what the host machine offers, and presents a virtual head that can hold a (typed, then spoken) conversation. Zero domain model changes; the local event bus is the runtime transport.
 
-### M3.1 Interface package generation
+### M3.1 Runtime loop
 
-- Generate the `android_brain_interfaces` ROS package from the aligned drafts; CI checks generated package against `tests/test_interface_alignment.py` contracts.
+- A single cross-platform runtime process (`mneme run`) that constructs and wires bus + engine + world model + working memory/context windows + attention + executive + dialogue planner + promoter/extractor/consolidation daemon, drives all `tick()` components on a deterministic scheduler, and shuts down cleanly (closing context windows and persisting snapshots).
+- Console-script entry point in `pyproject.toml`; identical behavior on all three OSes.
+- Exit: replay fixtures run through the runtime loop produce the same storage outcomes as the test harness; runtime starts and stops cleanly on all platforms.
 
-### M3.2 Single-process memory bridge
+### M3.2 Peripheral discovery service
 
-- One `mneme_memory_node` wrapping `MnemeMemory`: `RetrieveMemory.action`, `UpsertFact.srv`, `GetWorkingContext.srv`, `ConsolidateMemory.action`. Local bus stays internal; ROS adapters only at the edge.
-- Exit: replay scenarios pass through ROS services with results identical to the local-bus harness.
+- Startup and runtime scanning for attached peripherals (cameras, microphones, speakers): enumerate, fingerprint, and publish availability as `internal_health`/world-state events; rescan on a tick cadence so hot-plugged devices appear and removals degrade gracefully.
+- Deterministic fake discovery backend for tests and CI; platform backends behind one interface (no platform-specific code paths above the discovery layer).
+- Exit: the runtime reports an accurate device inventory on all three OSes; tests cover appearance, removal, and absence of devices.
 
-### M3.3 Split cognition nodes
+### M3.3 Virtual head v0
 
-- `working_memory_node`, `attention_manager_node`, `executive_node` as separate processes; QoS and namespace conventions encode the topic/kind boundaries.
-- Exit: replay parity maintained; node restart mid-scenario degrades gracefully (no crash, documented behavior).
+- A minimal interactive front end: typed user input becomes `speech_transcript` perception events; Mneme's utterance plans render as the head "speaking" (text first; voice in Stage 5); attention/idle/safety state is visible (where Mneme is "looking", what it is doing).
+- Terminal UI first (cross-platform, zero dependencies); a richer visual avatar may follow in Stage 5.
+- Exit: a person can type a conversation, be remembered (promotion → extraction → retrieval), and get memory-informed answers back — the full loop, live, no test harness.
 
-### M3.4 Launch, diagnostics, and replay-over-ROS
+### M3.4 Cross-platform CI and packaging
 
-- Launch files for bench topologies; diagnostics topics for every node; rosbag-based record/replay interop with the YAML scenario format.
-- Exit: one-command bench bring-up; CI runs at least one ROS-transport replay scenario.
+- CI matrix runs the full suite on `ubuntu-latest`, `macos-latest`, `windows-latest`; line-ending and path conventions fixed where they bite.
+- Exit: green matrix; documented one-command install (`pip install -e .` + `mneme run`) verified on all three platforms.
 
-**Safety gate to Stage 4:** replay parity between local bus and ROS transport; diagnostics prove event flow; no perception-to-actuator path exists (there are still no actuators).
+**Safety gate to Stage 4:** the virtual-head loop runs deterministically under replay on all three OSes; peripheral discovery never blocks or crashes the runtime when devices are missing.
 
 ---
 
-## Stage 4 — Real Perception
+## Stage 4 — Real Perception (Camera + Microphone)
 
-Goal: replace simulated workers with real sensors behind the same topics and event shapes. Simulated workers remain forever for CI.
+Goal: replace simulated workers with the host machine's real camera and microphone, behind the same event shapes, using devices found by the Stage 3 discovery service. Simulated workers remain forever for CI. Touch and body-state sensors are deferred to the physical-embodiment track (Stage 6) — a virtual head has neither.
+
+Privacy (owner-decided, recorded in `docs/safety/MEMORY_PRIVACY.md`): raw frames **are** stored, transcripts persist, and everyone seen or heard is remembered — no enrollment gate. Storage growth therefore needs hygiene (M4.4).
 
 ### M4.1 Vision worker
 
-- Camera capture, face detection, face re-identification with confidence; person entity events compatible with the simulated face worker.
-- Privacy policy: embeddings/identifiers storage rules documented; raw frames never persisted into memory.
+- Capture from the discovered camera (cross-platform: AVFoundation/MediaFoundation/V4L2 behind one library), face detection, face re-identification with confidence; person entity events compatible with the simulated face worker.
+- Raw frame archive: captured frames associated with episodes (bounded rate, e.g. keyframes at salience boundaries, not full video), with provenance.
 
 ### M4.2 Speech worker
 
-- VAD + ASR transcript events with confidence; speaker attribution when resolvable; explicit-remember phrase detection feeding the salience flag.
+- Local VAD + ASR (Apple Silicon friendly) producing transcript events with confidence; speaker attribution when resolvable; explicit-remember phrase detection feeding the salience flag.
+- Transcripts persist into episodes per the recorded privacy decisions.
 
-### M4.3 Sound direction worker
+### M4.3 Perception fusion and calibration
 
-- Microphone-array (or stereo) direction-of-arrival events for attention.
+- World model fusion across vision + speech attribution; per-sensor confidence calibration; latency budgets documented and measured. Sound direction is best-effort from available hardware (stereo) and optional — a proper mic array arrives with the physical head.
 
-### M4.4 Touch and body-state workers
+### M4.4 Storage hygiene at perception scale
 
-- Touch sensor events; servo temperature/load/voltage and compute health as `internal_health` events.
+- Raw-frame and transcript retention knobs (size/age caps on the frame archive, decay integration), database growth monitoring via lifecycle events, and documented bounds — because "store everything" must still fit on a disk.
 
-### M4.5 Perception fusion and calibration
+- Exit criteria: a person walking up to the machine, greeting, and leaving produces correct world state, attention shifts, episodes (with frames), transcripts, and facts — live, repeatedly, on all three OSes where the hardware exists, and the same pipeline still passes simulated CI. Memory provenance distinguishes `sensor_observed` correctly end-to-end.
 
-- World model fusion across real modalities (vision + sound direction + speech attribution); per-sensor confidence calibration; latency budgets documented and measured.
-
-- Exit criteria for the stage: a person walking up, greeting, and leaving produces correct world state, attention shifts, episodes, and facts — live, repeatedly, and the same pipeline still passes simulated CI. Memory provenance distinguishes `sensor_observed` correctly end-to-end.
-
-**Safety gate to Stage 5:** sustained live perception soak runs without memory corruption or unbounded growth; privacy rules enforced in tests.
+**Safety gate to Stage 5:** sustained live perception soak runs without memory corruption or unbounded growth; retention bounds enforced in tests.
 
 ---
 
-## Stage 5 — Expressive Skills and Dry-Run Actuation
+## Stage 5 — Conversational Presence
 
-Goal: the full behavior loop with a fake actuator backend — every motion decision testable before any real motor exists.
+Goal: the virtual head becomes a convincing conversational partner — full spoken loop, expressive on-screen behavior, and social timing, on whatever machine it runs on.
 
-### M5.1 Skill controller framework
+### M5.1 Speech output
 
-- Async skill controllers consuming executive intent and publishing `skill_goal` events: accept/reject, progress, completion, cancellation, timeout, preemption semantics.
+- Cross-platform local TTS adapter behind the dialogue planner (utterance plans → audio out through discovered speakers); voice selection persisted as a self-model fact.
 
-### M5.2 Core expressive skills
+### M5.2 Live spoken loop
 
-- Gaze (attention-driven), blink (idle patterns + reactive), head pose (orientation toward targets), ear expression, speech output (TTS adapter behind the dialogue plan).
-- Procedural memory parameters (Stage 2) drive timing/style values.
+- Microphone ASR (Stage 4) → cognition → spoken reply, with the executive's response timing gate tuned against real speech endpointing; barge-in handling (user speaks while Mneme talks → interruption through the executive).
 
-### M5.3 Actuator bridge with fake backend
+### M5.3 Expressive virtual avatar
 
-- Single chokepoint for final commands: limit enforcement, rate limiting, command validation, timeout behavior, neutral-pose fallback; fake backend records command streams for assertion.
+- The on-screen head visualizes attention (gaze direction toward the active target), blink/idle behaviors from the executive's idle rotation, listening/speaking/thinking states, and safety states. Procedural memory parameters drive timing/style values.
 
-### M5.4 Safety supervisor v1
+### M5.4 Virtual skill controllers
 
-- Dedicated node: e-stop event handling, watchdog heartbeats from every stage, degraded-mode policy (which skills shut down under which failures), safe neutral pose command, override authority over all skill goals.
+- The skill-controller framework (accept/reject, progress, cancellation, timeout, preemption semantics) implemented against *virtual* skills (speak, express, gaze-on-screen) publishing `skill_goal`/`skill_status` events — the same contracts physical skills will use later, proven without motors.
 
-### M5.5 Behavior integration and social timing
+### M5.5 Social timing integration
 
-- Idle presence behavior; attention-gaze coupling with natural dynamics; turn-taking timing between listening and speaking; interruption handling down through skills.
+- Turn-taking between listening and speaking; interruption handling down through virtual skills; idle presence that feels attentive rather than frozen.
 
-- Exit criteria: scripted live-perception scenarios produce correct, complete command streams against the fake backend; cancellation/timeout/preemption/safety-override tests pass at every layer; no module bypasses the executive or the bridge.
+- Exit criteria: a walk-up spoken conversation works end-to-end — Mneme listens, looks (on screen), remembers, answers from memory, and can be interrupted — repeatedly, with the full suite still green.
 
-**Safety gate to Stage 6 (hard):** e-stop verified end-to-end in dry-run; actuator limits enforced in the bridge with tests; degraded modes proven; hardware bring-up plan with per-actuator command range, failure mode, safe default, expected feedback, timeout behavior documented per `AGENTS.md` §11.
+**Gate to Stage 7:** sustained daily-driver use of the virtual head without memory corruption, unbounded growth, or stuck states.
 
 ---
 
-## Stage 6 — Hardware Bring-Up (gated)
+## Stage 6 — Physical Embodiment (deferred)
 
-Goal: the bench head moves, safely. Every step here is explicitly human-supervised; nothing actuates by default.
+Deferred by owner decision (2026-06-12) until the virtual head proves itself. This track collects everything motion-related from roadmap revision 1; nothing here starts without an explicit go-ahead, and all original safety gates apply unchanged.
 
-### M6.1 Bench platform definition
+### M6.1 ROS 2 bridge (optional transport step)
 
-- Mechanical/electrical documentation under `docs/hardware/`: actuators (neck, eyes/gaze mechanism, eyelids, ears), sensor mounts, power, wiring, physical e-stop.
+- The former Stage 3: interface package generation from the aligned drafts, `mneme_memory_node`, split cognition nodes, launch/diagnostics, replay-over-ROS parity (`docs/architecture/ROS_INTEGRATION_PLAN.md`). Linux-hosted; revisit whether ROS is still the right transport when this track resumes.
 
-### M6.2 Real actuator backend
+### M6.2 Actuator bridge and dry-run actuation
 
-- Servo driver backend behind the existing bridge interface; per-actuator calibration, soft limits inside hardware limits, current/temperature monitoring feeding `internal_health`.
+- The former Stage 5 hardware parts: actuator bridge chokepoint with fake backend (limits, rate limiting, validation, neutral-pose fallback), safety supervisor v1 (e-stop, watchdogs, degraded-mode policy, override authority), physical skill controllers reusing the Stage 5 virtual-skill contracts.
 
-### M6.3 Staged actuation
+### M6.3 Hardware bring-up (gated, human-supervised)
 
-- One actuator at a time: dry-run stream diff against fake backend → limited-range live test → full-range live test; neutral pose and e-stop verified at each step before the next actuator.
+- The former Stage 6 unchanged: bench platform definition under `docs/hardware/`, real servo backend with feedback, one-actuator-at-a-time staged actuation with e-stop verified at every step, integrated live behavior with thermal/duty-cycle limits.
+- Adds the deferred perception hardware: microphone-array sound direction, touch sensors, servo body-state telemetry.
 
-### M6.4 Integrated live behavior
-
-- Full loop on hardware: live perception → cognition → expressive skills → motion; long-duration supervised soak tests; thermal and duty-cycle limits enforced.
-
-- Exit criteria: the head tracks people with gaze and head pose, blinks naturally, reacts to sound, speaks, and remembers interactions — with e-stop, neutral-pose fallback, and degraded modes demonstrated live, repeatedly.
+**Hard gate (unchanged):** e-stop end-to-end in dry-run, limits enforced in the bridge with tests, degraded modes proven, and per-actuator safety documentation per `AGENTS.md` §11 — before any live motion.
 
 ---
 
