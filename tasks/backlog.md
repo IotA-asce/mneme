@@ -45,7 +45,8 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add timestamp, source type, status, and summary validation
 - [x] Add JSON-friendly model serialization helpers
 - [x] Add memory model boundary documentation
-- [ ] Add working context model
+- [x] Add bounded sensory echo and working memory runtime components
+- [x] Add working context snapshot export and persistence path
 
 ## Salience
 
@@ -126,6 +127,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add ROS-style interface drafts
 - [x] Add local runtime event model for ROS-like architecture boundaries
 - [x] Add deterministic in-process event bus for tests and demos
+- [x] Integrate sensory echo and working memory with local runtime events
 - [x] Document local runtime boundaries
 - [ ] Align Python models with interface drafts
 - [ ] Add JSON serialization helpers for future wrappers
@@ -141,6 +143,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add local runtime architecture document
 - [x] Add local development runbook
 - [x] Add memory CLI runbook
+- [x] Add sensory echo and working memory documentation
 - [x] Add memory storage documentation
 - [x] Add salience scoring documentation
 - [x] Add memory retrieval documentation

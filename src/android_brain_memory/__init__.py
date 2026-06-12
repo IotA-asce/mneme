@@ -53,6 +53,7 @@ from .runtime import (
     skill_status,
     world_state_update,
 )
+from .working_memory import EchoFragment, SensoryEchoBuffer, WorkingMemory, WorkingMemorySnapshot
 
 __all__ = [
     "MemoryCandidate",
@@ -105,4 +106,8 @@ __all__ = [
     "skill_goal",
     "skill_status",
     "safety_event",
+    "EchoFragment",
+    "SensoryEchoBuffer",
+    "WorkingMemory",
+    "WorkingMemorySnapshot",
 ]
