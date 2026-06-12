@@ -230,11 +230,16 @@ class AttentionManager:
     def state_history(self) -> list[dict[str, Any]]:
         return [dict(entry) for entry in self._history]
 
-    def attach_to_bus(self, bus: EventBus) -> Subscription:
+    def attach_to_bus(
+        self,
+        bus: EventBus,
+        *,
+        kinds: Sequence[RuntimeEventKind | str] | None = None,
+    ) -> Subscription:
         self._bus = bus
         self._subscription = bus.subscribe(
             self.process_event,
-            kinds=[
+            kinds=kinds or [
                 RuntimeEventKind.PERCEPTION_OBSERVATION,
                 RuntimeEventKind.WORLD_STATE_UPDATE,
                 RuntimeEventKind.EXECUTIVE_INTENT,

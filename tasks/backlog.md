@@ -124,6 +124,10 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 
 ## Interfaces and future integration
 
+- [x] Add Stage 3 `MnemeRuntime` one-process wiring loop
+- [x] Add fake peripheral discovery for camera, microphone, and speaker inventory
+- [x] Add terminal virtual head command `mneme run`
+- [x] Add scripted JSON mode for deterministic virtual-head demos
 - [x] Add ROS-style interface drafts
 - [x] Add local runtime event model for ROS-like architecture boundaries
 - [x] Add deterministic in-process event bus for tests and demos
@@ -155,6 +159,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add local development runbook
 - [x] Add memory CLI runbook
 - [x] Add scenario replay runbook
+- [x] Add Stage 3 virtual head runbook
 - [x] Add sensory echo and working memory documentation
 - [x] Add memory storage documentation
 - [x] Add salience scoring documentation

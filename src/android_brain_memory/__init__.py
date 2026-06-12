@@ -64,6 +64,20 @@ from .decay import DecayOptions, DecayReport, purge_memory, run_decay_once
 from .dialogue import DialogueActType, DialoguePlanner, UtterancePlan
 from .extraction import FactExtractionReport, FactExtractor, statement_fact_id
 from .promotion import MemoryPromoter, PromotionOutcome
+from .peripherals import (
+    FakePeripheralBackend,
+    PeripheralDevice,
+    PeripheralDiscoveryService,
+    PeripheralKind,
+    PeripheralSnapshot,
+)
+from .runtime_loop import (
+    MnemeRuntime,
+    RuntimeClock,
+    RuntimeStepResult,
+    VirtualHeadOutput,
+    candidate_from_user_utterance,
+)
 from .self_model import ProceduralMemory, SelfModel
 from .working_memory import EchoFragment, SensoryEchoBuffer, WorkingMemory, WorkingMemorySnapshot
 from .world_model import (
@@ -149,6 +163,16 @@ __all__ = [
     "memory_lifecycle_event",
     "MemoryPromoter",
     "PromotionOutcome",
+    "PeripheralKind",
+    "PeripheralDevice",
+    "PeripheralSnapshot",
+    "FakePeripheralBackend",
+    "PeripheralDiscoveryService",
+    "MnemeRuntime",
+    "RuntimeClock",
+    "RuntimeStepResult",
+    "VirtualHeadOutput",
+    "candidate_from_user_utterance",
     "FactExtractor",
     "FactExtractionReport",
     "statement_fact_id",

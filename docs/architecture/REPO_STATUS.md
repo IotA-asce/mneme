@@ -73,6 +73,9 @@ Implemented memory code:
 - Executive v1: goal stack with safety suspension/resumption, opt-in response timing, memory-informed intents with conflict-driven clarification flags, and deterministic idle behavior rotation.
 - Dialogue planner v0: deterministic act selection (answer/clarify/acknowledge/greet or safety silence) producing structured, speakability-filtered utterance plans from executive intent and memory bundles.
 - Self model v0 and procedural memory v0: reserved-subject identity facts with deliberate in-place updates, and versioned skill parameters with supersession chains and provenance notes.
+- Stage 3 runtime and virtual head: `MnemeRuntime` wires the local event bus, memory engine, world model, sensory echo, working memory, context windows, attention, executive, dialogue planner, promotion, extraction, consolidation daemon, and fake peripheral discovery into one deterministic process.
+- Terminal virtual head command: `mneme run` accepts typed input, publishes `speech_transcript` perception events, renders dialogue plans as text, and supports scripted JSON output for deterministic demos.
+- Fake peripheral discovery: deterministic camera/microphone/speaker inventory publication with tests for device appearance, removal, and absence.
 
 ## Partially Implemented
 
@@ -96,6 +99,8 @@ The design documents describe these future capabilities, but the repository does
 - Skill controllers, actuator bridge, and safety supervisor (the shared world model, attention manager v0, and executive arbiter v0 are implemented).
 - Physical actuator control or dry-run hardware backend.
 - Full ROS 2 package/runtime integration.
+- Real platform camera/microphone/speaker discovery backends.
+- Spoken TTS and visual avatar rendering.
 - Long-running memory daemon or background process.
 - Procedural learning behavior (self model and procedural parameter storage are implemented; autonomous learning is deferred).
 - Semanticization of consolidation summaries into facts (structured episode statements are implemented).
@@ -142,8 +147,11 @@ The test suite currently contains focused model, salience, storage, and retrieva
 - `tests/test_scenario_replay.py::test_loads_basic_conversation_scenario`
 - `tests/test_scenario_replay.py::test_replay_basic_conversation_updates_echo_working_memory_and_candidates`
 - `tests/test_scenario_replay.py::test_json_scenario_replay_matches_yaml_shape`
+- `tests/test_stage3_runtime.py::test_runtime_starts_with_fake_peripherals_and_publishes_inventory`
+- `tests/test_stage3_runtime.py::test_typed_virtual_head_remembers_and_answers_from_memory`
+- `tests/test_stage3_runtime.py::test_scenario_fixture_runs_through_runtime_stack`
 
-Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, bounded sensory echo/working-memory behavior, and deterministic scenario replay. There are no tests yet for full provenance traversal, fact extraction from consolidation, retrieval use of decay/downranking, raw trace read APIs, time-window episode queries, ROS adapters, cross-process runtime behavior, real sensor workers, or autonomous promotion from working memory.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, bounded sensory echo/working-memory behavior, deterministic scenario replay, fake peripheral discovery, and the Stage 3 typed virtual-head runtime. There are no tests yet for real OS peripheral discovery, real sensor workers, spoken output, visual avatar rendering, skill controllers, actuator bridges, ROS adapters, or cross-process runtime behavior.
 
 ## Verification Commands
 
