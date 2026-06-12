@@ -118,11 +118,13 @@ Goal: the cognition layers behave as one mind on simulated input — still no RO
 - [x] Deterministic act planner (`answer`/`clarify`/`acknowledge`/`greet` or silence) over executive intent + memory bundle, with content slots, template text, and speakability-filtered memory references; silent in safety modes.
 - [x] Exit: utterance plans never reference `never_say`/`internal_only` memory (retrieval excludes them; the planner additionally drops `restricted` from spoken refs); covered by tests (`tests/test_dialogue.py`). See `docs/executive/DIALOGUE_PLANNER.md`.
 
-### M2.6 Self model v0 and procedural memory v0
+### M2.6 Self model v0 and procedural memory v0 — complete (2026-06-12)
 
-- Self model: persistent identity facts about the robot itself (name, capabilities, current limitations, recent self-relevant episodes) stored through the existing fact machinery with a reserved subject.
-- Procedural memory: typed skill-parameter records (e.g., preferred gaze dwell times) with provenance — schema and storage only; no autonomous learning.
-- Exit: self-queries answerable from memory; procedural parameters versioned with provenance.
+- [x] Self model: identity facts under the reserved `self` subject with deliberate in-place updates (fixed fact ID per predicate), retrieval integration, and a deterministic `describe()`.
+- [x] Procedural memory: versioned skill parameters (`procedure:<skill>:<parameter>`) with explicit supersession chains, provenance notes, full queryable history, and no autonomous learning.
+- [x] Exit: self-queries answerable from memory; procedural parameters versioned with provenance (`tests/test_self_model.py`). See `docs/memory/SELF_MODEL.md`.
+
+**Stage 2 status: complete (2026-06-12).** The full bench cognition chain — perception sim → world model → context windows → attention v1 → memory → executive v1 → dialogue plan — runs deterministically under tests, with self model and procedural memory layers in place.
 
 **Safety gate to Stage 3:** full bench stack (perception sim → world model → attention → memory → executive → dialogue plan) runs scripted scenarios deterministically in CI.
 

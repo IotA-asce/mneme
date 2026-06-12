@@ -64,6 +64,7 @@ from .decay import DecayOptions, DecayReport, purge_memory, run_decay_once
 from .dialogue import DialogueActType, DialoguePlanner, UtterancePlan
 from .extraction import FactExtractionReport, FactExtractor, statement_fact_id
 from .promotion import MemoryPromoter, PromotionOutcome
+from .self_model import ProceduralMemory, SelfModel
 from .working_memory import EchoFragment, SensoryEchoBuffer, WorkingMemory, WorkingMemorySnapshot
 from .world_model import (
     InternalState,
@@ -162,6 +163,8 @@ __all__ = [
     "DialogueActType",
     "DialoguePlanner",
     "UtterancePlan",
+    "SelfModel",
+    "ProceduralMemory",
     "PersonPresence",
     "SpeechActivity",
     "SoundState",
