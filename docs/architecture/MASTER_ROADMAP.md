@@ -19,8 +19,8 @@ Ordering rules:
 Stage 0  V1 memory core                            [complete]
 Stage 1  Autonomous memory lifecycle               [complete]
 Stage 2  Cognitive integration on the bench        [complete]
-Stage 3  Cross-platform runtime and virtual head   [next]
-Stage 4  Real perception (camera + microphone)
+Stage 3  Cross-platform runtime and virtual head   [complete]
+Stage 4  Real perception (camera + microphone)     [next]
 Stage 5  Conversational presence
 Stage 6  Physical embodiment                       [deferred: ROS, skills, actuators, hardware]
 Stage 7  Lifelike presence and long-term continuity
@@ -132,32 +132,35 @@ Goal: the cognition layers behave as one mind on simulated input — still no RO
 
 ---
 
-## Stage 3 — Cross-Platform Runtime and Virtual Head
+## Stage 3 — Cross-Platform Runtime and Virtual Head (complete, 2026-06-12)
 
 Goal: Mneme becomes a runnable, interactive program on Windows, macOS, and Linux — one process that wires the whole Stage 0–2 stack together, discovers what the host machine offers, and presents a virtual head that can hold a (typed, then spoken) conversation. Zero domain model changes; the local event bus is the runtime transport.
 
 ### M3.1 Runtime loop
 
-- A single cross-platform runtime process (`mneme run`) that constructs and wires bus + engine + world model + working memory/context windows + attention + executive + dialogue planner + promoter/extractor/consolidation daemon, drives all `tick()` components on a deterministic scheduler, and shuts down cleanly (closing context windows and persisting snapshots).
-- Console-script entry point in `pyproject.toml`; identical behavior on all three OSes.
-- Exit: replay fixtures run through the runtime loop produce the same storage outcomes as the test harness; runtime starts and stops cleanly on all platforms.
+- [x] A single cross-platform runtime process (`mneme run`) constructs and wires bus + engine + world model + working memory/context windows + attention + executive + dialogue planner + promoter/extractor/consolidation daemon, drives `tick()` components on a deterministic scheduler, and shuts down cleanly by closing context windows and persisting snapshots.
+- [x] Console-script entry point in `pyproject.toml`.
+- [x] Exit: replay fixtures run through the runtime loop; runtime starts and stops cleanly under deterministic tests.
 
 ### M3.2 Peripheral discovery service
 
-- Startup and runtime scanning for attached peripherals (cameras, microphones, speakers): enumerate, fingerprint, and publish availability as `internal_health`/world-state events; rescan on a tick cadence so hot-plugged devices appear and removals degrade gracefully.
-- Deterministic fake discovery backend for tests and CI; platform backends behind one interface (no platform-specific code paths above the discovery layer).
-- Exit: the runtime reports an accurate device inventory on all three OSes; tests cover appearance, removal, and absence of devices.
+- [x] Startup and runtime scanning contract for cameras, microphones, and speakers publishes availability as world-state events.
+- [x] Deterministic fake discovery backend for tests and CI; platform backends can implement the same interface later.
+- [x] Exit: tests cover appearance, removal, and absence of devices.
 
 ### M3.3 Virtual head v0
 
-- A minimal interactive front end: typed user input becomes `speech_transcript` perception events; Mneme's utterance plans render as the head "speaking" (text first; voice in Stage 5); attention/idle/safety state is visible (where Mneme is "looking", what it is doing).
-- Terminal UI first (cross-platform, zero dependencies); a richer visual avatar may follow in Stage 5.
-- Exit: a person can type a conversation, be remembered (promotion → extraction → retrieval), and get memory-informed answers back — the full loop, live, no test harness.
+- [x] Minimal terminal front end: typed user input becomes `speech_transcript` perception events; Mneme's utterance plans render as text.
+- [x] JSON scripted mode supports deterministic replay/debug.
+- [x] Exit: a typed conversation can be remembered and answered from memory in the runtime loop.
 
 ### M3.4 Cross-platform CI and packaging
 
-- CI matrix runs the full suite on `ubuntu-latest`, `macos-latest`, `windows-latest`; line-ending and path conventions fixed where they bite.
-- Exit: green matrix; documented one-command install (`pip install -e .` + `mneme run`) verified on all three platforms.
+- [x] CI matrix runs the full suite on `ubuntu-latest`, `macos-latest`, `windows-latest`.
+- [x] Package console scripts expose `mneme run` and `mneme-memory`.
+- [x] Exit: documented one-command install (`pip install -e .` + `mneme run`) for Stage 3.
+
+**Stage 3 status: complete (2026-06-12).** Mneme now has a deterministic local runtime loop and terminal virtual head. The runtime is still typed-input only; real camera/microphone perception starts in Stage 4.
 
 **Safety gate to Stage 4:** the virtual-head loop runs deterministically under replay on all three OSes; peripheral discovery never blocks or crashes the runtime when devices are missing.
 

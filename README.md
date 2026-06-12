@@ -86,4 +86,17 @@ Primary commands:
 
 See `docs/runbooks/MEMORY_CLI.md` for JSON payload examples.
 
+## Stage 3 Virtual Head
+
+The Stage 3 runtime wires the local cognition stack into one terminal virtual head:
+
+```bash
+mneme run --input "hello Mneme"
+mneme run --json --input "remember that I like tea" --input "what do I like"
+```
+
+It uses typed input and fake deterministic peripherals only. Real camera, microphone, TTS, avatar rendering, ROS, and hardware remain later-stage work.
+
+See `docs/runbooks/VIRTUAL_HEAD.md` for the runtime runbook.
+
 This is intentionally small. The goal is to give Codex a precise, well-scoped project foundation before expanding into ROS 2 nodes, perception workers, and motor control.

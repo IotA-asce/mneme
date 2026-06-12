@@ -11,6 +11,10 @@ dependencies = [
   "PyYAML>=6.0.0"
 ]
 
+[project.scripts]
+mneme = "android_brain_memory.virtual_head:main"
+mneme-memory = "android_brain_memory.cli:main"
+
 [project.optional-dependencies]
 dev = [
   "pytest>=8.0.0"
