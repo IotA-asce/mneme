@@ -129,11 +129,15 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add deterministic in-process event bus for tests and demos
 - [x] Integrate sensory echo and working memory with local runtime events
 - [x] Add deterministic simulated perception workers and scenario replay
+- [x] Add deterministic Attention Manager v0 that publishes attention state
+- [x] Add attention dwell/lock and target expiry behavior
+- [x] Add attention priority explanations for ranked targets
 - [x] Add scenario replay runbook and fixture format
 - [x] Document local runtime boundaries
 - [ ] Align Python models with interface drafts
 - [ ] Add JSON serialization helpers for future wrappers
 - [ ] Add adapters between local runtime events and interface drafts
+- [ ] Add skill-level gaze consumer for attention state
 - [ ] Document future ROS node boundaries in implementation-facing docs
 - [ ] Keep hardware and actuator control out of V1 memory prototype
 
@@ -143,6 +147,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add current repository status document
 - [x] Add current roadmap document
 - [x] Add local runtime architecture document
+- [x] Add Attention Manager v0 documentation
 - [x] Add local development runbook
 - [x] Add memory CLI runbook
 - [x] Add scenario replay runbook
