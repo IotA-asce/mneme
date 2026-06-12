@@ -1033,6 +1033,25 @@ class MemoryStore:
         self.write_meta_memory(updated)
         return updated
 
+    def get_meta_memory_with_decay(self, *, limit: int = 50) -> list[MetaMemoryRecord]:
+        limit = _positive_int(limit, "limit")
+        rows = self.conn.execute(
+            """
+            SELECT *
+            FROM meta_memory
+            WHERE provenance_json LIKE '%"decay"%'
+            ORDER BY memory_kind ASC, memory_id ASC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        records = [self._meta_memory_from_row(row) for row in rows]
+        return [
+            record
+            for record in records
+            if isinstance(record.provenance.get("decay"), Mapping)
+        ]
+
     def update_decay_metadata(
         self,
         memory_id: str,

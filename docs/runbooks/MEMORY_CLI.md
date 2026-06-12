@@ -72,6 +72,20 @@ Run one deterministic consolidation pass:
 python scripts/mneme_memory.py consolidate-once --min-repetition 3
 ```
 
+Inspect the stored provenance chain of a memory (raw_trace, episode, fact, or summary):
+
+```bash
+python scripts/mneme_memory.py inspect-provenance --memory-id ep_abc123 --memory-kind episode
+```
+
+The output `chain` contains `nodes`, `edges` (`supported_by` / `derived_from`), unresolvable `missing` references, and a human-readable `summary`.
+
+List meta-memory records carrying decay metadata (downrank candidates, suppression inputs):
+
+```bash
+python scripts/mneme_memory.py inspect-decay --limit 50
+```
+
 ## JSON Payload Commands
 
 `remember-candidate`, `add-episode`, and `add-fact` accept either `--data` with a JSON object or `--file` with a JSON file path.

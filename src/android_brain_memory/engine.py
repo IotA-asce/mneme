@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, is_dataclass
 from enum import Enum
 from pathlib import Path
@@ -20,6 +20,7 @@ from .models import (
     Speakability,
 )
 from .retrieval import retrieve_memory
+from .runtime import EventBus, memory_lifecycle_event
 from .salience import SalienceScoringConfig, score_candidate
 from .storage import FactConflictReport, MemoryStore, MigrationRecord
 
@@ -79,11 +80,17 @@ class MnemeMemory:
         *,
         migrations_dir: str | Path | None = DEFAULT_MIGRATIONS,
         store: MemoryStore | None = None,
+        event_bus: EventBus | None = None,
+        event_source: str = "memory_engine",
+        clock: Callable[[], int] | None = None,
     ) -> None:
         self.migrations_dir = Path(migrations_dir) if migrations_dir is not None else None
         self.store = store if store is not None else MemoryStore(db_path)
         self.db_path = self.store.db_path
         self._owns_store = store is None
+        self.event_bus = event_bus
+        self.event_source = event_source
+        self._clock = clock or _now_ms
 
     def __enter__(self) -> "MnemeMemory":
         return self
@@ -264,10 +271,39 @@ class MnemeMemory:
             notes=notes,
         )
         refreshed = self.store.get_fact(stored_fact.fact_id) or stored_fact
+        if conflict_report is not None and self.event_bus is not None:
+            self.event_bus.publish(
+                memory_lifecycle_event(
+                    source=self.event_source,
+                    lifecycle_stage="conflict",
+                    timestamp=self._clock(),
+                    payload=to_jsonable(conflict_report),
+                )
+            )
         return FactUpsertResult(fact=refreshed, conflict_report=conflict_report)
 
     def retrieve(self, query: MemoryQuery | Mapping[str, Any] | str) -> MemoryBundle:
-        return retrieve_memory(self.store, _coerce_query(query))
+        memory_query = _coerce_query(query)
+        bundle = retrieve_memory(self.store, memory_query)
+        if self.event_bus is not None:
+            self.event_bus.publish(
+                memory_lifecycle_event(
+                    source=self.event_source,
+                    lifecycle_stage="retrieval",
+                    timestamp=self._clock(),
+                    payload={
+                        "query_id": bundle.query_id,
+                        "query_text": memory_query.query_text,
+                        "requester": memory_query.requester,
+                        "query_type": memory_query.query_type,
+                        "fact_ids": [fact.fact_id for fact in bundle.facts],
+                        "episode_ids": [episode.episode_id for episode in bundle.episodes],
+                        "summary_ids": [item["summary_id"] for item in bundle.summaries],
+                        "warnings": list(bundle.warnings),
+                    },
+                )
+            )
+        return bundle
 
     def consolidate_once(
         self,
@@ -332,6 +368,10 @@ class MnemeMemory:
 
 
 MemoryEngine = MnemeMemory
+
+
+def _now_ms() -> int:
+    return int(time.time() * 1000)
 
 
 def to_jsonable(value: Any) -> Any:

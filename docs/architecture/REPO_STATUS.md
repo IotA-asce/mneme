@@ -66,6 +66,7 @@ Implemented memory code:
 - Deterministic fact extraction (`FactExtractor`): structured episode statements become conflict-aware `model_inferred` facts automatically after semantic-candidate promotions.
 - Schedulable consolidation daemon (`ConsolidationDaemon`): interval-policed, batch-bounded consolidation passes with lifecycle events and cumulative stats, driven by injected-clock ticks (no threads).
 - Staged forgetting (`decay.py`): retrieval-time downranking from decay metadata, deterministic suppression passes for summarized episodes and superseded facts, and explicit provenance-preserving purge tombstones with user-confirmed protection.
+- Full lifecycle observability: `memory_lifecycle` events for promotion, extraction, consolidation, decay, retrieval, and fact conflicts (engine `event_bus` opt-in; content never leaks into events), plus `inspect-provenance` / `inspect-decay` CLI commands.
 
 ## Partially Implemented
 
@@ -95,7 +96,6 @@ The design documents describe these future capabilities, but the repository does
 - Semanticization of consolidation summaries into facts (structured episode statements are implemented).
 - Detail decay (in-place content summarization) and raw trace retention policy (accessibility decay, suppression, and explicit purge are implemented).
 - Contradiction review or supersession workflow.
-- Structured observability logs for promotion decisions, retrieval rankings, consolidation changes, conflicts, and pruning.
 
 ## Current Tests
 
