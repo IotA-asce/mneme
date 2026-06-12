@@ -70,6 +70,7 @@ Implemented memory code:
 - Shared world model (`WorldModel`): typed TTL-bounded fusion of perception events (persons, active speaker, sound, touch, internal state, safety level) publishing `world_state_update` events with deterministic snapshots.
 - Interaction-bounded context windows (`ContextWindowManager`): open on speech/person/touch, close on idle timeout or explicit boundary, persisting working-memory snapshots automatically.
 - Attention v1: habituation, inhibition-of-return, opt-in idle curiosity scanning, and bounded state history on top of the v0 weighted target ranking.
+- Executive v1: goal stack with safety suspension/resumption, opt-in response timing, memory-informed intents with conflict-driven clarification flags, and deterministic idle behavior rotation.
 
 ## Partially Implemented
 

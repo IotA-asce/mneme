@@ -42,7 +42,7 @@ from .consolidation import ConsolidationOptions, ConsolidationReport, consolidat
 from .consolidation_daemon import ConsolidationDaemon
 from .engine import FactUpsertResult, MemoryEngine, MnemeMemory, RememberCandidateResult
 from .attention import AttentionManager, AttentionState, AttentionTarget
-from .executive import Executive, ExecutiveIntent, ExecutiveIntentType, ExecutiveMode
+from .executive import Executive, ExecutiveGoal, ExecutiveIntent, ExecutiveIntentType, ExecutiveMode
 from .runtime import (
     EventBus,
     RuntimeEvent,
@@ -131,6 +131,7 @@ __all__ = [
     "AttentionState",
     "AttentionTarget",
     "Executive",
+    "ExecutiveGoal",
     "ExecutiveIntent",
     "ExecutiveIntentType",
     "ExecutiveMode",

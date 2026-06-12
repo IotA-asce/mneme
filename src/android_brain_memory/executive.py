@@ -3,12 +3,14 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
+import re
 import time
 import uuid
 from typing import Any
 
 from .attention import AttentionState
-from .models import validate_confidence, validate_timestamp
+from .engine import MnemeMemory
+from .models import MemoryQuery, validate_confidence, validate_timestamp
 from .runtime import (
     EventBus,
     RuntimeEvent,
@@ -23,6 +25,8 @@ DEFAULT_EXECUTIVE_INTENT_TTL_MS = 2_000
 DEFAULT_USER_INTERACTION_TTL_MS = 3_000
 DEFAULT_MEMORY_INSTRUCTION_TTL_MS = 15_000
 DEFAULT_SELF_SPEAKERS = ("mneme", "robot", "assistant")
+IDLE_BEHAVIORS = ("ambient_scan", "rest_pose", "micro_motion")
+GOAL_STATUSES = ("active", "suspended", "completed")
 
 
 class ExecutiveMode(StrEnum):
@@ -104,6 +108,33 @@ class ExecutiveIntent:
         )
 
 
+@dataclass(slots=True)
+class ExecutiveGoal:
+    goal_id: str
+    goal_type: str
+    created_ts: int
+    status: str = "active"
+    payload: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.goal_id = _required_text(self.goal_id, "goal_id")
+        self.goal_type = _required_text(self.goal_type, "goal_type")
+        self.created_ts = validate_timestamp(self.created_ts, "created_ts")
+        if self.status not in GOAL_STATUSES:
+            allowed = ", ".join(GOAL_STATUSES)
+            raise ValueError(f"status must be one of: {allowed}")
+        self.payload = _json_mapping(self.payload, "payload")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "goal_id": self.goal_id,
+            "goal_type": self.goal_type,
+            "created_ts": self.created_ts,
+            "status": self.status,
+            "payload": dict(self.payload),
+        }
+
+
 class Executive:
     """Deterministic executive intent generator and arbiter."""
 
@@ -118,6 +149,8 @@ class Executive:
         source: str = "executive",
         clock: Callable[[], int] | None = None,
         bus: EventBus | None = None,
+        engine: MnemeMemory | None = None,
+        min_response_delay_ms: int = 0,
     ) -> None:
         self._clock = clock or _now_ms
         self.source = _required_text(source, "source")
@@ -137,14 +170,52 @@ class Executive:
             for speaker in self_speakers
             if _required_text(speaker, "self_speakers")
         )
+        self.engine = engine
+        self.min_response_delay_ms = _non_negative_int(
+            min_response_delay_ms,
+            "min_response_delay_ms",
+        )
+        self.last_memory_bundle = None
         self._bus: EventBus | None = None
         self._subscription: Subscription | None = None
         self._attention_state: AttentionState | None = None
         self._world_state: dict[str, Any] = {}
         self._last_intent: ExecutiveIntent | None = None
         self._intent_counter = 0
+        self._goals: list[ExecutiveGoal] = []
+        self._goal_counter = 0
+        self._idle_counter = 0
         if bus is not None:
             self.attach_to_bus(bus)
+
+    def push_goal(
+        self,
+        goal_type: str,
+        *,
+        payload: Mapping[str, Any] | None = None,
+        now_ms: int | None = None,
+    ) -> ExecutiveGoal:
+        self._goal_counter += 1
+        goal = ExecutiveGoal(
+            goal_id=f"goal_{self._goal_counter:06d}",
+            goal_type=goal_type,
+            created_ts=now_ms if now_ms is not None else self._clock(),
+            payload=dict(payload or {}),
+        )
+        self._goals.append(goal)
+        return goal
+
+    def complete_goal(self, goal_id: str) -> bool:
+        for goal in self._goals:
+            if goal.goal_id == goal_id:
+                goal.status = "completed"
+                self._goals = [item for item in self._goals if item.goal_id != goal_id]
+                return True
+        return False
+
+    @property
+    def current_goal(self) -> ExecutiveGoal | None:
+        return self._goals[-1] if self._goals else None
 
     def attach_to_bus(self, bus: EventBus) -> Subscription:
         self._bus = bus
@@ -219,6 +290,26 @@ class Executive:
             }
 
     def _select_intent(self, context: "_ExecutiveContext") -> ExecutiveIntent:
+        intent = self._select_base_intent(context)
+        if intent.mode == ExecutiveMode.NORMAL:
+            resumed = [goal for goal in self._goals if goal.status == "suspended"]
+            for goal in resumed:
+                goal.status = "active"
+            active = self.current_goal
+            if active is not None and active.status == "active":
+                intent.payload["active_goal_id"] = active.goal_id
+                intent.payload["active_goal_type"] = active.goal_type
+            if resumed:
+                intent.payload["resumed_goal"] = resumed[-1].to_dict()
+        else:
+            suspended = [goal for goal in self._goals if goal.status == "active"]
+            for goal in suspended:
+                goal.status = "suspended"
+            if suspended:
+                intent.payload["suspended_goal_ids"] = [goal.goal_id for goal in suspended]
+        return intent
+
+    def _select_base_intent(self, context: "_ExecutiveContext") -> ExecutiveIntent:
         safety_level = _safety_level(context.safety)
         if safety_level in {"emergency", "critical", "estop", "stop", "unsafe"}:
             return self._intent(
@@ -245,12 +336,30 @@ class Executive:
         if latest_user_turn is not None:
             age_ms = context.now_ms - int(latest_user_turn["timestamp"])
             if age_ms <= self.user_interaction_ttl_ms:
+                if age_ms < self.min_response_delay_ms:
+                    return self._intent(
+                        ExecutiveIntentType.LISTEN,
+                        mode=ExecutiveMode.NORMAL,
+                        priority=45,
+                        reason="awaiting_turn_completion",
+                        target_id=str(latest_user_turn["speaker"]),
+                        payload={
+                            "speaker": str(latest_user_turn["speaker"]),
+                            "dialogue_turn": dict(latest_user_turn),
+                            "response_due_in_ms": self.min_response_delay_ms - age_ms,
+                        },
+                        context=context,
+                    )
                 payload = {
                     "dialogue_turn": dict(latest_user_turn),
                     "attention_target": _attention_target_id(context),
                 }
                 if _is_memory_instruction(str(latest_user_turn.get("text", ""))):
                     payload["secondary_intents"] = [ExecutiveIntentType.REMEMBER_EVENT.value]
+                if self.engine is not None:
+                    payload["memory"] = self._memory_context(
+                        str(latest_user_turn.get("text", ""))
+                    )
                 return self._intent(
                     ExecutiveIntentType.RESPOND_TO_USER,
                     mode=ExecutiveMode.NORMAL,
@@ -301,14 +410,50 @@ class Executive:
                 context=context,
             )
 
+        idle_behavior = IDLE_BEHAVIORS[self._idle_counter % len(IDLE_BEHAVIORS)]
+        self._idle_counter += 1
         return self._intent(
             ExecutiveIntentType.IDLE_PRESENCE,
             mode=ExecutiveMode.NORMAL,
             priority=10,
             reason="idle_presence_default",
-            payload={},
+            payload={"idle_behavior": idle_behavior},
             context=context,
         )
+
+    def _memory_context(self, query_text: str) -> dict[str, Any]:
+        bundle = self._retrieve_for_dialogue(query_text)
+        self.last_memory_bundle = bundle
+        return {
+            "query_id": bundle.query_id,
+            "fact_ids": [fact.fact_id for fact in bundle.facts],
+            "episode_ids": [episode.episode_id for episode in bundle.episodes],
+            "summary_ids": [item["summary_id"] for item in bundle.summaries],
+            "warnings": list(bundle.warnings),
+            "needs_clarification": any(
+                "conflicting fact records" in warning for warning in bundle.warnings
+            ),
+        }
+
+    def _retrieve_for_dialogue(self, text: str):
+        # Storage matches query_text as one substring, so a full dialogue
+        # sentence rarely hits; fall back to cue tokens, longest first.
+        queries = [text.strip(), *_cue_tokens(text)]
+        bundle = None
+        for query in queries:
+            if not query:
+                continue
+            bundle = self.engine.retrieve(
+                MemoryQuery(
+                    query_text=query,
+                    requester="executive",
+                    query_type="dialogue_support",
+                    max_results=3,
+                )
+            )
+            if bundle.facts or bundle.episodes or bundle.summaries:
+                return bundle
+        return bundle
 
     def _intent(
         self,
@@ -495,6 +640,23 @@ def _attention_target_id(context: _ExecutiveContext) -> str | None:
     return None
 
 
+CUE_TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
+CUE_STOPWORDS = {
+    "this", "that", "what", "when", "where", "which", "your", "yours",
+    "with", "from", "have", "does", "know", "tell", "about", "please",
+    "could", "would", "should", "think",
+}
+
+
+def _cue_tokens(text: str, *, limit: int = 3) -> list[str]:
+    tokens = CUE_TOKEN_PATTERN.findall(text.lower())
+    seen: list[str] = []
+    for token in tokens:
+        if len(token) >= 4 and token not in CUE_STOPWORDS and token not in seen:
+            seen.append(token)
+    return sorted(seen, key=lambda token: (-len(token), seen.index(token)))[:limit]
+
+
 def _is_memory_instruction(text: str) -> bool:
     normalized = " ".join(text.lower().split())
     return any(
@@ -564,6 +726,14 @@ def _positive_int(value: Any, field_name: str) -> int:
         raise ValueError(f"{field_name} must be a positive integer")
     if value < 1:
         raise ValueError(f"{field_name} must be a positive integer")
+    return value
+
+
+def _non_negative_int(value: Any, field_name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{field_name} must be a non-negative integer")
+    if value < 0:
+        raise ValueError(f"{field_name} must be a non-negative integer")
     return value
 
 

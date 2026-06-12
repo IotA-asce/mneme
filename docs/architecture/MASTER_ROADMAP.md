@@ -105,11 +105,13 @@ Goal: the cognition layers behave as one mind on simulated input — still no RO
 - [x] Habituation (geometric novelty decay per exposure), inhibition-of-return (windowed priority penalty with explicit factor, safety-immune), opt-in curiosity scan targets during idle, and bounded attention state history.
 - [x] Exit: attention traces over scripted scenarios match documented expectations (`tests/test_attention_v1.py`); v0 behavior preserved (existing tests unchanged). See `docs/attention/ATTENTION_MANAGER.md`.
 
-### M2.4 Executive v1
+### M2.4 Executive v1 — complete (2026-06-12)
 
-- Richer arbitration: goal stack, interruption/resumption, response timing (when to speak vs wait), memory-informed intents (use retrieved facts/episodes in decisions), explicit idle behaviors.
-- Executive consumes `MemoryBundle` warnings (conflicts, empty results) in its decisions.
-- Exit: preemption, resumption, timing, and memory-informed behavior covered by deterministic tests.
+- [x] Goal stack with safety-driven suspension and post-recovery resumption; intents carry goal context.
+- [x] Response timing gate (`min_response_delay_ms`, opt-in) — LISTEN/`awaiting_turn_completion` until the turn settles.
+- [x] Memory-informed RESPOND_TO_USER: retrieval with cue-token fallback, ID-only memory payloads, `needs_clarification` from conflicting-fact warnings, full bundle on `last_memory_bundle`.
+- [x] Deterministic idle behavior rotation.
+- [x] Exit: preemption, resumption, timing, and memory-informed behavior covered by deterministic tests (`tests/test_executive_v1.py`); v0 defaults preserved.
 
 ### M2.5 Dialogue planner v0 (intent-level)
 
