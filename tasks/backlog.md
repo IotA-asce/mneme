@@ -132,12 +132,15 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add deterministic Attention Manager v0 that publishes attention state
 - [x] Add attention dwell/lock and target expiry behavior
 - [x] Add attention priority explanations for ranked targets
+- [x] Add deterministic Executive v0 that publishes intent only
+- [x] Add Executive v0 priority/preemption and degraded-mode tests
 - [x] Add scenario replay runbook and fixture format
 - [x] Document local runtime boundaries
 - [ ] Align Python models with interface drafts
 - [ ] Add JSON serialization helpers for future wrappers
 - [ ] Add adapters between local runtime events and interface drafts
 - [ ] Add skill-level gaze consumer for attention state
+- [ ] Add skill dispatcher that consumes executive intents through explicit skill interfaces
 - [ ] Document future ROS node boundaries in implementation-facing docs
 - [ ] Keep hardware and actuator control out of V1 memory prototype
 
@@ -148,6 +151,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add current roadmap document
 - [x] Add local runtime architecture document
 - [x] Add Attention Manager v0 documentation
+- [x] Add Executive v0 documentation
 - [x] Add local development runbook
 - [x] Add memory CLI runbook
 - [x] Add scenario replay runbook
