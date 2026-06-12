@@ -86,6 +86,18 @@ class MemorySummaryRecord:
         if self.created_ts is not None:
             self.created_ts = validate_timestamp(self.created_ts, "created_ts")
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "summary_id": self.summary_id,
+            "summary_type": self.summary_type,
+            "scope_key": self.scope_key,
+            "summary": self.summary,
+            "confidence": self.confidence,
+            "start_ts": self.start_ts,
+            "end_ts": self.end_ts,
+            "created_ts": self.created_ts,
+        }
+
 
 @dataclass(slots=True)
 class FactConflictReport:
@@ -843,6 +855,21 @@ class MemoryStore:
             LIMIT ?
             """,
             (*params, limit),
+        ).fetchall()
+        return [self._memory_summary_from_row(row) for row in rows]
+
+    def search_memory_summaries(self, text: str, limit: int = 5) -> list[MemorySummaryRecord]:
+        limit = _positive_int(limit, "limit")
+        like = f"%{text.lower()}%"
+        rows = self.conn.execute(
+            """
+            SELECT *
+            FROM memory_summary
+            WHERE lower(summary) LIKE ? OR lower(scope_key) LIKE ?
+            ORDER BY created_ts DESC, summary_id ASC
+            LIMIT ?
+            """,
+            (like, like, limit),
         ).fetchall()
         return [self._memory_summary_from_row(row) for row in rows]
 

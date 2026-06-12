@@ -58,7 +58,7 @@ Exit criteria:
 
 Goal: move beyond simple free-text lookup while preserving the current simple API.
 
-Status: Implemented for facts. Episode time-window/topic retrieval remains future work.
+Status: Implemented for facts. Episode time-window retrieval is implemented (`get_episodes_in_window`); topic-specific episode retrieval remains future work.
 
 Deliverables:
 
@@ -92,20 +92,21 @@ Exit criteria:
 
 Goal: make retrieval cue-based while staying local and deterministic.
 
-Status: Implemented for facts and episodes. Summaries remain future work because summary retrieval is not implemented yet.
+Status: Implemented for facts, episodes, and memory summaries.
 
 Deliverables:
 
 - [x] Reranking based on context match, entity match, recency, salience, confidence, source type, and retrieval history where available.
 - [x] Use of `MemoryQuery.entities`; `MemoryQuery.tags` is already supported for fact retrieval.
-- Retrieval warnings for empty, suppressed, or conflicting memory results.
+- [x] Retrieval warnings for empty, suppressed, or conflicting memory results.
+- [x] Summary retrieval and ranking through `MemoryBundle.summaries`.
 - [x] Tests for rank order and ranking explanations.
-- Tests for provenance summary derived from stored support links.
+- [x] Tests for provenance summary derived from stored support links.
 
 Exit criteria:
 
 - [x] Retrieval order is explainable and tested.
-- Queries for the same topic/person return stable, relevant bundles.
+- [x] Queries for the same topic/person return stable, relevant bundles.
 
 ## Phase 5 — Minimal Consolidation
 
