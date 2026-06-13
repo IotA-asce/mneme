@@ -1,13 +1,13 @@
 # Repository Status
 
-Date: 2026-06-13
+Date: 2026-06-14
 Status: Current repository capability audit
 
 This audit records what the repository actually implements today versus what the design documents describe for the broader Mneme architecture.
 
 ## Current Implementation
 
-The repository currently implements a local Python virtual-head prototype with deterministic memory, cognition, live-perception adapter contracts, virtual conversational presence, and the Stage 6 Local Living Lab foundation. It does not control physical hardware, run ROS 2 nodes, use a vector database, call cloud LLM services, run a local LLM dialogue model, or bundle local model files as required assets.
+The repository currently implements a local Python virtual-head prototype with deterministic memory, cognition, live-perception adapter contracts, virtual conversational presence, and the Stage 6 Local Living Lab foundation. It does not control physical hardware, run ROS 2 nodes, use a vector database, call cloud LLM services, let a local LLM own planning/memory/safety, or bundle local model files as required assets.
 
 Implemented foundations:
 
@@ -88,6 +88,7 @@ Implemented memory code:
 - Stage 6 browser UI: `mneme ui` serves a stdlib local dashboard that reads runtime/avatar/cognition snapshots, renders state, submits typed user input, refreshes the local device inventory, saves preferred camera/microphone/speaker selections, and can show local model status without owning cognition.
 - Stage 6 device preferences: `.local/runtime_preferences.json` stores selected camera, microphone, and speaker IDs. `mneme ui` saves the file; `mneme run` and `mneme ui` load it on future runs, while terminal `--camera-device-id`, `--microphone-device-id`, and `--speaker-device-id` flags can override selections for one run.
 - Stage 6 evaluation logging: `EvaluationLogger`, `mneme run --evaluation-log`, and `mneme eval summarize` record JSONL daily-driver metrics for response generation, memory recall signal, skill-status count, safety-event count, and barge-in count.
+- M9.1 live-speech hardening: `SpeechLoopDiagnostics` tracks ASR/no-speech/error outcomes, response generation, duplicate-response suppression, TTS status, barge-ins, latency fields, and stuck-state signals in runtime snapshots and evaluation logs. `mneme eval speech --json` runs fake-backed soak fixtures for normal speech, no speech, ASR failure, TTS failure, barge-in, duplicate-response prevention, and stuck speaking.
 - M8/M10 memory review loop: `turn_understanding.py` classifies correction, forget, confirmation, contradiction, explanation, memory-review, self, capability, and status turns before dialogue planning. `memory_review.py` now creates durable review records and explicit apply/reject flows for corrections, forget requests, confirmations, and contradiction review.
 - M8 CLI/UI evidence: `mneme eval cognition --json` runs the bundled cognition suite, `mneme eval cognition --fixture ... --json` still runs one fixture, `mneme eval capability --json` reports conservative capability evidence, `mneme review ...` exposes supervised review actions, and `mneme ui` shows latest review state without owning cognition.
 
@@ -105,9 +106,9 @@ The following areas exist but are not complete enough to count as full phase com
 - Meta-memory: typed storage methods exist for records, provenance JSON, speakability, and retrieval history updates.
 - Config: `config/memory.yaml` records salience defaults that can be loaded when requested.
 - Conversational presence: virtual speech, avatar state, virtual skill status, local TTS command integration, and a lightweight local browser UI are implemented. Polished graphical avatar rendering, speaker device routing, and physical skills remain outside the repo-owned implementation.
-- Native local speech and vision: optional wrappers exist and are unit-tested with fake devices/models. Real microphone permissions, faster-whisper model placement, Kokoro compatibility, camera permissions, MediaPipe model quality, and end-to-end latency are manual/local validation tasks rather than CI-verified behavior.
+- Native local speech and vision: optional wrappers exist and are unit-tested with fake devices/models. Live speech now has fake-backed soak fixtures and runtime diagnostics. Real microphone permissions, faster-whisper model placement, Kokoro compatibility, camera permissions, MediaPipe model quality, and end-to-end latency are manual/local validation tasks rather than CI-verified behavior.
 - Local model management: the registry and verification CLI exist. File-managed model entries intentionally do not auto-download model files until exact sources/licenses/checksums are documented. Ollama-managed model entries are listed in the registry but verified through `mneme cognition check`.
-- Cognitive capability roadmap: `docs/architecture/COGNITIVE_CAPABILITY_ROADMAP.md` defines the local model integration path, animal-reference capability ladder, benchmark harness, and physical embodiment readiness gate. M7.1-M7.4 are implemented as local model readiness, context building, model wording, and runtime/UI status. M8 now has benchmark, turn-understanding, memory-review, and capability-evidence foundations; broad soak benchmarks remain future work.
+- Cognitive capability roadmap: `docs/architecture/COGNITIVE_CAPABILITY_ROADMAP.md` defines the local model integration path, animal-reference capability ladder, benchmark harness, and physical embodiment readiness gate. M7.1-M7.4 are implemented as local model readiness, context building, model wording, and runtime/UI status. M8 now has benchmark, turn-understanding, memory-review, and capability-evidence foundations. M9.1 fake-backed live-speech soak checks exist; real daily-driver soak logs remain future work.
 
 ## Documented But Not Implemented
 
@@ -196,7 +197,7 @@ The test suite currently contains focused model, salience, storage, and retrieva
 - `tests/test_stage6_local_living_lab.py::test_opencv_camera_backend_uses_injected_cv2_and_face_detector`
 - `tests/test_stage6_local_living_lab.py::test_evaluation_logger_records_and_summarizes_turn`
 
-Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, supervised memory review apply/reject flows, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, bounded sensory echo/working-memory behavior, deterministic scenario replay, fake peripheral discovery, injected-output real peripheral discovery parsing, command-adapter live perception workers, perception fusion diagnostics, bounded frame archive retention, typed virtual-head runtime, virtual conversational presence, Stage 6 fake local audio/vision/model backends, local model CLI, local model context building, model dialogue realization/fallback validation, deterministic turn understanding, memory-backed response explanation, cognitive benchmark suite scoring, conservative capability ladder reports, browser UI rendering, and evaluation logging. There are no CI tests for real microphone/camera devices, real ASR/TTS/vision models, physical skill controllers, actuator bridges, ROS adapters, or cross-process runtime behavior.
+Coverage is focused on model validation, salience decisions, raw trace/episode/fact/summary writes, migration tracking, meta-memory storage, provenance normalization, speakability filtering, retrieval history updates, working context snapshots, structured fact retrieval, deterministic retrieval reranking, semantic fact conflict handling, supervised memory review apply/reject flows, basic episode retrieval, repeated-episode consolidation summaries, consolidation decay metadata, retrieval include flags, the high-level memory API/CLI conversation-like flow, local runtime event publication/subscription behavior, bounded sensory echo/working-memory behavior, deterministic scenario replay, fake peripheral discovery, injected-output real peripheral discovery parsing, command-adapter live perception workers, perception fusion diagnostics, bounded frame archive retention, typed virtual-head runtime, virtual conversational presence, Stage 6 fake local audio/vision/model backends, local speech diagnostics and fake-backed speech soak fixtures, local model CLI, local model context building, model dialogue realization/fallback validation, deterministic turn understanding, memory-backed response explanation, cognitive benchmark suite scoring, conservative capability ladder reports, browser UI rendering, and evaluation logging. There are no CI tests for real microphone/camera devices, real ASR/TTS/vision models, physical skill controllers, actuator bridges, ROS adapters, or cross-process runtime behavior.
 
 ## Verification Commands
 
@@ -227,14 +228,13 @@ There is no configured lint, typecheck, formatter, or build command beyond packa
 
 The safest next tasks should stay inside the Local Living Lab and avoid physical hardware, ROS runtime, required heavyweight dependencies, and broad refactors:
 
-1. Add live-speech interruption benchmarks and soak replay fixtures for barge-in, duplicate-response prevention, latency, and recovery.
+1. Manually validate `local-speech` on the current Mac: microphone permissions, faster-whisper model placement, local TTS playback, barge-in, no-speech handling, and no duplicate spoken responses.
 2. Manually validate `local-cognition` with the installed `qwen2.5:1.5b` model across a few real typed sessions and record latency/fallback behavior.
-3. Manually validate `local-speech` on the current Mac: microphone permissions, faster-whisper model placement, local TTS playback, barge-in, and no duplicate spoken responses.
-4. Manually validate `local-vision`: camera permissions, OpenCV frame capture, MediaPipe face/person observations, and anonymous-session person continuity.
-5. Add redacted daily-driver logs and soak replay fixtures from real local runs.
-6. Add person-scoped continuity review after live vision/person tracking is validated.
-7. Improve the local browser UI from dashboard to expressive virtual head while keeping cognition outside the UI.
-8. Keep physical embodiment work deferred until explicit hardware safety planning resumes.
+3. Manually validate `local-vision`: camera permissions, OpenCV frame capture, MediaPipe face/person observations, and anonymous-session person continuity.
+4. Add redacted daily-driver logs and replayable soak scenarios from real local runs.
+5. Add person-scoped continuity review after live vision/person tracking is validated.
+6. Improve the local browser UI from dashboard to expressive virtual head while keeping cognition outside the UI.
+7. Keep physical embodiment work deferred until explicit hardware safety planning resumes.
 
 ## Current Risk
 

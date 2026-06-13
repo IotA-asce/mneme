@@ -79,9 +79,11 @@ Stage 6 starts the brain-first local loop:
 - `mneme cognition check` verifies the local Ollama service, checks whether `qwen2.5:1.5b` is installed, and can run one bounded non-streaming probe.
 - `mneme run --profile local-cognition` can use the checked Ollama model as a bounded wording layer after deterministic memory retrieval and dialogue planning.
 - `mneme run --profile local-speech` opts into native microphone/ASR/TTS backends when optional packages and local models are available.
+- Live speech diagnostics track ASR/no-speech/error outcomes, response generation, TTS status, barge-ins, duplicate suppressions, latency fields, and stuck-state signals in runtime JSON.
 - `mneme run --profile local-vision` opts into OpenCV camera capture and optional MediaPipe face/person observations.
 - `mneme ui` serves a lightweight browser UI that visualizes avatar/runtime state, accepts typed input, refreshes the local device inventory, and saves preferred camera/microphone/speaker selections.
-- `--evaluation-log` and `mneme eval summarize` record local daily-driver metrics for later brain-loop evaluation.
+- `--evaluation-log` and `mneme eval summarize` record local daily-driver metrics for later brain-loop evaluation, including speech-loop counters when present.
+- `mneme eval speech` runs fake-backed live-speech soak fixtures for no-speech handling, ASR failure, TTS failure, barge-in, duplicate-response prevention, and stuck-state detection.
 - `mneme eval cognition` runs the bundled deterministic cognitive benchmark suite, and `mneme eval capability` reports conservative capability ladder evidence.
 - User turns are classified before dialogue planning, so Mneme can distinguish remembering, recall, correction, forget, confirmation, self/capability/status, and explanation questions.
 - “Why did you say that?” can explain the memory refs used by the previous response when the answer was memory-backed.
@@ -105,7 +107,7 @@ The base package intentionally does not install OpenCV, face models, VAD, ASR, o
 - Local LLM-backed wording is implemented as an opt-in layer. It does not own intent, memory selection, safety, or confirmed memory writes.
 - Real-device quality has not been tuned in CI; local mic/camera permissions, model speed, and audio playback must be validated on your machine.
 - The browser UI is a lightweight local dashboard, not a polished graphical avatar renderer.
-- Long-running process supervision, private-log redaction workflows, person-continuity evaluation, and live speech/vision soak tests are not implemented yet.
+- Long-running process supervision, private-log redaction workflows, person-continuity evaluation, real-device live speech/vision soak sessions, and polished avatar rendering are not implemented yet.
 - Physical skill controllers and actuator bridge.
 - Physical hardware control, GPIO, serial, PWM, firmware flashing, or ROS runtime nodes.
 - Cloud LLM integration.
@@ -168,6 +170,110 @@ python -m pytest
 ```
 
 The current suite covers memory models, storage, migrations, salience, retrieval, provenance, conflicts, consolidation, decay, runtime events, working memory, scenario replay, world model, attention, executive behavior, dialogue planning, device discovery, live-perception adapters, conversational presence, Local Living Lab fake backends/model registry/UI/evaluation logging, and the virtual-head runtime.
+
+## Run Mneme Brain Locally
+
+Use this path when you want to run the current brain with memory, local cognition, the UI, review tools, speech/vision seams, and evaluation.
+
+1. Install and verify the base brain:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -e '.[dev]'
+mneme-memory init-db
+python scripts/dev_check.py
+```
+
+2. Check the local cognitive model. Ollama-managed models are not stored in git.
+
+```bash
+ollama pull qwen2.5:1.5b
+mneme cognition check --json
+```
+
+3. Run the typed local cognition loop:
+
+```bash
+mneme run --profile local-cognition --json --input "hello Mneme"
+mneme run --profile local-cognition --json \
+  --input "remember that I like green tea" \
+  --input "what do I like?" \
+  --input "why did you say that?"
+```
+
+4. Open the local browser UI:
+
+```bash
+mneme ui --cognition-profile local
+```
+
+Then open `http://127.0.0.1:8765`. Use **Refresh list** and **Save devices** to select camera, microphone, and speaker. Saved selections go to `.local/runtime_preferences.json` and are reused by future UI and terminal runs.
+
+5. Run local speech after installing optional speech extras and placing ASR/TTS models:
+
+```bash
+python -m pip install -e '.[local-speech]'
+mneme run \
+  --profile local-speech \
+  --asr-model .local/models/faster-whisper-base \
+  --record-ms 3000 \
+  --json
+```
+
+For macOS speech output without Kokoro, use the command adapter:
+
+```bash
+mneme run --profile local-speech --tts-command "say {text}" --json
+```
+
+6. Run local vision after installing optional vision extras:
+
+```bash
+python -m pip install -e '.[vision-local]'
+mneme run --profile local-vision --face-backend mediapipe --json
+```
+
+7. Run combined local-lab mode with explicit local cognition:
+
+```bash
+mneme run \
+  --profile local-lab \
+  --cognition-backend ollama \
+  --cognition-model qwen2.5:1.5b \
+  --json
+```
+
+8. Review supervised memory changes:
+
+```bash
+mneme review list --json
+mneme review show --review-id review_... --json
+mneme review apply --review-id review_... --reason "user approved" --json
+mneme review reject --review-id review_... --reason "not correct" --json
+mneme review explain --memory-kind fact --memory-id fact_... --json
+```
+
+9. Evaluate cognition and speech reliability:
+
+```bash
+mneme eval cognition --json
+mneme eval capability --json
+mneme eval speech --json
+mneme run --json --input "hello Mneme" --evaluation-log .local/evaluation/daily_driver.jsonl
+mneme eval summarize --path .local/evaluation/daily_driver.jsonl --json
+```
+
+Local files to know:
+
+- `.local/android_brain_memory.sqlite3` - default memory database.
+- `.local/runtime_preferences.json` - saved camera/mic/speaker choices.
+- `.local/models/` - file-managed local models; not committed.
+- `.local/evaluation/` - daily-driver JSONL metrics.
+- `.local/perception_frames/` and `.local/audio/` - bounded local media artifacts when live profiles are used.
+
+Current limits: no physical hardware control, no required cloud dependency, no autonomous confirmed-memory writes from model output, and CI uses fake devices/models for live speech and vision behavior. Real microphone, camera, ASR, TTS, and speaker quality still need manual validation on your machine.
 
 ## Memory CLI
 
@@ -343,10 +449,11 @@ mneme run --json --input "hello Mneme" --evaluation-log .local/evaluation/daily_
 mneme eval summarize --path .local/evaluation/daily_driver.jsonl --json
 ```
 
-Run the local cognitive benchmark suite and capability evidence report:
+Run the local cognitive benchmark suite, speech soak suite, and capability evidence report:
 
 ```bash
 mneme eval cognition --json
+mneme eval speech --json
 mneme eval capability --json
 ```
 

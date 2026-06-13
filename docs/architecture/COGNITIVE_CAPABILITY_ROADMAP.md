@@ -407,7 +407,7 @@ Implemented foundation:
 
 Goal: run Mneme locally in a useful everyday loop with microphone, speaker, camera, local model, and memory.
 
-### M9.1 Speech Loop Hardening
+### M9.1 Speech Loop Hardening — fake-backed foundation implemented (2026-06-14)
 
 Modify:
 
@@ -427,7 +427,9 @@ Add:
 
 Exit criteria:
 
-- 30-minute local speech session with no duplicate responses and bounded latency.
+- Fake-backed soak fixtures pass through `mneme eval speech --json`.
+- Runtime snapshots and evaluation logs expose speech-loop diagnostics.
+- Manual remaining gate: a 30-minute local speech session with no duplicate responses and bounded latency.
 
 ### M9.2 Vision and Person Continuity
 

@@ -1,7 +1,7 @@
 # Local Living Lab Runbook
 
-Status: Stage 6 foundation
-Date: 2026-06-13
+Status: Stage 6 foundation with M9.1 fake-backed speech hardening
+Date: 2026-06-14
 
 The Local Living Lab is Mneme's brain-first path: run the cognition loop on the current computer with local microphone, speaker, camera, local models, memory, attention, dialogue, virtual presence, and evaluation logs. It does not control physical robot hardware.
 
@@ -69,6 +69,29 @@ Expected flow:
 5. TTS or the simulated speech backend publishes skill status.
 
 Failure should be explicit. Missing optional packages, missing model files, microphone permission failures, empty speech, slow ASR, and TTS errors should surface as failed observations/status rather than silent success.
+
+Runtime JSON includes a `speech_loop` snapshot for speech reliability:
+
+- latest speech worker report (`transcribed`, `no_speech`, `no_microphone`, `capture_error`),
+- ASR, response, and TTS latency fields when available,
+- duplicate-response suppression count,
+- barge-in count,
+- TTS completion/failure/preemption counts,
+- stuck-state count and latest failure reason.
+
+Run the fake-backed speech soak suite before manual device testing:
+
+```bash
+mneme eval speech --json
+```
+
+Run one fixture while debugging:
+
+```bash
+mneme eval speech --fixture tests/fixtures/speech/barge_in.yaml --json
+```
+
+The soak suite uses fake speech/TTS backends and does not require real devices, ASR models, or speakers.
 
 ## Local Vision Loop
 
@@ -147,7 +170,30 @@ Summarize:
 mneme eval summarize --path .local/evaluation/daily_driver.jsonl --json
 ```
 
-Current metrics cover response generation, memory recall signal, skill status count, safety event count, and barge-in count. Future Stage 7 work should add redaction, soak replay, latency histograms, correction rate, contradiction rate, repeated-visitor continuity, and stuck-state counts.
+Current metrics cover response generation, memory recall signal, skill status count, safety event count, speech-loop state, ASR/response/TTS latency fields, no-speech count, capture error count, TTS failure count, duplicate suppression count, barge-in count, and stuck-state count. Future work should add private-log redaction, replay from real local runs, latency histograms, correction rate, contradiction rate, repeated-visitor continuity, and bounded procedural adaptation.
+
+## Manual Local Speech Acceptance
+
+After optional dependencies and local model files are available, manually validate:
+
+```bash
+mneme run \
+  --profile local-speech \
+  --asr-model .local/models/faster-whisper-base \
+  --tts-command "say {text}" \
+  --evaluation-log .local/evaluation/daily_driver.jsonl \
+  --json
+```
+
+Check:
+
+- microphone permission is granted,
+- ASR returns a transcript with bounded latency,
+- no speech produces `no_speech` instead of a response,
+- TTS playback succeeds or reports a structured failure,
+- speaking over Mneme increments `barge_ins`,
+- repeated live transcripts inside the duplicate window do not create duplicate spoken replies,
+- `mneme eval summarize --path .local/evaluation/daily_driver.jsonl --json` shows the expected speech metrics.
 
 ## Safety Boundaries
 

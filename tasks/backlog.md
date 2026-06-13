@@ -154,6 +154,9 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add UI device inventory refresh when dropdowns only show Auto
 - [x] Ground deterministic dialogue fallbacks in memory/current turn context
 - [x] Add local evaluation JSONL logger and `mneme eval summarize`
+- [x] Add live-speech diagnostics for ASR/no-speech/errors, duplicate suppression, TTS status, barge-in, latency, and stuck states
+- [x] Add fake-backed `mneme eval speech` soak fixtures for speech hardening
+- [x] Extend evaluation logs with speech-loop counters and latency fields
 - [ ] Validate local-speech with real microphone, ASR model files, TTS playback, and barge-in on the current Mac
 - [ ] Validate local-vision with real camera permission, OpenCV frame capture, and MediaPipe face/person observations
 - [ ] Improve local browser UI from dashboard to expressive virtual head

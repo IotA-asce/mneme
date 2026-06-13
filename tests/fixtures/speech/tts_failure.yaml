@@ -1,0 +1,18 @@
+name: tts_failure
+description: TTS errors fail the speech skill without losing the planned response.
+tts:
+  fail_on_calls: [1]
+speech_inputs:
+  - speaker: user
+    transcript: say hello back
+    confidence: 0.9
+steps:
+  - advance_ms: 1000
+    expect:
+      speech_status: transcribed
+      utterance_count: 1
+      responses_generated_total: 1
+      tts_failures_total: 1
+      current_state: degraded
+      latest_failure_contains: tts_failed
+

@@ -57,6 +57,7 @@ from .runtime import (
 )
 from .runtime_preferences import RuntimeDevicePreferences, RuntimePreferencesStore
 from .self_model import ProceduralMemory
+from .speech_loop import SpeechLoopDiagnostics
 from .simulation import ScenarioReplayRunner
 from .turn_understanding import TurnClassification, TurnType, classify_turn
 from .working_memory import SensoryEchoBuffer, WorkingMemory
@@ -269,6 +270,7 @@ class MnemeRuntime:
             if enable_virtual_presence and self.virtual_skill_runner is not None
             else None
         )
+        self.speech_loop = SpeechLoopDiagnostics()
 
         self._event_cursor = 0
         self._utterance_cursor = 0
@@ -295,12 +297,15 @@ class MnemeRuntime:
         if self.vision_worker is not None:
             self.vision_worker.tick(now_ms=now)
         if self.speech_worker is not None:
-            self.speech_worker.tick(now_ms=now)
+            speech_report = self.speech_worker.tick(now_ms=now)
+            if speech_report is not None:
+                self.speech_loop.record_capture_report(speech_report)
         if self.virtual_skill_runner is not None:
             self.virtual_skill_runner.tick(now_ms=now)
         self.context_windows.tick(now_ms=now)
         self.attention.idle_tick(now_ms=now)
         self.consolidation_daemon.tick(now_ms=now)
+        self.speech_loop.check_stuck_states(now_ms=now)
         return self._step_result(now)
 
     def process_user_utterance(
@@ -396,6 +401,7 @@ class MnemeRuntime:
                 "skills": self.virtual_skill_runner.stats if self.virtual_skill_runner is not None else None,
                 "coordinator": self.presence.stats if self.presence is not None else None,
             },
+            "speech_loop": self.speech_loop.to_dict(),
             "cognition": (
                 self.model_dialogue_realizer.status()
                 if self.model_dialogue_realizer is not None
@@ -474,6 +480,7 @@ class MnemeRuntime:
             self.avatar.attach_to_bus(self.bus)
         if self.virtual_skill_runner is not None:
             self.virtual_skill_runner.attach_to_bus(self.bus)
+        self.speech_loop.attach_to_bus(self.bus)
         self.executive.attach_to_bus(self.bus)
         self._subscriptions.append(
             self.bus.subscribe(
@@ -489,6 +496,20 @@ class MnemeRuntime:
         except ValueError:
             return
         self._enrich_review_intent(intent, event.timestamp)
+        dialogue_turn = _dialogue_turn_from_intent(intent)
+        dialogue_key = _dialogue_key(intent)
+        if dialogue_key is not None and dialogue_key in self._handled_dialogue_keys:
+            return
+        if (
+            dialogue_turn is not None
+            and self.speech_loop.should_suppress_response(
+                dialogue_turn,
+                timestamp=event.timestamp,
+            )
+        ):
+            if dialogue_key is not None:
+                self._handled_dialogue_keys.add(dialogue_key)
+            return
         plan = self.dialogue.plan(
             intent,
             bundle=self.executive.last_memory_bundle,
@@ -498,10 +519,7 @@ class MnemeRuntime:
             if self.presence is not None:
                 self.presence.handle_intent(intent, plan=None, timestamp=event.timestamp)
             return
-        dialogue_key = _dialogue_key(intent)
         if dialogue_key is not None:
-            if dialogue_key in self._handled_dialogue_keys:
-                return
             self._handled_dialogue_keys.add(dialogue_key)
         if self.model_dialogue_realizer is not None:
             context = build_cognitive_context(
@@ -536,6 +554,22 @@ class MnemeRuntime:
                     ],
                     "truncated": context.truncated,
                     "serialized_chars": context.serialized_chars(),
+                },
+            )
+        if dialogue_turn is not None:
+            self.speech_loop.record_response(
+                dialogue_turn,
+                plan,
+                timestamp=event.timestamp,
+            )
+            plan.content_slots = dict(
+                plan.content_slots,
+                speech_turn={
+                    "turn_id": self.speech_loop.latest_response["turn_id"]
+                    if self.speech_loop.latest_response
+                    else None,
+                    "source": dialogue_turn.get("source"),
+                    "event_id": dialogue_turn.get("event_id"),
                 },
             )
         self._utterances.append(
@@ -679,6 +713,11 @@ def _intent_turn_text(intent: ExecutiveIntent) -> str:
         if isinstance(text, str):
             return text
     return ""
+
+
+def _dialogue_turn_from_intent(intent: ExecutiveIntent) -> dict[str, Any] | None:
+    turn = intent.payload.get("dialogue_turn")
+    return dict(turn) if isinstance(turn, Mapping) else None
 
 
 def _turn_classification_from_intent(intent: ExecutiveIntent) -> TurnClassification | None:

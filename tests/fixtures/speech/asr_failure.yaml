@@ -1,0 +1,14 @@
+name: asr_failure
+description: ASR errors are surfaced as capture errors and degraded speech-loop state.
+speech_inputs:
+  - status: error
+    error: fixture_asr_timeout
+steps:
+  - advance_ms: 1000
+    expect:
+      speech_status: capture_error
+      current_state: degraded
+      utterance_count: 0
+      capture_errors_total: 1
+      latest_failure_contains: capture_error
+

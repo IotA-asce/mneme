@@ -1,0 +1,22 @@
+name: duplicate_response_guard
+description: Repeated live transcript text inside the duplicate window is not spoken twice.
+speech_inputs:
+  - speaker: user
+    transcript: hello Mneme
+    confidence: 0.9
+  - speaker: user
+    transcript: hello Mneme
+    confidence: 0.9
+steps:
+  - advance_ms: 1000
+    expect:
+      speech_status: transcribed
+      utterance_count: 1
+      responses_generated_total: 1
+  - advance_ms: 1000
+    expect:
+      speech_status: transcribed
+      utterance_count: 0
+      responses_generated_total: 1
+      duplicate_suppressions_total: 1
+
