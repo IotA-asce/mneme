@@ -4,6 +4,7 @@ import argparse
 import json
 import shlex
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -99,6 +100,23 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=1_000,
         help="Timestamp increment between scripted utterances.",
+    )
+    run.add_argument(
+        "--live",
+        action="store_true",
+        help="Continuously tick live perception/runtime workers instead of waiting for typed input.",
+    )
+    run.add_argument(
+        "--live-ticks",
+        type=int,
+        default=0,
+        help="Run this many live ticks, then exit. Useful for tests and smoke checks.",
+    )
+    run.add_argument(
+        "--live-sleep-ms",
+        type=int,
+        default=1_000,
+        help="Wall-clock delay between live ticks when --live is unbounded.",
     )
     run.add_argument(
         "--no-fake-devices",
@@ -377,15 +395,28 @@ def _run(args: argparse.Namespace) -> int:
                     evaluation_logger.record_turn(input_text=text, result=result_dict)
                 now += args.step_ms
                 outputs.append({"type": "tick", "result": runtime.tick(advance_ms=args.step_ms).to_dict()})
+        elif _should_run_live_loop(args):
+            outputs.extend(_live_loop(
+                runtime,
+                max_ticks=args.live_ticks or None,
+                step_ms=args.step_ms,
+                sleep_ms=args.live_sleep_ms,
+                evaluation_logger=evaluation_logger,
+                terminal=not args.json,
+            ))
         else:
-            outputs.extend(_interactive(runtime, evaluation_logger=evaluation_logger))
+            outputs.extend(_interactive(
+                runtime,
+                evaluation_logger=evaluation_logger,
+                terminal=not args.json,
+            ))
         outputs.append({"type": "shutdown", "snapshot": runtime.snapshot()})
     finally:
         runtime.close()
 
     if args.json:
         print(json.dumps(to_jsonable(outputs), indent=2, sort_keys=True))
-    else:
+    elif args.inputs:
         _print_terminal(outputs)
     return 0
 
@@ -788,9 +819,26 @@ def _interactive(
     runtime: MnemeRuntime,
     *,
     evaluation_logger: EvaluationLogger | None = None,
+    terminal: bool = True,
 ) -> list[dict[str, Any]]:
     outputs = []
-    print("Mneme virtual head. Type /quit to exit.", file=sys.stderr)
+    if terminal:
+        snapshot = runtime.snapshot()
+        devices = snapshot.get("devices") or {}
+        counts = devices.get("available_counts", {})
+        print("Mneme virtual head. Type a message and press Enter. Type /quit to exit.", file=sys.stderr)
+        print(
+            "Mode: typed terminal input. For continuous mic/camera ticking use "
+            "`mneme run --live` or `mneme run --profile local-lab --live`.",
+            file=sys.stderr,
+        )
+        if isinstance(counts, dict):
+            print(
+                f"devices camera={counts.get('camera', 0)} "
+                f"microphone={counts.get('microphone', 0)} "
+                f"speaker={counts.get('speaker', 0)}",
+                file=sys.stderr,
+            )
     for raw in sys.stdin:
         text = raw.strip()
         if not text:
@@ -802,8 +850,64 @@ def _interactive(
         outputs.append({"type": "turn", "input": text, "result": result_dict})
         if evaluation_logger is not None:
             evaluation_logger.record_turn(input_text=text, result=result_dict)
-        runtime.tick()
+        tick = runtime.tick()
+        outputs.append({"type": "tick", "result": tick.to_dict()})
+        if terminal:
+            _print_turn(result_dict)
     return outputs
+
+
+def _live_loop(
+    runtime: MnemeRuntime,
+    *,
+    max_ticks: int | None,
+    step_ms: int,
+    sleep_ms: int,
+    evaluation_logger: EvaluationLogger | None = None,
+    terminal: bool = True,
+) -> list[dict[str, Any]]:
+    if max_ticks is not None and max_ticks < 1:
+        raise ValueError("max_ticks must be positive when provided")
+    if step_ms < 1:
+        raise ValueError("step_ms must be positive")
+    if sleep_ms < 0:
+        raise ValueError("sleep_ms must be non-negative")
+    outputs: list[dict[str, Any]] = []
+    if terminal:
+        print("Mneme live loop is running. Press Ctrl-C to stop.", file=sys.stderr)
+    ticks = 0
+    try:
+        while max_ticks is None or ticks < max_ticks:
+            result = runtime.tick(advance_ms=step_ms)
+            result_dict = result.to_dict()
+            outputs.append({"type": "live_tick", "result": result_dict})
+            if evaluation_logger is not None:
+                for utterance in result_dict.get("utterances", []):
+                    if isinstance(utterance, dict):
+                        evaluation_logger.record_turn(
+                            input_text=_latest_user_turn_text(result_dict),
+                            result=result_dict,
+                        )
+                        break
+            if terminal:
+                _print_live_tick(result_dict)
+            ticks += 1
+            if max_ticks is None and sleep_ms:
+                time.sleep(sleep_ms / 1000)
+    except KeyboardInterrupt:
+        if terminal:
+            print("\nMneme live loop stopped.", file=sys.stderr)
+    return outputs
+
+
+def _should_run_live_loop(args: argparse.Namespace) -> bool:
+    if args.live or args.live_ticks > 0:
+        return True
+    if args.profile in {"local-speech", "local-vision", "local-lab"}:
+        return True
+    if args.camera_command or args.speech_command:
+        return True
+    return False
 
 
 def _print_payload(payload: dict[str, Any], *, json_mode: bool) -> None:
@@ -828,11 +932,47 @@ def _print_terminal(outputs: list[dict[str, Any]]) -> None:
             counts = item["devices"]["available_counts"]
             print(f"devices camera={counts['camera']} microphone={counts['microphone']} speaker={counts['speaker']}")
         elif item["type"] == "turn":
-            for utterance in item["result"]["utterances"]:
-                print(f"mneme: {utterance['text']}")
+            _print_turn(item["result"])
+        elif item["type"] == "live_tick":
+            _print_live_tick(item["result"])
         elif item["type"] == "shutdown":
             executive = item["snapshot"].get("executive") or {}
             print(f"state: {executive.get('intent_type', 'idle')}")
+
+
+def _print_turn(result: dict[str, Any]) -> None:
+    for utterance in result.get("utterances", []):
+        if isinstance(utterance, dict):
+            print(f"mneme: {utterance.get('text', '')}", flush=True)
+
+
+def _print_live_tick(result: dict[str, Any]) -> None:
+    _print_turn(result)
+    snapshot = result.get("snapshot", {})
+    if not isinstance(snapshot, dict):
+        return
+    speech_loop = snapshot.get("speech_loop", {})
+    if not isinstance(speech_loop, dict):
+        return
+    report = speech_loop.get("latest_capture_report")
+    if not isinstance(report, dict):
+        return
+    status = report.get("status")
+    if status in {"capture_error", "no_microphone"}:
+        print(f"speech: {status} ({speech_loop.get('latest_failure_reason')})", flush=True)
+
+
+def _latest_user_turn_text(result: dict[str, Any]) -> str:
+    snapshot = result.get("snapshot", {})
+    working = snapshot.get("working_memory", {}) if isinstance(snapshot, dict) else {}
+    turns = working.get("recent_dialogue_turns", []) if isinstance(working, dict) else []
+    if isinstance(turns, list) and turns:
+        latest = turns[-1]
+        if isinstance(latest, dict):
+            text = latest.get("text")
+            if isinstance(text, str):
+                return text
+    return ""
 
 
 if __name__ == "__main__":

@@ -314,6 +314,23 @@ mneme run --input "hello Mneme"
 mneme run --json --input "remember that I like tea" --input "what do I like"
 ```
 
+Plain interactive mode waits for keyboard input and prints a response after each line:
+
+```bash
+mneme run
+# type: hello Mneme
+# type: /quit
+```
+
+Use live ticking when you want Mneme to keep polling configured perception workers instead of waiting on the keyboard:
+
+```bash
+mneme run --live
+mneme run --live --live-ticks 5 --json
+```
+
+Plain `mneme run` does not open the microphone or camera. Use `--live` with `--profile local-speech`, `--profile local-vision`, or `--profile local-lab` after optional dependencies and model files are configured.
+
 Run with simulated speech output visible in JSON:
 
 ```bash
@@ -413,6 +430,7 @@ mneme run \
   --asr-model .local/models/faster-whisper-base \
   --asr-device cpu \
   --asr-compute-type int8 \
+  --live \
   --record-ms 3000 \
   --json
 ```

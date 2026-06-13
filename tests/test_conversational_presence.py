@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import io
 import json
 from pathlib import Path
+import sys
 from typing import Sequence
 
 from android_brain_memory import (
@@ -240,3 +242,42 @@ def test_mneme_run_tts_command_json_output(tmp_path, capsys):
     assert outputs
     assert outputs[-1]["status"] == "spoken"
     assert outputs[-1]["voice"] == "soft"
+
+
+def test_mneme_run_interactive_prints_typed_response(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(sys, "stdin", io.StringIO("hello Mneme\n/quit\n"))
+
+    exit_code = mneme_main([
+        "--db",
+        str(tmp_path / "memory.sqlite3"),
+        "--migrations",
+        str(MIGRATIONS),
+        "run",
+    ])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "mneme:" in captured.out
+    assert "state:" not in captured.out
+    assert "typed terminal input" in captured.err
+
+
+def test_mneme_run_live_ticks_speech_without_stdin(tmp_path, capsys):
+    exit_code = mneme_main([
+        "--db",
+        str(tmp_path / "memory.sqlite3"),
+        "--migrations",
+        str(MIGRATIONS),
+        "run",
+        "--json",
+        "--live-ticks",
+        "1",
+        "--speech-command",
+        "printf hello",
+    ])
+
+    assert exit_code == 0
+    output = json.loads(capsys.readouterr().out)
+    live_tick = next(item for item in output if item["type"] == "live_tick")
+    assert live_tick["result"]["utterances"]
+    assert live_tick["result"]["snapshot"]["speech_loop"]["counters"]["transcripts"] == 1
