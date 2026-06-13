@@ -266,6 +266,9 @@ class MnemeRuntime:
     def start(self) -> PeripheralSnapshot:
         return self.discovery.scan_now(now_ms=self._now_ms())
 
+    def refresh_devices(self) -> PeripheralSnapshot:
+        return self.discovery.scan_now(now_ms=self._now_ms())
+
     def tick(self, *, advance_ms: int = DEFAULT_TICK_MS) -> RuntimeStepResult:
         if isinstance(self.clock, RuntimeClock):
             now = self.clock.advance(advance_ms)

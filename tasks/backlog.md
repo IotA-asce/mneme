@@ -151,10 +151,13 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add clean minimal local UI state surface
 - [x] Add UI camera/microphone/speaker selection
 - [x] Persist selected local devices for future UI and terminal runs
+- [x] Add UI device inventory refresh when dropdowns only show Auto
+- [x] Ground deterministic dialogue fallbacks in memory/current turn context
 - [x] Add local evaluation JSONL logger and `mneme eval summarize`
 - [ ] Validate local-speech with real microphone, ASR model files, TTS playback, and barge-in on the current Mac
 - [ ] Validate local-vision with real camera permission, OpenCV frame capture, and MediaPipe face/person observations
 - [ ] Improve local browser UI from dashboard to expressive virtual head
+- [ ] Add local model-backed response realization behind the dialogue planner contract
 - [ ] Add redacted daily-driver logs and soak replay fixtures
 - [ ] Add richer evaluation metrics for latency, correction rate, contradiction rate, and stuck states
 - [x] Add ROS-style interface drafts

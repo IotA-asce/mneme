@@ -64,8 +64,10 @@ HTML_TEMPLATE = """<!doctype html>
     input, select { width: 100%; border: 1px solid var(--line); background: var(--field); color: var(--ink); border-radius: 6px; padding: 10px 11px; font: inherit; }
     button { border: 1px solid var(--ink); background: var(--ink); color: var(--paper); border-radius: 6px; padding: 10px 14px; font: inherit; font-weight: 620; cursor: pointer; }
     button.secondary { background: transparent; color: var(--ink); }
+    .device-actions { display: flex; gap: 8px; }
     .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 18px; }
     .devices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; }
+    .device-status { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
     label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
     label span { color: var(--muted); }
     pre { margin: 0; background: #211f1b; color: #f8f3e8; border-radius: 8px; padding: 14px; overflow: auto; max-height: 42vh; font-size: 12px; line-height: 1.45; }
@@ -104,8 +106,12 @@ HTML_TEMPLATE = """<!doctype html>
         <label><span>Camera</span>$camera_select</label>
         <label><span>Microphone</span>$microphone_select</label>
         <label><span>Speaker</span>$speaker_select</label>
-        <button class="secondary" type="submit">Save devices</button>
+        <div class="device-actions">
+          <button class="secondary" type="submit" name="action" value="save">Save devices</button>
+          <button class="secondary" type="submit" name="action" value="refresh">Refresh list</button>
+        </div>
       </form>
+      <p class="device-status" data-bind="device_status">$device_status</p>
     </section>
     <section class="panel">
       <h2>Runtime</h2>
@@ -130,6 +136,47 @@ HTML_TEMPLATE = """<!doctype html>
       var node = document.querySelector('[data-bind="' + name + '"]');
       if (node) node.textContent = text;
     }
+    function devicesFor(kind, state) {
+      var inventory = state.devices && Array.isArray(state.devices.devices) ? state.devices.devices : [];
+      return inventory.filter(function (device) { return device.kind === kind; });
+    }
+    function renderSelect(kind, selectedId, state) {
+      var select = document.querySelector('select[data-device-kind="' + kind + '"]');
+      if (!select) return;
+      var current = select.value || selectedId || "";
+      var devices = devicesFor(kind, state);
+      select.innerHTML = "";
+      var auto = document.createElement("option");
+      auto.value = "";
+      auto.textContent = "Auto";
+      select.appendChild(auto);
+      devices.forEach(function (device) {
+        if (!device.device_id) return;
+        var option = document.createElement("option");
+        option.value = String(device.device_id);
+        option.textContent = String(device.label || device.device_id);
+        select.appendChild(option);
+      });
+      if (current && !devices.some(function (device) { return device.device_id === current; })) {
+        var missing = document.createElement("option");
+        missing.value = current;
+        missing.textContent = "Saved device unavailable (" + current + ")";
+        select.appendChild(missing);
+      }
+      select.value = current;
+    }
+    function renderDevices(state) {
+      var preferences = state.device_preferences || {};
+      renderSelect("camera", preferences.camera_device_id, state);
+      renderSelect("microphone", preferences.microphone_device_id, state);
+      renderSelect("speaker", preferences.speaker_device_id, state);
+      var counts = state.devices && state.devices.available_counts ? state.devices.available_counts : {};
+      var total = (counts.camera || 0) + (counts.microphone || 0) + (counts.speaker || 0);
+      setText(
+        "device_status",
+        total ? "Found " + total + " device option(s)." : "No devices found yet. Check permissions, then refresh the list."
+      );
+    }
     function renderState(state) {
       window.mnemeState = state;
       var avatar = value(["presence", "avatar"], {});
@@ -149,6 +196,7 @@ HTML_TEMPLATE = """<!doctype html>
       setText("memory_count", String(memoryCount));
       setText("timestamp", String(value(["timestamp"], 0)));
       setText("snapshot_json", JSON.stringify(state, null, 2));
+      renderDevices(state);
     }
     window.mnemeState = $raw_snapshot_json;
     renderState(window.mnemeState);
@@ -198,6 +246,7 @@ def render_snapshot_html(snapshot: dict[str, Any]) -> str:
             devices,
             _optional_text(preferences.get("speaker_device_id")),
         ),
+        device_status=html.escape(_device_status_text(snapshot)),
         memory_count=str(memory_count),
         timestamp=html.escape(str(snapshot.get("timestamp", 0))),
         snapshot_json=html.escape(snapshot_json),
@@ -231,6 +280,14 @@ def make_ui_handler(runtime: MnemeRuntime) -> type[BaseHTTPRequestHandler]:
 
         def _handle_devices(self) -> None:
             form = self._read_form()
+            action = form.get("action", ["save"])[0]
+            if action == "refresh":
+                if not hasattr(runtime, "refresh_devices"):
+                    self.send_error(HTTPStatus.NOT_FOUND)
+                    return
+                runtime.refresh_devices()
+                self._redirect_home()
+                return
             if not hasattr(runtime, "update_device_preferences"):
                 self.send_error(HTTPStatus.NOT_FOUND)
                 return
@@ -330,10 +387,24 @@ def _device_select(
                 html.escape(f"Saved device unavailable ({selected_id})"),
             )
         )
-    return '<select name="{}">{}</select>'.format(
+    return '<select name="{}" data-device-kind="{}">{}</select>'.format(
         html.escape(field_name, quote=True),
+        html.escape(kind, quote=True),
         "".join(options),
     )
+
+
+def _device_status_text(snapshot: dict[str, Any]) -> str:
+    devices = snapshot.get("devices")
+    if not isinstance(devices, dict):
+        return "No device scan has run yet. Refresh the list."
+    counts = devices.get("available_counts")
+    if not isinstance(counts, dict):
+        return "No devices found yet. Check permissions, then refresh the list."
+    total = sum(value for value in counts.values() if isinstance(value, int))
+    if total:
+        return f"Found {total} device option(s)."
+    return "No devices found yet. Check permissions, then refresh the list."
 
 
 def _form_value(form: dict[str, list[str]], key: str) -> str | None:
