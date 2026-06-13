@@ -59,6 +59,7 @@ from .runtime import (
     skill_status,
     world_state_update,
 )
+from .runtime_preferences import RuntimeDevicePreferences, RuntimePreferencesStore
 from .context_windows import ContextWindow, ContextWindowManager
 from .decay import DecayOptions, DecayReport, purge_memory, run_decay_once
 from .dialogue import DialogueActType, DialoguePlanner, UtterancePlan
@@ -209,6 +210,8 @@ __all__ = [
     "Subscription",
     "perception_observation",
     "world_state_update",
+    "RuntimeDevicePreferences",
+    "RuntimePreferencesStore",
     "attention_update",
     "memory_candidate_event",
     "memory_lifecycle_event",

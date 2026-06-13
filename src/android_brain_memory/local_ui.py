@@ -20,48 +20,142 @@ HTML_TEMPLATE = """<!doctype html>
   <title>Mneme Local Living Lab</title>
   <style>
     :root {
-      color-scheme: light dark;
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #111827;
-      color: #f9fafb;
+      color-scheme: light;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f6f4ef;
+      color: #161616;
+      --ink: #161616;
+      --muted: #6f6a60;
+      --line: #d9d3c8;
+      --paper: #fffdf8;
+      --field: #f1ede4;
+      --accent: #2f6f5e;
+      --warm: #c85f37;
     }
-    body { margin: 0; min-height: 100vh; display: grid; grid-template-columns: minmax(260px, 420px) 1fr; }
-    main { padding: 28px; }
-    aside { padding: 28px; background: #0f172a; border-right: 1px solid #334155; }
-    .face { width: 220px; height: 220px; border-radius: 50%; background: #1f2937; margin: 20px auto; position: relative; border: 4px solid #38bdf8; }
-    .eye { position: absolute; top: 78px; width: 28px; height: 18px; border-radius: 50%; background: #f8fafc; }
-    .eye.left { left: 58px; }
-    .eye.right { right: 58px; }
-    .mouth { position: absolute; left: 72px; right: 72px; bottom: 58px; height: 12px; border-radius: 999px; background: #f97316; }
-    .mouth.open { height: 28px; bottom: 50px; }
-    .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #1e293b; border: 1px solid #475569; margin: 2px 4px 2px 0; }
-    form { display: flex; gap: 8px; margin-top: 18px; }
-    input { flex: 1; padding: 10px 12px; border-radius: 6px; border: 1px solid #475569; background: #020617; color: #f8fafc; }
-    button { padding: 10px 14px; border-radius: 6px; border: 0; background: #38bdf8; color: #082f49; font-weight: 700; }
-    pre { background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 14px; overflow: auto; max-height: 70vh; }
-    @media (max-width: 800px) { body { grid-template-columns: 1fr; } aside { border-right: 0; border-bottom: 1px solid #334155; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; }
+    .shell { min-height: 100vh; display: grid; grid-template-columns: minmax(320px, 440px) 1fr; }
+    aside { padding: 32px; border-right: 1px solid var(--line); background: var(--paper); }
+    main { padding: 32px; display: grid; gap: 18px; align-content: start; }
+    h1, h2 { margin: 0; font-weight: 650; letter-spacing: 0; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    p { color: var(--muted); line-height: 1.45; }
+    .topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 6px rgba(47,111,94,.12); }
+    .face { width: min(68vw, 260px); aspect-ratio: 1; border-radius: 50%; margin: 34px auto 28px; position: relative; background: #e9e2d5; border: 1px solid var(--line); box-shadow: inset 0 -22px 48px rgba(22,22,22,.06); }
+    .face::after { content: ""; position: absolute; inset: 18px; border-radius: 50%; border: 1px solid rgba(22,22,22,.08); }
+    .eye { position: absolute; top: 38%; width: 15%; height: 9%; border-radius: 999px; background: var(--ink); transition: transform .25s ease, height .25s ease; }
+    .eye.left { left: 28%; }
+    .eye.right { right: 28%; }
+    .mouth { position: absolute; left: 37%; right: 37%; bottom: 31%; height: 3%; border-radius: 999px; background: var(--warm); transition: height .25s ease, bottom .25s ease; }
+    .mouth.open { height: 10%; bottom: 28%; }
+    .face[data-mode="speaking"] .mouth { height: 11%; bottom: 27%; animation: speak 900ms ease-in-out infinite; }
+    .face[data-mode="listening"] .eye { transform: translateY(-2px); }
+    .face[data-mode="thinking"] .eye.right { transform: translateY(4px); }
+    @keyframes speak { 0%, 100% { transform: scaleY(.6); } 45% { transform: scaleY(1.35); } }
+    .state-line { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 20px; }
+    .metric { padding: 10px 0; border-top: 1px solid var(--line); }
+    .metric span { display: block; color: var(--muted); font-size: 12px; }
+    .metric strong { display: block; min-height: 24px; font-size: 15px; font-weight: 620; overflow-wrap: anywhere; }
+    .reply { min-height: 70px; padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--ink); font-size: 18px; line-height: 1.4; }
+    form { margin: 0; }
+    .prompt { display: flex; gap: 8px; margin-top: 18px; }
+    input, select { width: 100%; border: 1px solid var(--line); background: var(--field); color: var(--ink); border-radius: 6px; padding: 10px 11px; font: inherit; }
+    button { border: 1px solid var(--ink); background: var(--ink); color: var(--paper); border-radius: 6px; padding: 10px 14px; font: inherit; font-weight: 620; cursor: pointer; }
+    button.secondary { background: transparent; color: var(--ink); }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 18px; }
+    .devices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; }
+    label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
+    label span { color: var(--muted); }
+    pre { margin: 0; background: #211f1b; color: #f8f3e8; border-radius: 8px; padding: 14px; overflow: auto; max-height: 42vh; font-size: 12px; line-height: 1.45; }
+    @media (max-width: 860px) {
+      .shell { grid-template-columns: 1fr; }
+      aside { border-right: 0; border-bottom: 1px solid var(--line); }
+      .devices { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
+  <div class="shell">
   <aside>
-    <h1>Mneme</h1>
-    <div class="face" aria-label="Mneme avatar">
+    <div class="topline"><h1>Mneme</h1><span class="status-dot" aria-hidden="true"></span></div>
+    <div class="face" data-mode="$mode_attr" aria-label="Mneme avatar">
       <div class="eye left"></div>
       <div class="eye right"></div>
       <div class="mouth $mouth_class"></div>
     </div>
-    <p><span class="pill">mode: $mode</span><span class="pill">gaze: $gaze</span></p>
-    <p><span class="pill">expression: $expression</span><span class="pill">blink: $blink</span></p>
-    <p>$latest_response</p>
-    <form method="post" action="/input">
+    <div class="state-line">
+      <div class="metric"><span>mode</span><strong data-bind="mode">$mode</strong></div>
+      <div class="metric"><span>attention</span><strong data-bind="gaze">$gaze</strong></div>
+      <div class="metric"><span>expression</span><strong data-bind="expression">$expression</strong></div>
+      <div class="metric"><span>voice</span><strong data-bind="voice">$voice</strong></div>
+    </div>
+    <div class="reply" data-bind="latest_response">$latest_response</div>
+    <form class="prompt" method="post" action="/input">
       <input name="text" autocomplete="off" placeholder="Say something to Mneme">
       <button type="submit">Send</button>
     </form>
   </aside>
   <main>
-    <h2>Runtime State</h2>
-    <pre>$snapshot_json</pre>
+    <section class="panel">
+      <h2>Devices</h2>
+      <form class="devices" method="post" action="/devices">
+        <label><span>Camera</span>$camera_select</label>
+        <label><span>Microphone</span>$microphone_select</label>
+        <label><span>Speaker</span>$speaker_select</label>
+        <button class="secondary" type="submit">Save devices</button>
+      </form>
+    </section>
+    <section class="panel">
+      <h2>Runtime</h2>
+      <div class="state-line">
+        <div class="metric"><span>memory rows</span><strong data-bind="memory_count">$memory_count</strong></div>
+        <div class="metric"><span>last update</span><strong data-bind="timestamp">$timestamp</strong></div>
+      </div>
+      <pre data-bind="snapshot_json">$snapshot_json</pre>
+    </section>
   </main>
+  </div>
+  <script>
+    function value(path, fallback) {
+      var current = window.mnemeState || {};
+      for (var i = 0; i < path.length; i += 1) {
+        if (!current || typeof current !== "object" || !(path[i] in current)) return fallback;
+        current = current[path[i]];
+      }
+      return current == null ? fallback : current;
+    }
+    function setText(name, text) {
+      var node = document.querySelector('[data-bind="' + name + '"]');
+      if (node) node.textContent = text;
+    }
+    function renderState(state) {
+      window.mnemeState = state;
+      var avatar = value(["presence", "avatar"], {});
+      var latest = value(["last_utterance", "text"], "Waiting.");
+      var memory = value(["memory"], {});
+      var memoryCount = Object.values(memory).reduce(function (sum, item) {
+        return sum + (typeof item === "number" ? item : 0);
+      }, 0);
+      var face = document.querySelector(".face");
+      var mode = avatar.mode || "idle";
+      if (face) face.setAttribute("data-mode", mode);
+      setText("mode", mode);
+      setText("gaze", avatar.gaze_target || "none");
+      setText("expression", avatar.expression || "neutral");
+      setText("voice", value(["presence", "voice"], "default"));
+      setText("latest_response", latest);
+      setText("memory_count", String(memoryCount));
+      setText("timestamp", String(value(["timestamp"], 0)));
+      setText("snapshot_json", JSON.stringify(state, null, 2));
+    }
+    window.mnemeState = $raw_snapshot_json;
+    renderState(window.mnemeState);
+    window.setInterval(function () {
+      fetch("/state").then(function (response) { return response.json(); }).then(renderState).catch(function () {});
+    }, 1500);
+  </script>
 </body>
 </html>
 """
@@ -71,16 +165,43 @@ def render_snapshot_html(snapshot: dict[str, Any]) -> str:
     presence = snapshot.get("presence") if isinstance(snapshot.get("presence"), dict) else {}
     avatar = presence.get("avatar") if isinstance(presence.get("avatar"), dict) else {}
     latest = snapshot.get("last_utterance") if isinstance(snapshot.get("last_utterance"), dict) else {}
+    preferences = snapshot.get("device_preferences") if isinstance(snapshot.get("device_preferences"), dict) else {}
+    devices = _device_list(snapshot)
     mode = str(avatar.get("mode", "idle"))
     mouth = str(avatar.get("mouth_state", "closed"))
+    memory = snapshot.get("memory") if isinstance(snapshot.get("memory"), dict) else {}
+    memory_count = sum(value for value in memory.values() if isinstance(value, int))
+    snapshot_json = json.dumps(to_jsonable(snapshot), indent=2, sort_keys=True)
     return Template(HTML_TEMPLATE).safe_substitute(
         mouth_class="open" if mouth == "open" else "",
+        mode_attr=html.escape(mode, quote=True),
         mode=html.escape(mode),
         gaze=html.escape(str(avatar.get("gaze_target") or "none")),
         expression=html.escape(str(avatar.get("expression") or "neutral")),
-        blink=html.escape(str(avatar.get("blink_pattern") or "idle")),
+        voice=html.escape(str(presence.get("voice") or "default")),
         latest_response=html.escape(str(latest.get("text") or "Waiting.")),
-        snapshot_json=html.escape(json.dumps(to_jsonable(snapshot), indent=2, sort_keys=True)),
+        camera_select=_device_select(
+            "camera_device_id",
+            "camera",
+            devices,
+            _optional_text(preferences.get("camera_device_id")),
+        ),
+        microphone_select=_device_select(
+            "microphone_device_id",
+            "microphone",
+            devices,
+            _optional_text(preferences.get("microphone_device_id")),
+        ),
+        speaker_select=_device_select(
+            "speaker_device_id",
+            "speaker",
+            devices,
+            _optional_text(preferences.get("speaker_device_id")),
+        ),
+        memory_count=str(memory_count),
+        timestamp=html.escape(str(snapshot.get("timestamp", 0))),
+        snapshot_json=html.escape(snapshot_json),
+        raw_snapshot_json=_script_json(snapshot),
     )
 
 
@@ -93,14 +214,39 @@ def make_ui_handler(runtime: MnemeRuntime) -> type[BaseHTTPRequestHandler]:
             self._send_html(render_snapshot_html(runtime.snapshot()))
 
         def do_POST(self) -> None:  # noqa: N802
-            if self.path != "/input":
-                self.send_error(HTTPStatus.NOT_FOUND)
+            if self.path == "/input":
+                self._handle_input()
                 return
-            length = int(self.headers.get("Content-Length", "0"))
-            raw = self.rfile.read(length).decode("utf-8")
-            text = parse_qs(raw).get("text", [""])[0].strip()
+            if self.path == "/devices":
+                self._handle_devices()
+                return
+            self.send_error(HTTPStatus.NOT_FOUND)
+
+        def _handle_input(self) -> None:
+            form = self._read_form()
+            text = form.get("text", [""])[0].strip()
             if text:
                 runtime.process_user_utterance(text)
+            self._redirect_home()
+
+        def _handle_devices(self) -> None:
+            form = self._read_form()
+            if not hasattr(runtime, "update_device_preferences"):
+                self.send_error(HTTPStatus.NOT_FOUND)
+                return
+            runtime.update_device_preferences(
+                camera_device_id=_form_value(form, "camera_device_id"),
+                microphone_device_id=_form_value(form, "microphone_device_id"),
+                speaker_device_id=_form_value(form, "speaker_device_id"),
+            )
+            self._redirect_home()
+
+        def _read_form(self) -> dict[str, list[str]]:
+            length = int(self.headers.get("Content-Length", "0"))
+            raw = self.rfile.read(length).decode("utf-8")
+            return parse_qs(raw)
+
+        def _redirect_home(self) -> None:
             self.send_response(HTTPStatus.SEE_OTHER)
             self.send_header("Location", "/")
             self.end_headers()
@@ -139,3 +285,66 @@ def serve_ui(runtime: MnemeRuntime, *, host: str = "127.0.0.1", port: int = 8765
         server.serve_forever()
     finally:
         server.server_close()
+
+
+def _device_list(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
+    devices = snapshot.get("devices")
+    if not isinstance(devices, dict):
+        return []
+    raw_devices = devices.get("devices", [])
+    if not isinstance(raw_devices, list):
+        return []
+    return [dict(item) for item in raw_devices if isinstance(item, dict)]
+
+
+def _device_select(
+    field_name: str,
+    kind: str,
+    devices: list[dict[str, Any]],
+    selected_id: str | None,
+) -> str:
+    options = [
+        '<option value=""{}>Auto</option>'.format(" selected" if selected_id is None else "")
+    ]
+    seen_selected = selected_id is None
+    for device in devices:
+        if device.get("kind") != kind:
+            continue
+        device_id = str(device.get("device_id", ""))
+        if not device_id:
+            continue
+        label = str(device.get("label") or device_id)
+        selected = device_id == selected_id
+        seen_selected = seen_selected or selected
+        options.append(
+            '<option value="{}"{}>{}</option>'.format(
+                html.escape(device_id, quote=True),
+                " selected" if selected else "",
+                html.escape(label),
+            )
+        )
+    if selected_id is not None and not seen_selected:
+        options.append(
+            '<option value="{}" selected>{}</option>'.format(
+                html.escape(selected_id, quote=True),
+                html.escape(f"Saved device unavailable ({selected_id})"),
+            )
+        )
+    return '<select name="{}">{}</select>'.format(
+        html.escape(field_name, quote=True),
+        "".join(options),
+    )
+
+
+def _form_value(form: dict[str, list[str]], key: str) -> str | None:
+    values = form.get(key, [""])
+    value = values[0].strip() if values else ""
+    return value or None
+
+
+def _optional_text(value: Any) -> str | None:
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def _script_json(value: Any) -> str:
+    return json.dumps(to_jsonable(value), sort_keys=True).replace("</", "<\\/")

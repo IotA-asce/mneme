@@ -148,6 +148,9 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add local model registry and `mneme models` CLI
 - [x] Add Stage 6 runtime profiles for local-speech, local-vision, and local-lab
 - [x] Add stdlib local browser UI command `mneme ui`
+- [x] Add clean minimal local UI state surface
+- [x] Add UI camera/microphone/speaker selection
+- [x] Persist selected local devices for future UI and terminal runs
 - [x] Add local evaluation JSONL logger and `mneme eval summarize`
 - [ ] Validate local-speech with real microphone, ASR model files, TTS playback, and barge-in on the current Mac
 - [ ] Validate local-vision with real camera permission, OpenCV frame capture, and MediaPipe face/person observations

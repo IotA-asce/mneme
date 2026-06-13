@@ -492,6 +492,7 @@ class LiveVisionWorker:
         retention: PerceptionRetentionPolicy | None = None,
         source: str = "live.vision_worker",
         capture_interval_ms: int = DEFAULT_LIVE_CAPTURE_INTERVAL_MS,
+        preferred_device_id: str | None = None,
         clock: Callable[[], int] | None = None,
     ) -> None:
         self.discovery = discovery
@@ -501,6 +502,7 @@ class LiveVisionWorker:
         self.retention = retention or PerceptionRetentionPolicy()
         self.source = _required_text(source, "source")
         self.capture_interval_ms = _positive_int(capture_interval_ms, "capture_interval_ms")
+        self.preferred_device_id = _optional_text(preferred_device_id, "preferred_device_id")
         self._clock = clock or _now_ms
         self._last_capture_ms: int | None = None
         self._stats = {
@@ -524,7 +526,12 @@ class LiveVisionWorker:
 
     def capture_once(self, *, now_ms: int | None = None) -> LivePerceptionReport:
         now = self._clock() if now_ms is None else validate_timestamp(now_ms, "now_ms")
-        device = _first_available(self.discovery, PeripheralKind.CAMERA, now)
+        device = _first_available(
+            self.discovery,
+            PeripheralKind.CAMERA,
+            now,
+            preferred_device_id=self.preferred_device_id,
+        )
         if device is None:
             self._stats["skipped"] += 1
             return LivePerceptionReport("vision", now, "no_camera")
@@ -683,6 +690,7 @@ class LiveSpeechWorker:
         retention: PerceptionRetentionPolicy | None = None,
         source: str = "live.speech_worker",
         capture_interval_ms: int = DEFAULT_LIVE_CAPTURE_INTERVAL_MS,
+        preferred_device_id: str | None = None,
         clock: Callable[[], int] | None = None,
     ) -> None:
         self.discovery = discovery
@@ -692,6 +700,7 @@ class LiveSpeechWorker:
         self.retention = retention or PerceptionRetentionPolicy()
         self.source = _required_text(source, "source")
         self.capture_interval_ms = _positive_int(capture_interval_ms, "capture_interval_ms")
+        self.preferred_device_id = _optional_text(preferred_device_id, "preferred_device_id")
         self._clock = clock or _now_ms
         self._last_capture_ms: int | None = None
         self._stats = {
@@ -715,7 +724,12 @@ class LiveSpeechWorker:
 
     def transcribe_once(self, *, now_ms: int | None = None) -> LivePerceptionReport:
         now = self._clock() if now_ms is None else validate_timestamp(now_ms, "now_ms")
-        device = _first_available(self.discovery, PeripheralKind.MICROPHONE, now)
+        device = _first_available(
+            self.discovery,
+            PeripheralKind.MICROPHONE,
+            now,
+            preferred_device_id=self.preferred_device_id,
+        )
         if device is None:
             self._stats["skipped"] += 1
             return LivePerceptionReport("speech", now, "no_microphone")
@@ -945,11 +959,17 @@ def _first_available(
     discovery: PeripheralDiscoveryService,
     kind: PeripheralKind,
     now: int,
+    *,
+    preferred_device_id: str | None = None,
 ) -> PeripheralDevice | None:
     snapshot = discovery.last_snapshot
     if snapshot is None:
         snapshot = discovery.scan_now(now_ms=now)
     devices = snapshot.available(kind)
+    if preferred_device_id:
+        for device in devices:
+            if device.device_id == preferred_device_id:
+                return device
     return devices[0] if devices else None
 
 
@@ -1121,6 +1141,14 @@ def _required_text(value: Any, field_name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field_name} must be a non-empty string")
     return value
+
+
+def _optional_text(value: Any, field_name: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    return value.strip() or None
 
 
 def _json_mapping(value: Any, field_name: str) -> dict[str, Any]:
