@@ -93,7 +93,7 @@ from .local_audio import (
     write_silent_wav,
 )
 from .local_models import LocalModelRecord, LocalModelRegistry, ModelVerification
-from .local_ui import make_ui_handler, render_snapshot_html, serve_ui
+from .local_ui import make_ui_handler, make_ui_server, render_snapshot_html, serve_ui
 from .local_vision import (
     FaceDetectionBackend,
     MediaPipeFaceDetectionBackend,
@@ -242,6 +242,7 @@ __all__ = [
     "ModelVerification",
     "render_snapshot_html",
     "make_ui_handler",
+    "make_ui_server",
     "serve_ui",
     "FaceDetectionBackend",
     "MediaPipeFaceDetectionBackend",
