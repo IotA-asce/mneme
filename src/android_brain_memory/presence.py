@@ -651,6 +651,7 @@ class ConversationalPresenceCoordinator:
         source: str = "conversational_presence",
         clock: Callable[[], int] | None = None,
         default_voice: str = "default",
+        preferred_speaker_device_id: str | None = None,
         self_speakers: set[str] | None = None,
     ) -> None:
         self.bus = bus
@@ -658,6 +659,10 @@ class ConversationalPresenceCoordinator:
         self.source = _required_text(source, "source")
         self._clock = clock or _now_ms
         self.default_voice = _required_text(default_voice, "default_voice")
+        self.preferred_speaker_device_id = _optional_text(
+            preferred_speaker_device_id,
+            "preferred_speaker_device_id",
+        )
         self.self_speakers = {speaker.lower() for speaker in (self_speakers or SELF_SPEAKERS)}
         self._subscription = bus.subscribe(
             self.process_event,
@@ -744,6 +749,7 @@ class ConversationalPresenceCoordinator:
                     "plan_id": plan.plan_id,
                     "intent_id": intent.intent_id,
                     "voice": self.default_voice,
+                    "device_id": self.preferred_speaker_device_id,
                 },
                 timestamp=now,
             )

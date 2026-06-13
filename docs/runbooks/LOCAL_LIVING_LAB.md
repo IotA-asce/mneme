@@ -100,6 +100,30 @@ Open `http://127.0.0.1:8765`.
 
 The UI visualizes runtime snapshot state and sends typed input. It does not own cognition, memory, attention, executive intent, or skills.
 
+The UI also has device selectors for:
+
+- camera,
+- microphone,
+- speaker.
+
+Press **Save devices** after selecting devices. The selection is saved in:
+
+```text
+.local/runtime_preferences.json
+```
+
+Future `mneme ui` and `mneme run` sessions load this file automatically. Terminal runs can temporarily override saved devices:
+
+```bash
+mneme run \
+  --profile local-speech \
+  --microphone-device-id <device-id> \
+  --speaker-device-id <device-id> \
+  --json
+```
+
+Use the device IDs shown in the UI runtime JSON or `/state` endpoint. If a saved device is unavailable, Mneme falls back to the first available device of that kind.
+
 ## Evaluation Logs
 
 Record local daily-driver metrics:

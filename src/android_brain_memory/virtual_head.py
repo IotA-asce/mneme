@@ -25,6 +25,11 @@ from .local_ui import serve_ui
 from .local_vision import MediaPipeFaceDetectionBackend, OpenCVCameraCaptureBackend
 from .peripherals import PeripheralDiscoveryService, RealPeripheralBackend, default_virtual_head_devices
 from .presence import CommandSpeechOutputBackend
+from .runtime_preferences import (
+    DEFAULT_RUNTIME_PREFERENCES,
+    RuntimeDevicePreferences,
+    RuntimePreferencesStore,
+)
 from .runtime_loop import MnemeRuntime, RuntimeClock
 
 
@@ -39,6 +44,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=DEFAULT_MIGRATIONS,
         help="Directory containing SQLite migrations.",
+    )
+    parser.add_argument(
+        "--preferences",
+        type=Path,
+        default=DEFAULT_RUNTIME_PREFERENCES,
+        help="Runtime preference file for saved local device selections.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -96,6 +107,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Camera backend. OpenCV requires the vision-local optional extra.",
     )
     run.add_argument("--camera-index", type=int, help="OpenCV camera index override.")
+    run.add_argument("--camera-device-id", help="Preferred discovered camera device ID.")
     run.add_argument(
         "--face-backend",
         choices=["none", "mediapipe"],
@@ -114,6 +126,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--asr-device", default="cpu", help="faster-whisper device name.")
     run.add_argument("--asr-compute-type", default="int8", help="faster-whisper compute type.")
     run.add_argument("--asr-language", help="Optional ASR language code.")
+    run.add_argument("--microphone-device-id", help="Preferred discovered microphone device ID.")
     run.add_argument("--record-ms", type=int, default=3_000, help="Bounded microphone segment length.")
     run.add_argument("--audio-dir", type=Path, default=DEFAULT_AUDIO_DIR, help="Local audio segment directory.")
     run.add_argument(
@@ -147,6 +160,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=10_000,
         help="Timeout for local TTS command.",
     )
+    run.add_argument("--speaker-device-id", help="Preferred discovered speaker device ID.")
     run.add_argument(
         "--virtual-speech-duration-ms",
         type=int,
@@ -167,6 +181,18 @@ def build_parser() -> argparse.ArgumentParser:
     ui = subparsers.add_parser("ui", help="Serve the local browser virtual-head UI.")
     ui.add_argument("--host", default="127.0.0.1")
     ui.add_argument("--port", type=int, default=8765)
+    ui.add_argument(
+        "--device-backend",
+        choices=["fake", "real", "none"],
+        default="real",
+        help="Device inventory backend for UI device selectors.",
+    )
+    ui.add_argument(
+        "--device-scan-timeout-ms",
+        type=int,
+        default=1_500,
+        help="Timeout for each real device inventory command.",
+    )
 
     models = subparsers.add_parser("models", help="Inspect local model registry.")
     models.add_argument("--registry", type=Path, default=DEFAULT_MODEL_REGISTRY)
@@ -240,19 +266,9 @@ def _run(args: argparse.Namespace) -> int:
 
 
 def _build_runtime(args: argparse.Namespace) -> MnemeRuntime:
-    device_backend = "none" if args.no_fake_devices else args.device_backend
-    if args.profile in LOCAL_PROFILES and args.device_backend == "fake" and not args.no_fake_devices:
-        device_backend = "real"
-    discovery_service = None
-    fake_devices = None
-    if device_backend == "real":
-        discovery_service = PeripheralDiscoveryService(
-            backend=RealPeripheralBackend(timeout_ms=args.device_scan_timeout_ms),
-        )
-    else:
-        fake_devices = [] if device_backend == "none" else [
-            device.to_dict() for device in default_virtual_head_devices()
-        ]
+    preferences_store = RuntimePreferencesStore(args.preferences)
+    preferences = _device_preferences_from_args(args, preferences_store.load())
+    discovery_service, fake_devices = _device_discovery(args)
     retention = PerceptionRetentionPolicy(
         frame_archive_dir=args.frame_archive_dir,
         max_archived_frames=args.max_archived_frames,
@@ -276,8 +292,42 @@ def _build_runtime(args: argparse.Namespace) -> MnemeRuntime:
         enable_perception_fusion=bool(camera_backend or speech_backend),
         speech_output_backend=speech_output_backend,
         speech_voice=args.voice,
+        device_preferences=preferences,
+        preferences_store=preferences_store,
         enable_virtual_presence=not args.no_virtual_presence,
         virtual_speech_duration_ms=args.virtual_speech_duration_ms,
+    )
+
+
+def _device_discovery(args: argparse.Namespace) -> tuple[PeripheralDiscoveryService | None, list[dict[str, Any]] | None]:
+    device_backend = "none" if getattr(args, "no_fake_devices", False) else args.device_backend
+    if (
+        getattr(args, "profile", "default") in LOCAL_PROFILES
+        and getattr(args, "device_backend", "fake") == "fake"
+        and not getattr(args, "no_fake_devices", False)
+    ):
+        device_backend = "real"
+    if device_backend == "real":
+        return (
+            PeripheralDiscoveryService(
+                backend=RealPeripheralBackend(timeout_ms=args.device_scan_timeout_ms),
+            ),
+            None,
+        )
+    fake_devices = [] if device_backend == "none" else [
+        device.to_dict() for device in default_virtual_head_devices()
+    ]
+    return None, fake_devices
+
+
+def _device_preferences_from_args(
+    args: argparse.Namespace,
+    current: RuntimeDevicePreferences,
+) -> RuntimeDevicePreferences:
+    return RuntimeDevicePreferences(
+        camera_device_id=getattr(args, "camera_device_id", None) or current.camera_device_id,
+        microphone_device_id=getattr(args, "microphone_device_id", None) or current.microphone_device_id,
+        speaker_device_id=getattr(args, "speaker_device_id", None) or current.speaker_device_id,
     )
 
 
@@ -331,7 +381,15 @@ def _speech_output_backend(args: argparse.Namespace) -> Any:
 
 
 def _ui(args: argparse.Namespace) -> int:
-    runtime = MnemeRuntime(db_path=args.db, migrations_dir=args.migrations)
+    preferences_store = RuntimePreferencesStore(args.preferences)
+    discovery_service, fake_devices = _device_discovery(args)
+    runtime = MnemeRuntime(
+        db_path=args.db,
+        migrations_dir=args.migrations,
+        discovery_service=discovery_service,
+        fake_devices=fake_devices,
+        preferences_store=preferences_store,
+    )
     try:
         runtime.start()
         print(f"Mneme UI listening on http://{args.host}:{args.port}", file=sys.stderr)

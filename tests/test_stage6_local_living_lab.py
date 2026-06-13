@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from http.server import HTTPServer
+from pathlib import Path
 
 from android_brain_memory import (
     AudioCapture,
@@ -12,10 +12,13 @@ from android_brain_memory import (
     KokoroSpeechOutputBackend,
     LocalModelRecord,
     LocalModelRegistry,
+    MnemeRuntime,
     OpenCVCameraCaptureBackend,
     PeripheralDevice,
     PeripheralKind,
     RuntimeClock,
+    RuntimeDevicePreferences,
+    RuntimePreferencesStore,
     VadDecision,
     VirtualSkillGoal,
     VirtualSkillRunner,
@@ -28,6 +31,9 @@ from android_brain_memory import (
 )
 from android_brain_memory.local_ui import make_ui_handler
 from android_brain_memory.virtual_head import main as mneme_main
+
+
+MIGRATIONS = Path(__file__).resolve().parents[1] / "storage" / "migrations"
 
 
 def _microphone() -> PeripheralDevice:
@@ -96,6 +102,27 @@ def test_model_registry_download_requires_configured_url(tmp_path):
         assert "download is not configured" in str(exc)
     else:
         raise AssertionError("download should require a configured URL")
+
+
+def test_runtime_preferences_store_round_trips_and_clears_device_ids(tmp_path):
+    store = RuntimePreferencesStore(tmp_path / "prefs.json")
+
+    store.save(RuntimeDevicePreferences(
+        camera_device_id="camera-a",
+        microphone_device_id="mic-a",
+        speaker_device_id="speaker-a",
+    ))
+    loaded = store.load()
+
+    assert loaded.camera_device_id == "camera-a"
+    assert loaded.microphone_device_id == "mic-a"
+    assert loaded.speaker_device_id == "speaker-a"
+
+    updated = store.update(camera_device_id=None, speaker_device_id="speaker-b")
+
+    assert updated.camera_device_id is None
+    assert updated.microphone_device_id == "mic-a"
+    assert updated.speaker_device_id == "speaker-b"
 
 
 def test_webrtc_vad_endpoint_detector_uses_injected_vad():
@@ -306,9 +333,59 @@ def test_opencv_camera_backend_uses_injected_cv2_and_face_detector(tmp_path):
     assert frame.detections[0]["attention_facing_signal"] is True
 
 
+def test_runtime_uses_preferred_microphone_and_speaker_devices(tmp_path):
+    seen_microphones: list[str] = []
+
+    class RecordingSpeechBackend:
+        def transcribe(self, *, device: PeripheralDevice, timestamp: int):
+            seen_microphones.append(device.device_id)
+            return None
+
+    runtime = MnemeRuntime(
+        db_path=tmp_path / "memory.sqlite3",
+        migrations_dir=MIGRATIONS,
+        clock=RuntimeClock(1_000),
+        fake_devices=[
+            PeripheralDevice("mic-1", PeripheralKind.MICROPHONE, "Mic 1").to_dict(),
+            PeripheralDevice("mic-2", PeripheralKind.MICROPHONE, "Mic 2").to_dict(),
+            PeripheralDevice("speaker-1", PeripheralKind.SPEAKER, "Speaker 1").to_dict(),
+            PeripheralDevice("speaker-2", PeripheralKind.SPEAKER, "Speaker 2").to_dict(),
+        ],
+        live_speech_backend=RecordingSpeechBackend(),
+        device_preferences=RuntimeDevicePreferences(
+            microphone_device_id="mic-2",
+            speaker_device_id="speaker-2",
+        ),
+    )
+    try:
+        runtime.start()
+        runtime.tick(advance_ms=1_000)
+        result = runtime.process_user_utterance("hello Mneme", timestamp=2_500)
+    finally:
+        runtime.close()
+
+    assert seen_microphones == ["mic-2"]
+    outputs = result.snapshot["presence"]["skills"]["outputs"]
+    assert outputs[-1]["device_id"] == "speaker-2"
+
+
 def test_local_ui_renders_avatar_state():
     snapshot = {
+        "timestamp": 1_000,
+        "devices": {
+            "devices": [
+                {"device_id": "cam-1", "kind": "camera", "label": "Camera 1"},
+                {"device_id": "mic-1", "kind": "microphone", "label": "Mic 1"},
+                {"device_id": "speaker-1", "kind": "speaker", "label": "Speaker 1"},
+            ],
+        },
+        "device_preferences": {
+            "camera_device_id": "cam-1",
+            "microphone_device_id": "mic-1",
+            "speaker_device_id": "speaker-1",
+        },
         "presence": {
+            "voice": "default",
             "avatar": {
                 "mode": "speaking",
                 "gaze_target": "person:user",
@@ -322,10 +399,14 @@ def test_local_ui_renders_avatar_state():
 
     html = render_snapshot_html(snapshot)
 
-    assert "mode: speaking" in html
+    assert 'data-mode="speaking"' in html
     assert "person:user" in html
     assert "Hello!" in html
     assert "mouth open" in html
+    assert "Camera 1" in html
+    assert "Mic 1" in html
+    assert "Speaker 1" in html
+    assert '<option value="cam-1" selected>' in html
 
 
 def test_make_ui_handler_returns_handler_class():

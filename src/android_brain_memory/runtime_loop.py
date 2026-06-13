@@ -46,6 +46,7 @@ from .runtime import (
     memory_candidate_event,
     perception_observation,
 )
+from .runtime_preferences import RuntimeDevicePreferences, RuntimePreferencesStore
 from .self_model import ProceduralMemory
 from .simulation import ScenarioReplayRunner
 from .working_memory import SensoryEchoBuffer, WorkingMemory
@@ -125,6 +126,8 @@ class MnemeRuntime:
         enable_perception_fusion: bool = False,
         speech_output_backend: SpeechOutputBackend | None = None,
         speech_voice: str | None = None,
+        device_preferences: RuntimeDevicePreferences | Mapping[str, Any] | None = None,
+        preferences_store: RuntimePreferencesStore | None = None,
         persist_speech_voice: bool = True,
         enable_virtual_presence: bool = True,
         virtual_speech_duration_ms: int = 0,
@@ -133,6 +136,14 @@ class MnemeRuntime:
     ) -> None:
         self.source = _required_text(source, "source")
         self.clock = clock if clock is not None else RuntimeClock(0)
+        self.preferences_store = preferences_store
+        if device_preferences is None and preferences_store is not None:
+            device_preferences = preferences_store.load()
+        self.device_preferences = (
+            device_preferences
+            if isinstance(device_preferences, RuntimeDevicePreferences)
+            else RuntimeDevicePreferences.from_dict(device_preferences)
+        )
         self.bus = EventBus(clock=self.clock)
         self.engine = MnemeMemory(
             db_path,
@@ -197,6 +208,7 @@ class MnemeRuntime:
                 store=self.engine.store,
                 retention=perception_retention,
                 capture_interval_ms=live_camera_interval_ms,
+                preferred_device_id=self.device_preferences.camera_device_id,
                 clock=self.clock,
             )
             if live_camera_backend is not None
@@ -210,6 +222,7 @@ class MnemeRuntime:
                 store=self.engine.store,
                 retention=perception_retention,
                 capture_interval_ms=live_speech_interval_ms,
+                preferred_device_id=self.device_preferences.microphone_device_id,
                 clock=self.clock,
             )
             if live_speech_backend is not None
@@ -237,6 +250,7 @@ class MnemeRuntime:
                 skill_runner=self.virtual_skill_runner,
                 clock=self.clock,
                 default_voice=self.speech_voice,
+                preferred_speaker_device_id=self.device_preferences.speaker_device_id,
             )
             if enable_virtual_presence and self.virtual_skill_runner is not None
             else None
@@ -330,6 +344,7 @@ class MnemeRuntime:
                 if self.discovery.last_snapshot is not None
                 else None
             ),
+            "device_preferences": self.device_preferences.to_dict(),
             "world": self.world_model.snapshot().to_dict(),
             "working_memory": self.working_memory.to_dict(created_ts=self._now_ms()),
             "attention": attention_state.to_dict(),
@@ -359,6 +374,30 @@ class MnemeRuntime:
                 "coordinator": self.presence.stats if self.presence is not None else None,
             },
         }
+
+    def update_device_preferences(
+        self,
+        *,
+        camera_device_id: str | None = None,
+        microphone_device_id: str | None = None,
+        speaker_device_id: str | None = None,
+        save: bool = True,
+    ) -> RuntimeDevicePreferences:
+        preferences = RuntimeDevicePreferences(
+            camera_device_id=camera_device_id,
+            microphone_device_id=microphone_device_id,
+            speaker_device_id=speaker_device_id,
+        )
+        self.device_preferences = preferences
+        if self.vision_worker is not None:
+            self.vision_worker.preferred_device_id = preferences.camera_device_id
+        if self.speech_worker is not None:
+            self.speech_worker.preferred_device_id = preferences.microphone_device_id
+        if self.presence is not None:
+            self.presence.preferred_speaker_device_id = preferences.speaker_device_id
+        if save and self.preferences_store is not None:
+            self.preferences_store.save(preferences)
+        return preferences
 
     def close(self) -> None:
         if self.virtual_skill_runner is not None:
