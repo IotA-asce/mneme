@@ -27,6 +27,13 @@ from .models import (
 SENSITIVE_PROVENANCE_KEY_PARTS = ("password", "secret", "token", "credential", "private_key", "api_key")
 CONFLICT_AWARE_SOURCE_TYPES = {SourceType.USER_CONFIRMED, SourceType.MODEL_INFERRED}
 PROVENANCE_MEMORY_KINDS = ("raw_trace", "episode", "fact", "summary")
+MEMORY_REVIEW_PROPOSAL_TYPES = (
+    "correction",
+    "forget_request",
+    "confirm_memory",
+    "contradiction_challenge",
+)
+MEMORY_REVIEW_STATUSES = ("proposed", "applied", "rejected", "failed")
 
 
 @dataclass(slots=True)
@@ -178,6 +185,57 @@ class WorkingContextSnapshot:
         self.context = _json_mapping(self.context, "context")
 
 
+@dataclass(slots=True)
+class MemoryReviewRecord:
+    review_id: str
+    proposal_type: str
+    status: str
+    source_turn_text: str
+    related_memory_refs: list[dict[str, str]]
+    created_ts: int
+    applied_ts: int | None = None
+    action_result: dict[str, Any] | None = None
+    reason: str = ""
+    provenance: dict[str, Any] | None = None
+
+    def __post_init__(self) -> None:
+        self.review_id = _required_text(self.review_id, "review_id")
+        self.proposal_type = _review_value(
+            self.proposal_type,
+            "proposal_type",
+            MEMORY_REVIEW_PROPOSAL_TYPES,
+        )
+        self.status = _review_value(self.status, "status", MEMORY_REVIEW_STATUSES)
+        self.source_turn_text = _required_text(self.source_turn_text, "source_turn_text")
+        self.related_memory_refs = _memory_ref_list(
+            self.related_memory_refs,
+            "related_memory_refs",
+        )
+        self.created_ts = validate_timestamp(self.created_ts, "created_ts")
+        if self.applied_ts is not None:
+            self.applied_ts = validate_timestamp(self.applied_ts, "applied_ts")
+            if self.applied_ts < self.created_ts:
+                raise ValueError("applied_ts must be greater than or equal to created_ts")
+        self.action_result = _json_mapping(self.action_result or {}, "action_result")
+        self.reason = self.reason.strip() if isinstance(self.reason, str) else ""
+        self.provenance = _json_mapping(self.provenance or {}, "provenance")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "review_id": self.review_id,
+            "proposal_id": self.review_id,
+            "proposal_type": self.proposal_type,
+            "status": self.status,
+            "source_turn_text": self.source_turn_text,
+            "related_memory_refs": [dict(ref) for ref in self.related_memory_refs],
+            "created_ts": self.created_ts,
+            "applied_ts": self.applied_ts,
+            "action_result": dict(self.action_result or {}),
+            "reason": self.reason,
+            "provenance": dict(self.provenance or {}),
+        }
+
+
 def _required_text(value: Any, field_name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field_name} must be a non-empty string")
@@ -213,6 +271,30 @@ def _string_list(value: Any, field_name: str) -> list[str]:
     if not all(isinstance(item, str) for item in items):
         raise ValueError(f"{field_name} must be a list of strings")
     return items
+
+
+def _review_value(value: Any, field_name: str, allowed: Sequence[str]) -> str:
+    if not isinstance(value, str):
+        allowed_text = ", ".join(allowed)
+        raise ValueError(f"{field_name} must be one of: {allowed_text}")
+    normalized = value.strip()
+    if normalized not in allowed:
+        allowed_text = ", ".join(allowed)
+        raise ValueError(f"{field_name} must be one of: {allowed_text}")
+    return normalized
+
+
+def _memory_ref_list(value: Any, field_name: str) -> list[dict[str, str]]:
+    if isinstance(value, str) or not isinstance(value, Sequence):
+        raise ValueError(f"{field_name} must be a list of mappings")
+    refs = []
+    for item in value:
+        if not isinstance(item, Mapping):
+            raise ValueError(f"{field_name} must be a list of mappings")
+        memory_kind = _required_text(item.get("memory_kind"), "memory_kind")
+        memory_id = _required_text(item.get("memory_id"), "memory_id")
+        refs.append({"memory_kind": memory_kind, "memory_id": memory_id})
+    return refs
 
 
 def _canonical_json(value: Any) -> str:
@@ -1142,6 +1224,113 @@ class MemoryStore:
         ).fetchall()
         return [self._working_context_snapshot_from_row(row) for row in rows]
 
+    def write_memory_review(self, record: MemoryReviewRecord) -> MemoryReviewRecord:
+        review = record if isinstance(record, MemoryReviewRecord) else MemoryReviewRecord(**record)
+        self.conn.execute(
+            """
+            INSERT OR REPLACE INTO memory_review(
+                review_id,
+                proposal_type,
+                status,
+                source_turn_text,
+                related_memory_refs_json,
+                created_ts,
+                applied_ts,
+                action_result_json,
+                reason,
+                provenance_json
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                review.review_id,
+                review.proposal_type,
+                review.status,
+                review.source_turn_text,
+                json.dumps(review.related_memory_refs, sort_keys=True),
+                review.created_ts,
+                review.applied_ts,
+                json.dumps(review.action_result or {}, sort_keys=True),
+                review.reason,
+                json.dumps(review.provenance or {}, sort_keys=True),
+            ),
+        )
+        self.conn.commit()
+        return review
+
+    def get_memory_review(self, review_id: str) -> MemoryReviewRecord | None:
+        row = self.conn.execute(
+            """
+            SELECT *
+            FROM memory_review
+            WHERE review_id = ?
+            """,
+            (_required_text(review_id, "review_id"),),
+        ).fetchone()
+        return self._memory_review_from_row(row) if row else None
+
+    def list_memory_reviews(
+        self,
+        *,
+        status: str | None = None,
+        proposal_type: str | None = None,
+        limit: int = 50,
+    ) -> list[MemoryReviewRecord]:
+        limit = _positive_int(limit, "limit")
+        where = []
+        params: list[Any] = []
+        if status is not None:
+            where.append("status = ?")
+            params.append(_review_value(status, "status", MEMORY_REVIEW_STATUSES))
+        if proposal_type is not None:
+            where.append("proposal_type = ?")
+            params.append(
+                _review_value(
+                    proposal_type,
+                    "proposal_type",
+                    MEMORY_REVIEW_PROPOSAL_TYPES,
+                )
+            )
+        where_sql = "WHERE " + " AND ".join(where) if where else ""
+        rows = self.conn.execute(
+            f"""
+            SELECT *
+            FROM memory_review
+            {where_sql}
+            ORDER BY created_ts DESC, review_id DESC
+            LIMIT ?
+            """,
+            (*params, limit),
+        ).fetchall()
+        return [self._memory_review_from_row(row) for row in rows]
+
+    def update_memory_review(
+        self,
+        review_id: str,
+        *,
+        status: str | None = None,
+        applied_ts: int | None = None,
+        action_result: dict[str, Any] | None = None,
+        reason: str | None = None,
+        provenance: dict[str, Any] | None = None,
+    ) -> MemoryReviewRecord:
+        current = self.get_memory_review(review_id)
+        if current is None:
+            raise KeyError(f"memory review not found: {review_id}")
+        updated = MemoryReviewRecord(
+            review_id=current.review_id,
+            proposal_type=current.proposal_type,
+            status=status if status is not None else current.status,
+            source_turn_text=current.source_turn_text,
+            related_memory_refs=current.related_memory_refs,
+            created_ts=current.created_ts,
+            applied_ts=applied_ts if applied_ts is not None else current.applied_ts,
+            action_result=action_result if action_result is not None else current.action_result,
+            reason=reason if reason is not None else current.reason,
+            provenance=provenance if provenance is not None else current.provenance,
+        )
+        return self.write_memory_review(updated)
+
     def get_episode(self, episode_id: str) -> Episode | None:
         row = self.conn.execute(
             """
@@ -1554,17 +1743,31 @@ class MemoryStore:
         ).fetchall()
         return [self._fact_from_row(row) for row in rows]
 
-    def search_episodes(self, text: str, limit: int = 5) -> list[Episode]:
+    def search_episodes(
+        self,
+        text: str,
+        limit: int = 5,
+        *,
+        status: MemoryStatus | str | None = MemoryStatus.ACTIVE,
+    ) -> list[Episode]:
         limit = _positive_int(limit, "limit")
         like = f"%{text.lower()}%"
+        params: list[Any] = [like, like]
+        status_filter = parse_memory_status(status, "status") if status is not None else None
+        status_clause = ""
+        if status_filter is not None:
+            status_clause = "AND status = ?"
+            params.append(status_filter.value)
+        params.append(limit)
         rows = self.conn.execute(
-            """
+            f"""
             SELECT * FROM episode
-            WHERE lower(summary) LIKE ? OR lower(context_json) LIKE ?
+            WHERE (lower(summary) LIKE ? OR lower(context_json) LIKE ?)
+            {status_clause}
             ORDER BY salience DESC, start_ts DESC
             LIMIT ?
             """,
-            (like, like, limit),
+            tuple(params),
         ).fetchall()
         return [self._episode_from_row(row) for row in rows]
 
@@ -1690,4 +1893,19 @@ class MemoryStore:
             snapshot_id=row["snapshot_id"],
             created_ts=row["created_ts"],
             context=json.loads(row["context_json"]),
+        )
+
+    @staticmethod
+    def _memory_review_from_row(row: sqlite3.Row) -> MemoryReviewRecord:
+        return MemoryReviewRecord(
+            review_id=row["review_id"],
+            proposal_type=row["proposal_type"],
+            status=row["status"],
+            source_turn_text=row["source_turn_text"],
+            related_memory_refs=json.loads(row["related_memory_refs_json"]),
+            created_ts=row["created_ts"],
+            applied_ts=row["applied_ts"],
+            action_result=json.loads(row["action_result_json"]),
+            reason=row["reason"],
+            provenance=json.loads(row["provenance_json"]),
         )

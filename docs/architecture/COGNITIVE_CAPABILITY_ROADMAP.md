@@ -305,7 +305,7 @@ Exit criteria:
 
 Goal: make cognitive progress measurable and comparable over time.
 
-Implementation status as of 2026-06-13: M8 now has a foundation. Mneme can classify turns, explain memory-backed responses, create non-mutating correction/forget proposals, run a first fixture-based cognitive benchmark, report conservative capability ladder evidence, and surface turn/capability evidence in the local UI. The benchmark suite is still small and should not be treated as broad intelligence evidence.
+Implementation status as of 2026-06-14: M8 now has a broader deterministic suite. Mneme can classify turns, explain memory-backed responses, create durable correction/forget/confirm/contradiction review proposals, run bundled cognition fixtures, report conservative capability ladder evidence, and surface turn/review/capability evidence in the local UI. The suite is still narrow and should not be treated as broad intelligence evidence.
 
 ### M8.1 Benchmark Fixture Format
 
@@ -341,9 +341,10 @@ Example benchmark categories:
 
 Implemented foundation:
 
-- `mneme eval cognition --fixture tests/fixtures/cognition/basic_preference_recall.yaml --json` produces a score report.
+- `mneme eval cognition --json` runs the bundled cognition fixture suite.
+- `mneme eval cognition --fixture tests/fixtures/cognition/basic_preference_recall.yaml --json` still produces a single-fixture score report.
 - Benchmark runs use temporary databases by default.
-- The first fixture covers simple preference recall and memory-backed explanation.
+- Bundled fixtures cover simple preference recall, delayed recall, hallucination guard, correction proposal, correction approval, forget suppression, contradiction review, self/status questions, and memory-backed explanation.
 
 ### M8.2 Capability Ladder Scoring
 
@@ -370,7 +371,7 @@ Metrics:
 Map metrics to ladder levels conservatively:
 
 - L2 requires stable attention + salience + simple memory recall.
-- L3 requires persistent world state and reliable novelty/threat handling.
+- L3 currently requires delayed recall, memory review proposal handling, hallucinated-memory guard, and self/status question handling.
 - L4 requires episodic recall, preference learning, and corrections.
 - L5 requires social continuity and flexible interruption recovery.
 - L6+ requires multi-step planning and self-monitoring benchmarks.
@@ -379,7 +380,8 @@ Implemented foundation:
 
 - `mneme eval capability --json` reports conservative L0-L8 evidence.
 - Output includes `animal_equivalence_claim: false`.
-- L2 evidence requires passing benchmark categories, and L3+ remain explicitly not proven.
+- L2 evidence requires passing simple recall/provenance/hallucination-guard categories.
+- L3 evidence requires the broader bundled suite categories. L4+ remain explicitly not proven.
 
 ### M8.3 Evaluation Dashboard
 
@@ -492,13 +494,16 @@ Add:
 
 Backend additions:
 
-- review commands on `MnemeMemory`,
+- review commands on `mneme review`,
 - safe write paths for corrections,
 - explicit provenance updates.
 
-Exit criteria:
+Implemented foundation:
 
 - User corrections produce auditable memory changes.
+- Forget requests suppress related memories without purging rows.
+- Confirmation can upgrade safe fact references to `user_confirmed`.
+- The UI shows the latest review id/status and can submit review actions.
 
 ### M10.2 Contradiction Review Workflow
 

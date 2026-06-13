@@ -1,0 +1,13 @@
+name: hallucination_guard
+description: Do not claim a durable memory when no matching memory exists.
+category: hallucinated_memory
+steps:
+  - input: "what is my favorite color?"
+    timestamp: 1000
+    expect:
+      turn_type: recall_question
+      memory_ref_forbidden: true
+      response_contains:
+        - "I don't know that yet"
+      category_tags:
+        - hallucinated_memory

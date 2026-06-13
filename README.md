@@ -82,9 +82,10 @@ Stage 6 starts the brain-first local loop:
 - `mneme run --profile local-vision` opts into OpenCV camera capture and optional MediaPipe face/person observations.
 - `mneme ui` serves a lightweight browser UI that visualizes avatar/runtime state, accepts typed input, refreshes the local device inventory, and saves preferred camera/microphone/speaker selections.
 - `--evaluation-log` and `mneme eval summarize` record local daily-driver metrics for later brain-loop evaluation.
-- `mneme eval cognition` runs deterministic cognitive benchmark fixtures, and `mneme eval capability` reports conservative capability ladder evidence.
-- User turns are classified before dialogue planning, so Mneme can distinguish remembering, recall, correction, forget, self/capability/status, and explanation questions.
+- `mneme eval cognition` runs the bundled deterministic cognitive benchmark suite, and `mneme eval capability` reports conservative capability ladder evidence.
+- User turns are classified before dialogue planning, so Mneme can distinguish remembering, recall, correction, forget, confirmation, self/capability/status, and explanation questions.
 - “Why did you say that?” can explain the memory refs used by the previous response when the answer was memory-backed.
+- `mneme review` lists, explains, applies, and rejects supervised memory review records for corrections, forget requests, confirmations, and contradiction challenges.
 
 ### Live Perception
 
@@ -104,7 +105,7 @@ The base package intentionally does not install OpenCV, face models, VAD, ASR, o
 - Local LLM-backed wording is implemented as an opt-in layer. It does not own intent, memory selection, safety, or confirmed memory writes.
 - Real-device quality has not been tuned in CI; local mic/camera permissions, model speed, and audio playback must be validated on your machine.
 - The browser UI is a lightweight local dashboard, not a polished graphical avatar renderer.
-- Long-running process supervision and private-log redaction workflows are not implemented yet.
+- Long-running process supervision, private-log redaction workflows, person-continuity evaluation, and live speech/vision soak tests are not implemented yet.
 - Physical skill controllers and actuator bridge.
 - Physical hardware control, GPIO, serial, PWM, firmware flashing, or ROS runtime nodes.
 - Cloud LLM integration.
@@ -342,10 +343,10 @@ mneme run --json --input "hello Mneme" --evaluation-log .local/evaluation/daily_
 mneme eval summarize --path .local/evaluation/daily_driver.jsonl --json
 ```
 
-Run the first local cognitive benchmark and capability evidence report:
+Run the local cognitive benchmark suite and capability evidence report:
 
 ```bash
-mneme eval cognition --fixture tests/fixtures/cognition/basic_preference_recall.yaml --json
+mneme eval cognition --json
 mneme eval capability --json
 ```
 
@@ -358,7 +359,20 @@ mneme run --json \
   --input "why did you say that?"
 ```
 
-See `docs/runbooks/LOCAL_LIVING_LAB.md`, `docs/runbooks/LOCAL_MODELS.md`, `docs/runbooks/LOCAL_COGNITIVE_MODELS.md`, and `docs/runbooks/COGNITIVE_BENCHMARKS.md`.
+Review and apply supervised memory changes:
+
+```bash
+mneme run --json \
+  --input "remember that I like green tea" \
+  --input "what do I like?" \
+  --input "actually I like coffee"
+
+mneme review list --json
+mneme review apply --review-id review_... --reason "user approved correction" --json
+mneme review explain --memory-kind fact --memory-id fact_... --json
+```
+
+See `docs/runbooks/LOCAL_LIVING_LAB.md`, `docs/runbooks/LOCAL_MODELS.md`, `docs/runbooks/LOCAL_COGNITIVE_MODELS.md`, `docs/runbooks/COGNITIVE_BENCHMARKS.md`, and `docs/memory/MEMORY_REVIEW.md`.
 
 ## Live Perception Adapters
 

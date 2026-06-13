@@ -8,6 +8,13 @@ Mneme now has a local benchmark harness for measuring brain-loop behavior withou
 ## Run A Benchmark
 
 ```bash
+mneme eval cognition --json
+```
+
+By default this runs the bundled cognition suite under `tests/fixtures/cognition/`.
+Run one fixture when you want a narrow check:
+
+```bash
 mneme eval cognition --fixture tests/fixtures/cognition/basic_preference_recall.yaml --json
 ```
 
@@ -15,7 +22,7 @@ Benchmark runs use an isolated temporary SQLite database by default. To inspect 
 
 ```bash
 mneme eval cognition \
-  --fixture tests/fixtures/cognition/basic_preference_recall.yaml \
+  --fixtures-dir tests/fixtures/cognition \
   --benchmark-db .local/evaluation/basic_preference_recall.sqlite3 \
   --json
 ```
@@ -61,6 +68,14 @@ Supported expectation fields include:
 - `response_not_contains`
 - `memory_ref_required`
 - `correction_proposal`
+- `review_proposal_required`
+- `review_type`
+- `review_status`
+- `apply_latest_review`
+- `fact_source_type`
+- `fact_status_counts`
+- `memory_ref_forbidden`
+- `conflict_report_required`
 - `model_realized`
 - `max_latency_ms`
 - `contradiction_clarification`
@@ -68,7 +83,7 @@ Supported expectation fields include:
 
 ## Current Scored Areas
 
-The first scorer reports:
+The scorer reports:
 
 - preference recall,
 - delayed recall,
@@ -76,12 +91,11 @@ The first scorer reports:
 - provenance correctness,
 - contradiction handling,
 - correction acceptance,
-- interruption recovery placeholder,
 - stuck-state detection,
 - response latency,
 - model fallback rate.
 
-Some categories are intentionally shallow until richer fixtures exist. Future benchmarks should add live-speech interruption runs, person continuity, contradiction review, correction approval, and long-running soak replay.
+Some categories are intentionally shallow until richer fixtures exist. The bundled suite now covers delayed recall, hallucination guard, correction proposals, correction approval, forget suppression, contradiction review, self/status questions, and explanation quality. Future benchmarks should add live-speech interruption runs, person continuity, and long-running soak replay.
 
 ## Review And Explanation Commands
 
@@ -94,4 +108,10 @@ mneme run --json --input "what can you do?"
 mneme run --json --input "what model are you using?"
 ```
 
-Correction and forget turns create review proposals in the runtime snapshot, but they do not mutate durable facts or purge memory yet.
+Correction, forget, confirmation, and contradiction turns create durable review proposals. They do not mutate durable facts at creation time. Apply or reject proposals explicitly with:
+
+```bash
+mneme review list --json
+mneme review apply --review-id review_... --reason "approved" --json
+mneme review reject --review-id review_... --reason "not correct" --json
+```

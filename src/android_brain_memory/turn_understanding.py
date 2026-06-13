@@ -18,6 +18,7 @@ class TurnType(StrEnum):
     CORRECTION = "correction"
     CONTRADICTION_CHALLENGE = "contradiction_challenge"
     FORGET_REQUEST = "forget_request"
+    CONFIRM_MEMORY_REQUEST = "confirm_memory_request"
     IDENTITY_SELF_QUESTION = "identity_self_question"
     CAPABILITY_QUESTION = "capability_question"
     DEVICE_STATUS_QUESTION = "device_status_question"
@@ -77,6 +78,14 @@ def classify_turn(text: str) -> TurnClassification:
             TurnType.FORGET_REQUEST,
             normalized,
             "forget_request",
+            is_question=is_question,
+            requires_review=True,
+        )
+    if _matches(normalized, ("confirm this", "that is correct", "that's correct", "yes that is correct", "mark that correct")):
+        return _classification(
+            TurnType.CONFIRM_MEMORY_REQUEST,
+            normalized,
+            "confirm_memory_request",
             is_question=is_question,
             requires_review=True,
         )

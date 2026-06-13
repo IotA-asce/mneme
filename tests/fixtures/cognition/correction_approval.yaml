@@ -1,0 +1,41 @@
+name: correction_approval
+description: Applying a correction writes a user-confirmed fact and retrieval follows the corrected fact.
+category: correction_acceptance
+steps:
+  - input: "remember that I like green tea"
+    timestamp: 1000
+    expect:
+      turn_type: explicit_remember_instruction
+  - input: "what do I like?"
+    timestamp: 2000
+    expect:
+      turn_type: recall_question
+      memory_ref_required: true
+      response_contains:
+        - green tea
+  - input: "actually I like coffee"
+    timestamp: 3000
+    expect:
+      turn_type: correction
+      review_proposal_required: true
+      review_type: correction
+      apply_latest_review: true
+      review_status: applied
+      fact_source_type: user_confirmed
+      fact_status_counts:
+        active: 1
+        superseded: 1
+      category_tags:
+        - review_proposal
+        - correction_acceptance
+  - input: "what do I like?"
+    timestamp: 4000
+    expect:
+      turn_type: recall_question
+      memory_ref_required: true
+      response_contains:
+        - coffee
+      response_not_contains:
+        - green tea
+      category_tags:
+        - preference_recall

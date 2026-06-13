@@ -146,6 +146,6 @@ The safest next work, in dependency order:
 2. Validate `mneme run --profile local-vision` with real camera permission, OpenCV frame capture, MediaPipe face/person observations, and anonymous-session continuity.
 3. Improve `mneme ui` from a debug dashboard toward a useful local virtual head while keeping cognition owned by the runtime.
 4. Convert real local runs into redacted soak scenarios and daily-driver evaluation logs.
-5. Continue memory/retrieval polish such as topic-specific episode retrieval and conflict-review tools.
+5. Continue memory/retrieval polish such as topic-specific episode retrieval, conflict-resolution workflows, and person-scoped continuity review.
 
 Physical hardware, ROS runtime integration, actuation, GPIO, serial, PWM, firmware flashing, and motors remain deferred behind the safety rules in `AGENTS.md`.

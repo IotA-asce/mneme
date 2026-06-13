@@ -26,7 +26,12 @@ from .live_perception import (
 )
 from .models import MemoryCandidate, SalienceFeatures, SourceType
 from .model_dialogue import ModelDialogueRealizer, disabled_model_dialogue_status
-from .memory_review import create_correction_proposal, explain_last_response
+from .memory_review import (
+    apply_memory_review,
+    create_memory_review_record,
+    explain_last_response,
+    reject_memory_review,
+)
 from .peripherals import (
     FakePeripheralBackend,
     PeripheralDiscoveryService,
@@ -432,6 +437,16 @@ class MnemeRuntime:
             self.preferences_store.save(preferences)
         return preferences
 
+    def apply_review(self, review_id: str, *, reason: str) -> dict[str, Any]:
+        record = apply_memory_review(self.engine.store, review_id, reason=reason)
+        self._last_correction_proposal = record.to_dict()
+        return self._last_correction_proposal
+
+    def reject_review(self, review_id: str, *, reason: str) -> dict[str, Any]:
+        record = reject_memory_review(self.engine.store, review_id, reason=reason)
+        self._last_correction_proposal = record.to_dict()
+        return self._last_correction_proposal
+
     def close(self) -> None:
         if self.virtual_skill_runner is not None:
             self.virtual_skill_runner.cancel_active(reason="runtime_shutdown", now_ms=self._now_ms())
@@ -546,13 +561,15 @@ class MnemeRuntime:
             TurnType.CORRECTION,
             TurnType.CONTRADICTION_CHALLENGE,
             TurnType.FORGET_REQUEST,
+            TurnType.CONFIRM_MEMORY_REQUEST,
         }:
             related_refs = (
                 self._utterances[-1].plan.memory_refs
                 if self._utterances
                 else []
             )
-            proposal = create_correction_proposal(
+            proposal = create_memory_review_record(
+                self.engine.store,
                 turn_text,
                 turn_type=turn_classification.turn_type,
                 created_ts=timestamp,

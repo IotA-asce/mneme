@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import tempfile
 import time
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -16,6 +16,7 @@ from .runtime_loop import MnemeRuntime, RuntimeClock
 
 
 DEFAULT_COGNITION_FIXTURE = ROOT / "tests" / "fixtures" / "cognition" / "basic_preference_recall.yaml"
+DEFAULT_COGNITION_FIXTURES_DIR = ROOT / "tests" / "fixtures" / "cognition"
 MEMORY_CLAIM_PHRASES = ("you told me", "you said", "i remember", "i observed")
 
 
@@ -113,6 +114,34 @@ class CognitiveBenchmarkReport:
         }
 
 
+@dataclass(slots=True)
+class CognitiveBenchmarkSuiteReport:
+    fixture_reports: list[CognitiveBenchmarkReport]
+
+    def to_dict(self) -> dict[str, Any]:
+        reports = [report.to_dict() for report in self.fixture_reports]
+        passed = sum(1 for report in self.fixture_reports if report.total_score >= 1.0)
+        total = len(self.fixture_reports)
+        score = (
+            round(sum(report.total_score for report in self.fixture_reports) / total, 6)
+            if total
+            else 0.0
+        )
+        return {
+            "suite": True,
+            "total_score": score,
+            "passed_fixtures": passed,
+            "total_fixtures": total,
+            "failed_expectations": [
+                failure
+                for report in self.fixture_reports
+                for failure in report.failed_expectations
+            ],
+            "fixture_reports": reports,
+            "capability_ladder": build_capability_report(reports).to_dict(),
+        }
+
+
 def load_benchmark_fixture(path: str | Path) -> BenchmarkFixture:
     fixture_path = Path(path)
     raw = fixture_path.read_text(encoding="utf-8")
@@ -149,6 +178,25 @@ def run_cognitive_benchmark(
         with tempfile.TemporaryDirectory(prefix="mneme-cognition-benchmark-") as tmp_dir:
             return _run_with_db(loaded, Path(tmp_dir) / "memory.sqlite3", migrations_dir)
     return _run_with_db(loaded, Path(db_path), migrations_dir)
+
+
+def run_cognitive_benchmark_suite(
+    fixtures: Sequence[str | Path] | None = None,
+    *,
+    fixtures_dir: str | Path | None = None,
+    db_path: str | Path | None = None,
+    migrations_dir: str | Path = DEFAULT_MIGRATIONS,
+) -> CognitiveBenchmarkSuiteReport:
+    fixture_paths = list(fixtures or [])
+    if fixtures_dir is not None:
+        fixture_paths.extend(_fixture_paths(Path(fixtures_dir)))
+    if not fixture_paths:
+        fixture_paths = _fixture_paths(DEFAULT_COGNITION_FIXTURES_DIR)
+    reports = [
+        run_cognitive_benchmark(path, db_path=db_path, migrations_dir=migrations_dir)
+        for path in fixture_paths
+    ]
+    return CognitiveBenchmarkSuiteReport(reports)
 
 
 def _run_with_db(
@@ -192,8 +240,23 @@ def _score_step(
     realization = slots.get("model_realization", {}) if isinstance(slots, Mapping) else {}
     snapshot = result.get("snapshot", {}) if isinstance(result.get("snapshot"), Mapping) else {}
     turn_type = _latest_turn_type(snapshot)
-    failures: list[str] = []
     expect = step.expect
+    review_action_result: dict[str, Any] | None = None
+    if expect.get("apply_latest_review"):
+        latest_review = _latest_review(snapshot)
+        review_id = latest_review.get("review_id")
+        if isinstance(review_id, str) and review_id:
+            record = runtime.apply_review(
+                review_id,
+                reason="benchmark expectation",
+            )
+            review_action_result = record.get("action_result") if isinstance(record, Mapping) else None
+            snapshot = runtime.snapshot()
+        else:
+            review_action_result = {
+                "error": "no latest review proposal to apply",
+            }
+    failures: list[str] = []
     category_scores = {
         "hallucinated_memory": True,
         "provenance_correctness": True,
@@ -209,6 +272,8 @@ def _score_step(
         category_scores.setdefault("contradiction_handling", True)
     if expect.get("correction_proposal"):
         category_scores.setdefault("correction_acceptance", True)
+    if expect.get("review_proposal_required"):
+        category_scores.setdefault("review_proposal", True)
 
     for phrase in expect.get("response_contains", []):
         if str(phrase).lower() not in text.lower():
@@ -219,6 +284,9 @@ def _score_step(
     if expect.get("memory_ref_required") and not refs:
         failures.append("response did not include a memory reference")
         category_scores["preference_recall"] = False
+    if expect.get("memory_ref_forbidden") and refs:
+        failures.append("response unexpectedly included a memory reference")
+        category_scores["hallucinated_memory"] = False
     expected_turn = expect.get("turn_type")
     if expected_turn and turn_type != expected_turn:
         failures.append(f"turn_type was {turn_type}, expected {expected_turn}")
@@ -230,6 +298,40 @@ def _score_step(
         if not proposal:
             failures.append("expected a correction proposal")
             category_scores["correction_acceptance"] = False
+    if expect.get("review_proposal_required"):
+        proposal = _latest_review(snapshot)
+        if not proposal:
+            failures.append("expected a memory review proposal")
+            category_scores["correction_acceptance"] = False
+            category_scores["review_proposal"] = False
+    expected_review_type = expect.get("review_type")
+    if expected_review_type:
+        proposal = _latest_review(snapshot)
+        if proposal.get("proposal_type") != expected_review_type:
+            failures.append(f"review_type was {proposal.get('proposal_type')}, expected {expected_review_type}")
+            category_scores["correction_acceptance"] = False
+            category_scores["review_proposal"] = False
+    expected_review_status = expect.get("review_status")
+    if expected_review_status:
+        proposal = _latest_review(snapshot)
+        if proposal.get("status") != expected_review_status:
+            failures.append(f"review_status was {proposal.get('status')}, expected {expected_review_status}")
+            category_scores["correction_acceptance"] = False
+            category_scores["review_proposal"] = False
+    expected_counts = expect.get("fact_status_counts")
+    if isinstance(expected_counts, Mapping):
+        counts = runtime.engine.inspect_db().get("facts_by_status", {})
+        for status, expected_count in expected_counts.items():
+            if counts.get(status, 0) != expected_count:
+                failures.append(f"fact status {status} count was {counts.get(status, 0)}, expected {expected_count}")
+    if expect.get("conflict_report_required") and not runtime.engine.store.get_fact_conflict_reports():
+        failures.append("expected at least one fact conflict report")
+        category_scores["contradiction_handling"] = False
+    expected_source = expect.get("fact_source_type")
+    if expected_source:
+        if not _has_fact_source(runtime, expected_source, refs, review_action_result):
+            failures.append(f"expected fact source_type {expected_source}")
+            category_scores["provenance_correctness"] = False
     if expect.get("model_realized") is not None:
         used = bool(realization.get("used_model")) if isinstance(realization, Mapping) else False
         if used != bool(expect["model_realized"]):
@@ -322,6 +424,45 @@ def _latest_turn_type(snapshot: Mapping[str, Any]) -> str | None:
     return None
 
 
+def _latest_review(snapshot: Mapping[str, Any]) -> Mapping[str, Any]:
+    review = snapshot.get("memory_review")
+    if not isinstance(review, Mapping):
+        return {}
+    latest = review.get("last_correction_proposal")
+    return latest if isinstance(latest, Mapping) else {}
+
+
+def _has_fact_source(
+    runtime: MnemeRuntime,
+    expected_source: str,
+    refs: list[dict[str, str]],
+    review_action_result: Mapping[str, Any] | None,
+) -> bool:
+    fact_ids = [
+        ref["memory_id"]
+        for ref in refs
+        if ref["memory_kind"] == "fact"
+    ]
+    if isinstance(review_action_result, Mapping):
+        created = review_action_result.get("created_fact_ids")
+        if isinstance(created, list):
+            fact_ids.extend(item for item in created if isinstance(item, str))
+        changed = review_action_result.get("changed_memory_refs")
+        if isinstance(changed, list):
+            fact_ids.extend(
+                item["memory_id"]
+                for item in changed
+                if isinstance(item, Mapping)
+                and item.get("memory_kind") == "fact"
+                and isinstance(item.get("memory_id"), str)
+            )
+    for fact_id in dict.fromkeys(fact_ids):
+        fact = runtime.engine.store.get_fact(fact_id)
+        if fact is not None and fact.source_type.value == expected_source:
+            return True
+    return False
+
+
 def _has_unsupported_memory_claim(text: str, refs: list[dict[str, str]], expect: Mapping[str, Any]) -> bool:
     if refs or expect.get("allow_memory_claim_without_ref"):
         return False
@@ -358,3 +499,13 @@ def _text(value: Any, field_name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field_name} must be a non-empty string")
     return value.strip()
+
+
+def _fixture_paths(fixtures_dir: Path) -> list[Path]:
+    if not fixtures_dir.exists():
+        return []
+    return sorted(
+        path
+        for path in fixtures_dir.iterdir()
+        if path.suffix.lower() in {".yaml", ".yml", ".json"}
+    )

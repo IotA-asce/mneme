@@ -127,6 +127,7 @@ class DialoguePlanner:
             TurnType.CORRECTION,
             TurnType.CONTRADICTION_CHALLENGE,
             TurnType.FORGET_REQUEST,
+            TurnType.CONFIRM_MEMORY_REQUEST,
         }:
             return self._acknowledge_review_proposal(intent, turn_type)
         if turn_type == TurnType.IDENTITY_SELF_QUESTION:
@@ -298,16 +299,20 @@ class DialoguePlanner:
     ) -> UtterancePlan:
         proposal = intent.payload.get("correction_proposal")
         proposal_dict = dict(proposal) if isinstance(proposal, Mapping) else {}
+        review_id = proposal_dict.get("review_id") or proposal_dict.get("proposal_id")
+        review_suffix = f" Review id: {review_id}." if review_id else ""
         if turn_type == TurnType.FORGET_REQUEST:
             text = "I marked that as a forget request for review. I have not purged any memory yet."
         elif turn_type == TurnType.CONTRADICTION_CHALLENGE:
             text = "I marked that as a contradiction challenge for review. I have not changed confirmed memory yet."
+        elif turn_type == TurnType.CONFIRM_MEMORY_REQUEST:
+            text = "I marked that as a confirmation request for review. I have not changed memory yet."
         else:
             text = "I marked that as a correction proposal for review. I have not changed memory yet."
         return self._build(
             intent,
             act_type=DialogueActType.ACKNOWLEDGE,
-            text=text,
+            text=f"{text}{review_suffix}",
             content_slots={"correction_proposal": proposal_dict},
             memory_refs=[
                 dict(ref)

@@ -1,0 +1,36 @@
+name: forget_suppression_review
+description: Applying a forget request suppresses the referenced memory without purging it.
+category: forgetting
+steps:
+  - input: "remember that I like green tea"
+    timestamp: 1000
+    expect:
+      turn_type: explicit_remember_instruction
+  - input: "what do I like?"
+    timestamp: 2000
+    expect:
+      turn_type: recall_question
+      memory_ref_required: true
+      response_contains:
+        - green tea
+  - input: "forget this"
+    timestamp: 3000
+    expect:
+      turn_type: forget_request
+      review_proposal_required: true
+      review_type: forget_request
+      apply_latest_review: true
+      review_status: applied
+      fact_status_counts:
+        suppressed: 1
+      category_tags:
+        - review_proposal
+  - input: "what do I like?"
+    timestamp: 4000
+    expect:
+      turn_type: recall_question
+      memory_ref_forbidden: true
+      response_not_contains:
+        - green tea
+      category_tags:
+        - hallucinated_memory

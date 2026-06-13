@@ -1,0 +1,29 @@
+name: correction_proposal
+description: A user correction creates a durable review proposal without mutating memory.
+category: review_proposal
+steps:
+  - input: "remember that I like green tea"
+    timestamp: 1000
+    expect:
+      turn_type: explicit_remember_instruction
+      act_type: acknowledge
+  - input: "what do I like?"
+    timestamp: 2000
+    expect:
+      turn_type: recall_question
+      memory_ref_required: true
+      response_contains:
+        - green tea
+  - input: "actually I like coffee"
+    timestamp: 3000
+    expect:
+      turn_type: correction
+      act_type: acknowledge
+      review_proposal_required: true
+      review_type: correction
+      review_status: proposed
+      response_contains:
+        - Review id
+      category_tags:
+        - review_proposal
+        - correction_acceptance

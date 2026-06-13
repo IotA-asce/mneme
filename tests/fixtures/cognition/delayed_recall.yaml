@@ -1,0 +1,24 @@
+name: delayed_recall
+description: Recall a preference after unrelated intervening dialogue.
+category: delayed_recall
+steps:
+  - input: "remember that I prefer quiet rooms"
+    timestamp: 1000
+    expect:
+      turn_type: explicit_remember_instruction
+      act_type: acknowledge
+  - input: "hello Mneme"
+    timestamp: 2000
+    expect:
+      turn_type: greeting
+      act_type: greet
+  - input: "what do I prefer?"
+    timestamp: 120000
+    expect:
+      turn_type: recall_question
+      act_type: answer
+      memory_ref_required: true
+      response_contains:
+        - quiet rooms
+      category_tags:
+        - delayed_recall
