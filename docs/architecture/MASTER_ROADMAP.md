@@ -1,6 +1,6 @@
 # Mneme Master Roadmap
 
-Date: 2026-06-13 (revision 4)
+Date: 2026-06-13 (revision 5)
 Status: Long-term implementation roadmap from the V1 memory core to the complete android head brain
 
 This roadmap covers every implementation milestone between the current bench-only memory prototype and the end goal: a safe, debuggable, expressive, memory-centered robot head with lifelike attention, timing, memory continuity, and transparent reasoning.
@@ -8,6 +8,8 @@ This roadmap covers every implementation milestone between the current bench-onl
 **Revision 2 (2026-06-12), by owner decision:** motor/actuator work is deferred. The near-term embodiment is a *virtual head* — a cross-platform app that perceives through the host machine's camera/microphone and talks back on screen/speakers. Mneme targets **Windows, macOS, and Linux** equally (primary dev machine is an Apple Silicon Mac), so the ROS 2 bridge moved into the deferred physical-embodiment track and a cross-platform runtime replaced it. Perception must **discover attached peripherals at startup/runtime** rather than assuming configured devices. Recorded privacy decisions live in `docs/safety/MEMORY_PRIVACY.md`.
 
 **Revision 4 (2026-06-13), by owner decision:** the next active stage is **Stage 6 — Local Living Lab**, not physical embodiment. Mneme should become useful as a daily local brain loop on the current computer first: microphone, speaker, camera, local models, memory, attention, virtual presence, and evaluation. Physical motors, GPIO, serial, PWM, ROS control, and actuator hardware remain deferred until the brain loop is stable.
+
+**Revision 5 (2026-06-13), by owner decision:** the post-Stage 6 trajectory is now documented as a cognitive capability roadmap: local model integration first, then benchmarked capability growth against an explicit animal-reference ladder, with physical embodiment deferred until the brain loop passes a readiness gate. See `docs/architecture/COGNITIVE_CAPABILITY_ROADMAP.md`.
 
 Ordering rules:
 
@@ -25,7 +27,7 @@ Stage 3  Cross-platform runtime and virtual head   [complete]
 Stage 4  Real perception (camera + microphone)     [complete]
 Stage 5  Conversational presence                   [complete]
 Stage 6  Local Living Lab                          [foundation implemented; opt-in live validation next]
-Stage 7  Evolving brain evaluation                 [planned]
+Stage 7  Local cognitive model + evaluation        [planned]
 Stage 8  Physical embodiment                       [deferred: ROS, skills, actuators, hardware]
 Stage 9  Lifelike embodied continuity              [planned]
 ```
@@ -322,9 +324,26 @@ Future work: redaction workflows, replayable soak scenarios from real logs, resp
 
 ---
 
-## Stage 7 — Evolving Brain Evaluation
+## Stage 7 — Local Cognitive Model and Evolving Brain Evaluation
 
-Goal: evaluate whether Mneme's local brain loop improves in continuity and social timing before any physical embodiment. Capabilities here may use learned/model-driven components, but always behind deterministic safety, provenance, replay, and rollback.
+Goal: connect local AI models as bounded cognitive tools, then evaluate whether Mneme's local brain loop improves in continuity, memory, social timing, and reasoning before any physical embodiment. Capabilities here may use learned/model-driven components, but always behind deterministic safety, provenance, replay, and rollback.
+
+The comprehensive implementation reference for this stage is `docs/architecture/COGNITIVE_CAPABILITY_ROADMAP.md`. It defines:
+
+- the local model runtime adapter path,
+- cognitive context construction,
+- model-backed dialogue realization with deterministic fallback,
+- benchmark fixtures and capability scoring,
+- an animal-reference capability ladder,
+- the long-term human-brain-equivalent functional target,
+- the physical embodiment readiness gate.
+
+### M7.0 Local cognitive model layer
+
+- Model runtime adapters for local backends such as Ollama and OpenAI-compatible local servers.
+- Compact cognitive context builder from working memory, attention, safety, and retrieved memory.
+- Model dialogue realizer behind the existing deterministic planner.
+- UI/CLI status surfaces showing whether the model is connected, which memory refs were used, and whether deterministic fallback was used.
 
 ### M7.1 Daily-driver metrics
 
