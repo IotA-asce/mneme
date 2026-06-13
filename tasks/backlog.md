@@ -138,6 +138,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add terminal virtual head command `mneme run`
 - [x] Make interactive `mneme run` print responses immediately
 - [x] Add explicit `mneme run --live` ticking mode for configured live perception workers
+- [x] Stream human-readable live perception, attention, speech, and presence status during live mode
 - [x] Add scripted JSON mode for deterministic virtual-head demos
 - [x] Add virtual conversational presence coordinator
 - [x] Add simulated speech output backend

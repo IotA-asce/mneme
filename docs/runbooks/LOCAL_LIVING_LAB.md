@@ -55,6 +55,10 @@ mneme run --profile local-speech --live --json
 mneme run --profile local-speech --live-ticks 5 --json
 ```
 
+Live mode streams status lines while the loop runs. With `--json`, these lines
+go to stderr and the final JSON dump remains on stdout. Use
+`--quiet-live-status` to suppress the readable stream.
+
 Useful flags:
 
 ```bash
@@ -108,6 +112,10 @@ Run native vision after installing optional dependencies and granting camera per
 ```bash
 mneme run --profile local-vision --face-backend mediapipe --json
 ```
+
+If `--face-backend mediapipe` is omitted, OpenCV can still capture
+`camera_frame` events, but no `person_seen` events are generated. In that case
+Mneme may continue curiosity scanning instead of tracking a person.
 
 The first native vision target is reliable observation, not identity recognition:
 

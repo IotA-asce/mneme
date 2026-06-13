@@ -54,6 +54,19 @@ mneme run --live
 mneme run --live --live-ticks 5 --json
 ```
 
+Live mode streams readable status lines while it runs. With `--json`, status goes
+to stderr and the final JSON document remains on stdout. Use
+`--quiet-live-status` for machine-only JSON.
+
+Example live status:
+
+```text
+vision: frame from Brio 100; person detection is off (add --face-backend mediapipe)
+speech: ASR/capture failed: capture_error:HFValidationError (check --asr-model path; run `mneme models verify --profile local-speech --json`)
+attention: curiosity:scan_center (curiosity_idle)
+presence: idle; gaze=curiosity:scan_center
+```
+
 For native speech/vision, combine live ticking with a local profile after the
 optional dependencies and model files are configured:
 
