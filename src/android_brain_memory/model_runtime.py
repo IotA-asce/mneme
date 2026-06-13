@@ -40,6 +40,7 @@ class ModelRequest:
     model: str
     messages: list[ModelMessage]
     options: dict[str, Any] = field(default_factory=dict)
+    response_format: str | dict[str, Any] | None = None
     timeout_ms: int = DEFAULT_MODEL_TIMEOUT_MS
 
     def __post_init__(self) -> None:
@@ -52,6 +53,12 @@ class ModelRequest:
             raise ValueError("messages must not be empty")
         if not isinstance(self.options, dict):
             raise ValueError("options must be a dictionary")
+        if self.response_format is not None and not isinstance(self.response_format, (str, dict)):
+            raise ValueError("response_format must be a string, dictionary, or None")
+        if isinstance(self.response_format, str):
+            self.response_format = _required_text(self.response_format, "response_format")
+        if isinstance(self.response_format, dict):
+            self.response_format = dict(self.response_format)
         self.timeout_ms = _positive_int(self.timeout_ms, "timeout_ms")
 
     @classmethod
@@ -63,6 +70,7 @@ class ModelRequest:
         system: str | None = None,
         timeout_ms: int = DEFAULT_MODEL_TIMEOUT_MS,
         options: Mapping[str, Any] | None = None,
+        response_format: str | dict[str, Any] | None = None,
     ) -> "ModelRequest":
         messages = []
         if system:
@@ -72,6 +80,7 @@ class ModelRequest:
             model=model,
             messages=messages,
             options=dict(options or {}),
+            response_format=response_format,
             timeout_ms=timeout_ms,
         )
 
@@ -80,6 +89,7 @@ class ModelRequest:
             "model": self.model,
             "messages": [message.to_dict() for message in self.messages],
             "options": dict(self.options),
+            "response_format": self.response_format,
             "timeout_ms": self.timeout_ms,
         }
 
@@ -326,6 +336,8 @@ class OllamaModelRuntime:
             }
             if request.options:
                 payload["options"] = dict(request.options)
+            if request.response_format is not None:
+                payload["format"] = request.response_format
             _, response = self._http_json(
                 "POST",
                 f"{self.base_url}/api/chat",

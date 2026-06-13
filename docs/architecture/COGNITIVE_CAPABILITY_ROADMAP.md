@@ -162,6 +162,8 @@ These milestones refine the existing Stage 7+ roadmap. Physical embodiment remai
 
 Goal: connect local models to Mneme without compromising memory provenance, safety, or architecture boundaries.
 
+Implementation status as of 2026-06-13: M7.1-M7.4 are implemented for local Ollama readiness, bounded context construction, model-backed wording with deterministic fallback, and runtime/UI cognition status. The model remains a wording layer; benchmark-driven capability scoring starts in M8.
+
 ### M7.1 Model Runtime Adapter
 
 Add:

@@ -27,6 +27,7 @@ from .model_runtime import (
     DEFAULT_OLLAMA_MODEL,
     OllamaModelRuntime,
 )
+from .model_dialogue import DEFAULT_MAX_RESPONSE_CHARS, DEFAULT_MODEL_DIALOGUE_TIMEOUT_MS, ModelDialogueRealizer
 from .local_ui import serve_ui
 from .local_vision import MediaPipeFaceDetectionBackend, OpenCVCameraCaptureBackend
 from .peripherals import PeripheralDiscoveryService, RealPeripheralBackend, default_virtual_head_devices
@@ -39,7 +40,8 @@ from .runtime_preferences import (
 from .runtime_loop import MnemeRuntime, RuntimeClock
 
 
-LOCAL_PROFILES = {"local-speech", "local-vision", "local-lab"}
+LOCAL_PROFILES = {"local-speech", "local-vision", "local-cognition", "local-lab"}
+REAL_DEVICE_AUTO_PROFILES = {"local-speech", "local-vision", "local-lab"}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -62,7 +64,7 @@ def build_parser() -> argparse.ArgumentParser:
     run = subparsers.add_parser("run", help="Run the terminal virtual head.")
     run.add_argument(
         "--profile",
-        choices=["default", "local-speech", "local-vision", "local-lab"],
+        choices=["default", "local-speech", "local-vision", "local-cognition", "local-lab"],
         default="default",
         help="Runtime profile. Local profiles use optional native backends when configured.",
     )
@@ -183,6 +185,16 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Append local living-lab conversation metrics to a JSONL file.",
     )
+    run.add_argument(
+        "--cognition-backend",
+        choices=["auto", "none", "ollama"],
+        default="auto",
+        help="Optional local model wording backend. Auto enables Ollama for local-cognition only.",
+    )
+    run.add_argument("--cognition-base-url", default=DEFAULT_OLLAMA_BASE_URL)
+    run.add_argument("--cognition-model", default=DEFAULT_OLLAMA_MODEL)
+    run.add_argument("--cognition-timeout-ms", type=int, default=DEFAULT_MODEL_DIALOGUE_TIMEOUT_MS)
+    run.add_argument("--cognition-max-response-chars", type=int, default=DEFAULT_MAX_RESPONSE_CHARS)
 
     ui = subparsers.add_parser("ui", help="Serve the local browser virtual-head UI.")
     ui.add_argument("--host", default="127.0.0.1")
@@ -199,6 +211,22 @@ def build_parser() -> argparse.ArgumentParser:
         default=5_000,
         help="Timeout for each real device inventory command.",
     )
+    ui.add_argument(
+        "--cognition-profile",
+        choices=["none", "local"],
+        default="none",
+        help="Enable local model wording status and realization in the UI runtime.",
+    )
+    ui.add_argument(
+        "--cognition-backend",
+        choices=["ollama"],
+        default="ollama",
+        help="Local cognition backend for --cognition-profile local.",
+    )
+    ui.add_argument("--cognition-base-url", default=DEFAULT_OLLAMA_BASE_URL)
+    ui.add_argument("--cognition-model", default=DEFAULT_OLLAMA_MODEL)
+    ui.add_argument("--cognition-timeout-ms", type=int, default=DEFAULT_MODEL_DIALOGUE_TIMEOUT_MS)
+    ui.add_argument("--cognition-max-response-chars", type=int, default=DEFAULT_MAX_RESPONSE_CHARS)
 
     models = subparsers.add_parser("models", help="Inspect local model registry.")
     models.add_argument("--registry", type=Path, default=DEFAULT_MODEL_REGISTRY)
@@ -296,6 +324,7 @@ def _build_runtime(args: argparse.Namespace) -> MnemeRuntime:
     camera_backend = _camera_backend(args)
     speech_backend = _speech_backend(args)
     speech_output_backend = _speech_output_backend(args)
+    model_dialogue_realizer = _model_dialogue_realizer(args)
     return MnemeRuntime(
         db_path=args.db,
         migrations_dir=args.migrations,
@@ -314,13 +343,14 @@ def _build_runtime(args: argparse.Namespace) -> MnemeRuntime:
         preferences_store=preferences_store,
         enable_virtual_presence=not args.no_virtual_presence,
         virtual_speech_duration_ms=args.virtual_speech_duration_ms,
+        model_dialogue_realizer=model_dialogue_realizer,
     )
 
 
 def _device_discovery(args: argparse.Namespace) -> tuple[PeripheralDiscoveryService | None, list[dict[str, Any]] | None]:
     device_backend = "none" if getattr(args, "no_fake_devices", False) else args.device_backend
     if (
-        getattr(args, "profile", "default") in LOCAL_PROFILES
+        getattr(args, "profile", "default") in REAL_DEVICE_AUTO_PROFILES
         and getattr(args, "device_backend", "fake") == "fake"
         and not getattr(args, "no_fake_devices", False)
     ):
@@ -407,6 +437,7 @@ def _ui(args: argparse.Namespace) -> int:
         discovery_service=discovery_service,
         fake_devices=fake_devices,
         preferences_store=preferences_store,
+        model_dialogue_realizer=_ui_model_dialogue_realizer(args),
     )
     try:
         runtime.start()
@@ -483,6 +514,35 @@ def _model_runtime_adapter(args: argparse.Namespace) -> OllamaModelRuntime:
     if args.backend == "ollama":
         return OllamaModelRuntime(base_url=args.base_url)
     raise ValueError(f"unsupported cognition backend: {args.backend}")
+
+
+def _model_dialogue_realizer(args: argparse.Namespace) -> ModelDialogueRealizer | None:
+    backend = args.cognition_backend
+    if backend == "auto":
+        backend = "ollama" if args.profile == "local-cognition" else "none"
+    if backend == "none":
+        return None
+    if backend != "ollama":
+        raise ValueError(f"unsupported cognition backend: {backend}")
+    return ModelDialogueRealizer(
+        OllamaModelRuntime(base_url=args.cognition_base_url),
+        model=args.cognition_model,
+        timeout_ms=args.cognition_timeout_ms,
+        max_response_chars=args.cognition_max_response_chars,
+    )
+
+
+def _ui_model_dialogue_realizer(args: argparse.Namespace) -> ModelDialogueRealizer | None:
+    if args.cognition_profile == "none":
+        return None
+    if args.cognition_backend != "ollama":
+        raise ValueError(f"unsupported cognition backend: {args.cognition_backend}")
+    return ModelDialogueRealizer(
+        OllamaModelRuntime(base_url=args.cognition_base_url),
+        model=args.cognition_model,
+        timeout_ms=args.cognition_timeout_ms,
+        max_response_chars=args.cognition_max_response_chars,
+    )
 
 
 def _eval(args: argparse.Namespace) -> int:

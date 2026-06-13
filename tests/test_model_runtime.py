@@ -61,7 +61,13 @@ def test_ollama_chat_sends_non_streaming_request_and_parses_response():
         }
 
     runtime = OllamaModelRuntime(http_json=fake_http)
-    response = runtime.generate(ModelRequest.from_prompt("health?", model=DEFAULT_OLLAMA_MODEL))
+    response = runtime.generate(
+        ModelRequest.from_prompt(
+            "health?",
+            model=DEFAULT_OLLAMA_MODEL,
+            response_format={"type": "object"},
+        )
+    )
 
     assert response.ok is True
     assert response.text == "ready"
@@ -70,6 +76,7 @@ def test_ollama_chat_sends_non_streaming_request_and_parses_response():
     assert seen["url"] == "http://localhost:11434/api/chat"
     assert seen["payload"]["stream"] is False
     assert seen["payload"]["model"] == DEFAULT_OLLAMA_MODEL
+    assert seen["payload"]["format"] == {"type": "object"}
 
 
 def test_ollama_check_reports_missing_model_with_pull_suggestion():

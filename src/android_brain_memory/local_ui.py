@@ -114,6 +114,16 @@ HTML_TEMPLATE = """<!doctype html>
       <p class="device-status" data-bind="device_status">$device_status</p>
     </section>
     <section class="panel">
+      <h2>Cognition</h2>
+      <div class="state-line">
+        <div class="metric"><span>model</span><strong data-bind="cognition_model">$cognition_model</strong></div>
+        <div class="metric"><span>status</span><strong data-bind="cognition_status">$cognition_status</strong></div>
+        <div class="metric"><span>latency</span><strong data-bind="cognition_latency">$cognition_latency</strong></div>
+        <div class="metric"><span>memory refs</span><strong data-bind="cognition_refs">$cognition_refs</strong></div>
+      </div>
+      <p class="device-status" data-bind="cognition_detail">$cognition_detail</p>
+    </section>
+    <section class="panel">
       <h2>Runtime</h2>
       <div class="state-line">
         <div class="metric"><span>memory rows</span><strong data-bind="memory_count">$memory_count</strong></div>
@@ -195,6 +205,14 @@ HTML_TEMPLATE = """<!doctype html>
       setText("latest_response", latest);
       setText("memory_count", String(memoryCount));
       setText("timestamp", String(value(["timestamp"], 0)));
+      var cognition = value(["cognition"], {});
+      var lastCognition = cognition.last_result || {};
+      var refs = Array.isArray(lastCognition.memory_refs_used) ? lastCognition.memory_refs_used : [];
+      setText("cognition_model", cognition.enabled ? String(cognition.backend || "model") + " / " + String(cognition.model || "unknown") : "off");
+      setText("cognition_status", !cognition.enabled ? "deterministic" : (lastCognition.used_model ? "model-realized" : "fallback"));
+      setText("cognition_latency", lastCognition.latency_ms == null ? "none" : String(lastCognition.latency_ms) + " ms");
+      setText("cognition_refs", refs.length ? refs.map(function (ref) { return ref.memory_id; }).join(", ") : "none");
+      setText("cognition_detail", !cognition.enabled ? "Local model wording is disabled." : (lastCognition.fallback_reason || "Local model wording is available."));
       setText("snapshot_json", JSON.stringify(state, null, 2));
       renderDevices(state);
     }
@@ -213,6 +231,8 @@ def render_snapshot_html(snapshot: dict[str, Any]) -> str:
     presence = snapshot.get("presence") if isinstance(snapshot.get("presence"), dict) else {}
     avatar = presence.get("avatar") if isinstance(presence.get("avatar"), dict) else {}
     latest = snapshot.get("last_utterance") if isinstance(snapshot.get("last_utterance"), dict) else {}
+    cognition = snapshot.get("cognition") if isinstance(snapshot.get("cognition"), dict) else {}
+    cognition_last = cognition.get("last_result") if isinstance(cognition.get("last_result"), dict) else {}
     preferences = snapshot.get("device_preferences") if isinstance(snapshot.get("device_preferences"), dict) else {}
     devices = _device_list(snapshot)
     mode = str(avatar.get("mode", "idle"))
@@ -247,6 +267,11 @@ def render_snapshot_html(snapshot: dict[str, Any]) -> str:
             _optional_text(preferences.get("speaker_device_id")),
         ),
         device_status=html.escape(_device_status_text(snapshot)),
+        cognition_model=html.escape(_cognition_model_text(cognition)),
+        cognition_status=html.escape(_cognition_status_text(cognition, cognition_last)),
+        cognition_latency=html.escape(_cognition_latency_text(cognition_last)),
+        cognition_refs=html.escape(_cognition_refs_text(cognition_last)),
+        cognition_detail=html.escape(_cognition_detail_text(cognition, cognition_last)),
         memory_count=str(memory_count),
         timestamp=html.escape(str(snapshot.get("timestamp", 0))),
         snapshot_json=html.escape(snapshot_json),
@@ -405,6 +430,48 @@ def _device_status_text(snapshot: dict[str, Any]) -> str:
     if total:
         return f"Found {total} device option(s)."
     return "No devices found yet. Check permissions, then refresh the list."
+
+
+def _cognition_model_text(cognition: dict[str, Any]) -> str:
+    if not cognition.get("enabled"):
+        return "off"
+    backend = cognition.get("backend") or "model"
+    model = cognition.get("model") or "unknown"
+    return f"{backend} / {model}"
+
+
+def _cognition_status_text(cognition: dict[str, Any], last_result: dict[str, Any]) -> str:
+    if not cognition.get("enabled"):
+        return "deterministic"
+    if not last_result:
+        return "ready"
+    return "model-realized" if last_result.get("used_model") else "fallback"
+
+
+def _cognition_latency_text(last_result: dict[str, Any]) -> str:
+    latency = last_result.get("latency_ms")
+    return f"{latency} ms" if isinstance(latency, int) else "none"
+
+
+def _cognition_refs_text(last_result: dict[str, Any]) -> str:
+    refs = last_result.get("memory_refs_used")
+    if not isinstance(refs, list) or not refs:
+        return "none"
+    memory_ids = [
+        str(ref.get("memory_id"))
+        for ref in refs
+        if isinstance(ref, dict) and ref.get("memory_id")
+    ]
+    return ", ".join(memory_ids) if memory_ids else "none"
+
+
+def _cognition_detail_text(cognition: dict[str, Any], last_result: dict[str, Any]) -> str:
+    if not cognition.get("enabled"):
+        return "Local model wording is disabled."
+    if not last_result:
+        return "Local model wording is enabled."
+    fallback = last_result.get("fallback_reason")
+    return f"Fallback: {fallback}" if fallback else "Local model wording was used for the last response."
 
 
 def _form_value(form: dict[str, list[str]], key: str) -> str | None:

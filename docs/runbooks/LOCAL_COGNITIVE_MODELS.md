@@ -1,9 +1,9 @@
 # Local Cognitive Models Runbook
 
-Status: M7.1 local Ollama adapter
+Status: M7.2-M7.4 local model-backed wording
 Date: 2026-06-13
 
-Mneme can now check a local Ollama chat model without making that model own the dialogue loop. This is the first safe step toward model-backed cognition: verify the service, verify the model, run one bounded probe, and return structured status.
+Mneme can now check a local Ollama chat model and use it as an optional wording layer after deterministic memory retrieval, executive intent, and dialogue planning. The model does not own memory selection, safety, intent, or durable writes.
 
 The default first model is `qwen2.5:1.5b`.
 
@@ -54,14 +54,61 @@ ollama pull qwen2.5:1.5b
 
 The command exits with status `0` when the check is healthy and status `1` when the backend or model is not ready.
 
+## Local Model Wording
+
+Use local model wording in terminal mode:
+
+```bash
+mneme run --profile local-cognition --json --input "hello Mneme"
+```
+
+Use local cognition with the broader local-lab profile:
+
+```bash
+mneme run \
+  --profile local-lab \
+  --cognition-backend ollama \
+  --cognition-model qwen2.5:1.5b \
+  --json
+```
+
+Open the browser UI with local cognition enabled:
+
+```bash
+mneme ui --cognition-profile local
+```
+
+The runtime snapshot includes:
+
+- whether local cognition is enabled,
+- backend and model name,
+- last model latency,
+- whether the last response was model-realized or deterministic fallback,
+- memory refs used by the final response,
+- fallback reason when validation fails.
+
+## Safety Boundary
+
+The local model receives a bounded `CognitiveContextPacket` containing the user utterance, working memory, attention, safety/avatar state, and allowed retrieved memories.
+
+Rules enforced before model output is spoken:
+
+- `never_say` and `internal_only` memories are excluded.
+- `restricted` memories become `restricted memory exists` unless trusted internal mode is used.
+- model output must be structured JSON,
+- model output may use only memory refs present in the context packet,
+- model output must not claim inferred facts were user-confirmed,
+- low-confidence memory use is hedged,
+- failures fall back to deterministic dialogue text.
+
 ## What This Does Not Do Yet
 
 - It does not replace the deterministic dialogue planner.
-- It does not connect the model to `mneme ui` chat responses.
 - It does not let the model write confirmed memories.
 - It does not send model output to skills or hardware.
+- It does not add multi-step reasoning, planning, embeddings, or cloud models.
 
-The next cognition milestone is a bounded context builder and model dialogue realizer behind the existing dialogue contract.
+The next cognition milestone is a benchmark harness and capability ladder to measure whether model-backed wording improves real behavior without increasing hallucinated memory claims.
 
 ## Failure Modes
 
