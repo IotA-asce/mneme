@@ -56,6 +56,7 @@ from .speech_benchmarks import (
 
 LOCAL_PROFILES = {"local-speech", "local-vision", "local-cognition", "local-lab"}
 REAL_DEVICE_AUTO_PROFILES = {"local-speech", "local-vision", "local-lab"}
+DEFAULT_STATUS_STREAM = object()
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -117,6 +118,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=1_000,
         help="Wall-clock delay between live ticks when --live is unbounded.",
+    )
+    run.add_argument(
+        "--quiet-live-status",
+        action="store_true",
+        help="Suppress human-readable live status lines. JSON output is unchanged.",
     )
     run.add_argument(
         "--no-fake-devices",
@@ -402,7 +408,11 @@ def _run(args: argparse.Namespace) -> int:
                 step_ms=args.step_ms,
                 sleep_ms=args.live_sleep_ms,
                 evaluation_logger=evaluation_logger,
-                terminal=not args.json,
+                status_stream=(
+                    None
+                    if args.quiet_live_status
+                    else (sys.stderr if args.json else sys.stdout)
+                ),
             ))
         else:
             outputs.extend(_interactive(
@@ -864,7 +874,7 @@ def _live_loop(
     step_ms: int,
     sleep_ms: int,
     evaluation_logger: EvaluationLogger | None = None,
-    terminal: bool = True,
+    status_stream: Any = DEFAULT_STATUS_STREAM,
 ) -> list[dict[str, Any]]:
     if max_ticks is not None and max_ticks < 1:
         raise ValueError("max_ticks must be positive when provided")
@@ -872,9 +882,16 @@ def _live_loop(
         raise ValueError("step_ms must be positive")
     if sleep_ms < 0:
         raise ValueError("sleep_ms must be non-negative")
+    if status_stream is DEFAULT_STATUS_STREAM:
+        status_stream = sys.stdout
     outputs: list[dict[str, Any]] = []
-    if terminal:
-        print("Mneme live loop is running. Press Ctrl-C to stop.", file=sys.stderr)
+    if status_stream is not None:
+        print("Mneme live loop is running. Press Ctrl-C to stop.", file=status_stream, flush=True)
+        print(
+            "Live status shows perception, attention, speech, and generated responses as they happen.",
+            file=status_stream,
+            flush=True,
+        )
     ticks = 0
     try:
         while max_ticks is None or ticks < max_ticks:
@@ -889,14 +906,14 @@ def _live_loop(
                             result=result_dict,
                         )
                         break
-            if terminal:
-                _print_live_tick(result_dict)
+            if status_stream is not None:
+                _print_live_tick(result_dict, stream=status_stream)
             ticks += 1
             if max_ticks is None and sleep_ms:
                 time.sleep(sleep_ms / 1000)
     except KeyboardInterrupt:
-        if terminal:
-            print("\nMneme live loop stopped.", file=sys.stderr)
+        if status_stream is not None:
+            print("\nMneme live loop stopped.", file=status_stream, flush=True)
     return outputs
 
 
@@ -940,26 +957,166 @@ def _print_terminal(outputs: list[dict[str, Any]]) -> None:
             print(f"state: {executive.get('intent_type', 'idle')}")
 
 
-def _print_turn(result: dict[str, Any]) -> None:
+def _print_turn(result: dict[str, Any], *, stream: Any | None = None) -> None:
+    stream = sys.stdout if stream is None else stream
     for utterance in result.get("utterances", []):
         if isinstance(utterance, dict):
-            print(f"mneme: {utterance.get('text', '')}", flush=True)
+            print(f"mneme: {utterance.get('text', '')}", file=stream, flush=True)
 
 
-def _print_live_tick(result: dict[str, Any]) -> None:
-    _print_turn(result)
+def _print_live_tick(result: dict[str, Any], *, stream: Any | None = None) -> None:
+    stream = sys.stdout if stream is None else stream
+    _print_turn(result, stream=stream)
+    for line in _live_status_lines(result):
+        print(line, file=stream, flush=True)
+
+
+def _live_status_lines(result: dict[str, Any]) -> list[str]:
+    lines: list[str] = []
+    events = result.get("events", [])
+    if isinstance(events, list):
+        lines.extend(_vision_status_lines(events))
+        lines.extend(_speech_event_lines(events))
     snapshot = result.get("snapshot", {})
     if not isinstance(snapshot, dict):
-        return
+        return lines
+    lines.extend(_speech_loop_status_lines(snapshot))
+    attention_line = _attention_status_line(snapshot)
+    if attention_line is not None:
+        lines.append(attention_line)
+    presence_line = _presence_status_line(snapshot)
+    if presence_line is not None:
+        lines.append(presence_line)
+    if not lines:
+        lines.append("live: tick processed; no new perception or response")
+    return _dedupe_preserve_order(lines)
+
+
+def _vision_status_lines(events: list[Any]) -> list[str]:
+    lines: list[str] = []
+    for event in events:
+        if not isinstance(event, dict) or event.get("kind") != "perception_observation":
+            continue
+        payload = event.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        observation_type = payload.get("observation_type")
+        if observation_type == "camera_frame":
+            detections = payload.get("detections", [])
+            count = len(detections) if isinstance(detections, list) else 0
+            label = payload.get("device_label") or payload.get("device_id") or "camera"
+            metadata = payload.get("metadata", {})
+            detector = metadata.get("face_detector") if isinstance(metadata, dict) else None
+            if count:
+                lines.append(f"vision: frame from {label}; detected {count} person candidate(s)")
+            elif detector:
+                lines.append(f"vision: frame from {label}; no person detected")
+            else:
+                lines.append(
+                    f"vision: frame from {label}; person detection is off "
+                    "(add --face-backend mediapipe)"
+                )
+        elif observation_type == "person_seen":
+            label = payload.get("label") or payload.get("person_id") or "person"
+            confidence = event.get("confidence")
+            suffix = f" confidence={confidence:.2f}" if isinstance(confidence, (int, float)) else ""
+            lines.append(f"vision: person seen: {label}{suffix}")
+    return lines
+
+
+def _speech_event_lines(events: list[Any]) -> list[str]:
+    lines: list[str] = []
+    for event in events:
+        if not isinstance(event, dict) or event.get("kind") != "perception_observation":
+            continue
+        payload = event.get("payload", {})
+        if not isinstance(payload, dict):
+            continue
+        if payload.get("observation_type") != "speech_transcript":
+            continue
+        speaker = payload.get("speaker", "speaker")
+        text = str(payload.get("utterance") or payload.get("transcript") or "").strip()
+        if text:
+            lines.append(f"speech: heard {speaker}: {_short_console_text(text)}")
+    return lines
+
+
+def _speech_loop_status_lines(snapshot: dict[str, Any]) -> list[str]:
     speech_loop = snapshot.get("speech_loop", {})
     if not isinstance(speech_loop, dict):
-        return
+        return []
     report = speech_loop.get("latest_capture_report")
     if not isinstance(report, dict):
-        return
+        return []
     status = report.get("status")
-    if status in {"capture_error", "no_microphone"}:
-        print(f"speech: {status} ({speech_loop.get('latest_failure_reason')})", flush=True)
+    if status == "transcribed":
+        latency = speech_loop.get("latest_asr_latency_ms")
+        return [f"speech: transcribed in {latency} ms" if isinstance(latency, int) else "speech: transcribed"]
+    if status == "no_speech":
+        return ["speech: listening; no speech detected"]
+    if status == "no_microphone":
+        return ["speech: no microphone available"]
+    if status == "capture_error":
+        reason = str(speech_loop.get("latest_failure_reason") or "capture_error")
+        return [f"speech: ASR/capture failed: {reason}{_speech_failure_hint(reason)}"]
+    return []
+
+
+def _attention_status_line(snapshot: dict[str, Any]) -> str | None:
+    attention = snapshot.get("attention", {})
+    if not isinstance(attention, dict):
+        return None
+    target = attention.get("active_target_id")
+    reason = attention.get("reason")
+    if isinstance(target, str) and target:
+        return f"attention: {target} ({reason or 'active'})"
+    return None
+
+
+def _presence_status_line(snapshot: dict[str, Any]) -> str | None:
+    world = snapshot.get("world", {})
+    presence = snapshot.get("presence", {})
+    avatar = presence.get("avatar", {}) if isinstance(presence, dict) else {}
+    persons = world.get("persons", []) if isinstance(world, dict) else []
+    mode = avatar.get("mode") if isinstance(avatar, dict) else None
+    gaze = avatar.get("gaze_target") if isinstance(avatar, dict) else None
+    if isinstance(persons, list) and persons:
+        latest = persons[-1]
+        if isinstance(latest, dict):
+            label = latest.get("label") or latest.get("person_id") or "person"
+            return f"presence: {mode or 'active'}; tracking {label}"
+    if isinstance(mode, str) and mode:
+        return f"presence: {mode}; gaze={gaze or 'none'}"
+    return None
+
+
+def _speech_failure_hint(reason: str) -> str:
+    lowered = reason.lower()
+    if "hfvalidationerror" in lowered or "repo id" in lowered:
+        return " (check --asr-model path; run `mneme models verify --profile local-speech --json`)"
+    if "importerror" in lowered or "optional dependency" in lowered:
+        return " (install the local speech optional extras)"
+    if "permission" in lowered:
+        return " (check microphone permission)"
+    return ""
+
+
+def _dedupe_preserve_order(lines: list[str]) -> list[str]:
+    seen: set[str] = set()
+    results: list[str] = []
+    for line in lines:
+        if line in seen:
+            continue
+        seen.add(line)
+        results.append(line)
+    return results
+
+
+def _short_console_text(text: str, *, limit: int = 96) -> str:
+    clean = " ".join(text.split())
+    if len(clean) <= limit:
+        return clean
+    return f"{clean[: limit - 3]}..."
 
 
 def _latest_user_turn_text(result: dict[str, Any]) -> str:

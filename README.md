@@ -331,6 +331,17 @@ mneme run --live --live-ticks 5 --json
 
 Plain `mneme run` does not open the microphone or camera. Use `--live` with `--profile local-speech`, `--profile local-vision`, or `--profile local-lab` after optional dependencies and model files are configured.
 
+Live mode prints human-readable status as it runs:
+
+```text
+vision: frame from Brio 100; person detection is off (add --face-backend mediapipe)
+speech: ASR/capture failed: capture_error:HFValidationError (check --asr-model path; run `mneme models verify --profile local-speech --json`)
+attention: curiosity:scan_center (curiosity_idle)
+presence: idle; gaze=curiosity:scan_center
+```
+
+When `--json` is used, these live status lines go to stderr and the final JSON dump stays on stdout. Use `--quiet-live-status` to suppress the human-readable stream.
+
 Run with simulated speech output visible in JSON:
 
 ```bash
@@ -441,6 +452,8 @@ Run native local vision when optional packages and a camera are available:
 python -m pip install -e '.[vision-local]'
 mneme run --profile local-vision --face-backend mediapipe --json
 ```
+
+Without `--face-backend mediapipe`, local vision captures camera frames but does not publish `person_seen` events, so Mneme may only show curiosity/scan attention rather than person tracking.
 
 Open the local browser UI:
 

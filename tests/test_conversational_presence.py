@@ -277,7 +277,41 @@ def test_mneme_run_live_ticks_speech_without_stdin(tmp_path, capsys):
     ])
 
     assert exit_code == 0
-    output = json.loads(capsys.readouterr().out)
+    captured = capsys.readouterr()
+    output = json.loads(captured.out)
     live_tick = next(item for item in output if item["type"] == "live_tick")
     assert live_tick["result"]["utterances"]
     assert live_tick["result"]["snapshot"]["speech_loop"]["counters"]["transcripts"] == 1
+    assert "speech: heard" in captured.err
+    assert "mneme:" in captured.err
+
+
+def test_mneme_run_live_json_streams_vision_status_to_stderr(tmp_path, capsys):
+    capture_script = tmp_path / "capture_frame.py"
+    capture_script.write_text(
+        "from pathlib import Path\n"
+        "import sys\n"
+        "Path(sys.argv[1]).write_bytes(b'frame-bytes')\n",
+        encoding="utf-8",
+    )
+
+    exit_code = mneme_main([
+        "--db",
+        str(tmp_path / "memory.sqlite3"),
+        "--migrations",
+        str(MIGRATIONS),
+        "run",
+        "--json",
+        "--live-ticks",
+        "1",
+        "--camera-command",
+        f"{sys.executable} {capture_script} {{output}}",
+    ])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    output = json.loads(captured.out)
+    live_tick = next(item for item in output if item["type"] == "live_tick")
+    assert live_tick["result"]["snapshot"]["perception"]["vision"]["frames"] == 1
+    assert "vision: frame" in captured.err
+    assert "person detection is off" in captured.err
