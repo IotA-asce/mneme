@@ -158,6 +158,13 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [ ] Validate local-vision with real camera permission, OpenCV frame capture, and MediaPipe face/person observations
 - [ ] Improve local browser UI from dashboard to expressive virtual head
 - [ ] Add local model-backed response realization behind the dialogue planner contract
+- [ ] Add local model runtime adapter protocol and fake adapter tests
+- [ ] Add Ollama/local HTTP model adapter behind optional configuration
+- [ ] Add `mneme cognition check` for local model availability and latency
+- [ ] Add cognitive context builder from working memory, attention, safety, and retrieval
+- [ ] Add model dialogue realizer with deterministic fallback and schema validation
+- [ ] Add cognitive benchmark fixture format and capability ladder scoring
+- [ ] Add UI model status, memory refs used, and cognitive level evidence
 - [ ] Add redacted daily-driver logs and soak replay fixtures
 - [ ] Add richer evaluation metrics for latency, correction rate, contradiction rate, and stuck states
 - [x] Add ROS-style interface drafts
@@ -195,6 +202,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add Stage 5 conversational presence runbook
 - [x] Add Stage 6 Local Living Lab runbook
 - [x] Add local model hygiene runbook
+- [x] Add cognitive capability roadmap with local model milestones and animal-reference ladder
 - [x] Add sensory echo and working memory documentation
 - [x] Add memory storage documentation
 - [x] Add salience scoring documentation

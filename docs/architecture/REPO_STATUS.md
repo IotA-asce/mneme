@@ -7,7 +7,7 @@ This audit records what the repository actually implements today versus what the
 
 ## Current Implementation
 
-The repository currently implements a local Python virtual-head prototype with deterministic memory, cognition, live-perception adapter contracts, virtual conversational presence, and the Stage 6 Local Living Lab foundation. It does not control physical hardware, run ROS 2 nodes, use a vector database, call LLM services, or bundle local model files as required assets.
+The repository currently implements a local Python virtual-head prototype with deterministic memory, cognition, live-perception adapter contracts, virtual conversational presence, and the Stage 6 Local Living Lab foundation. It does not control physical hardware, run ROS 2 nodes, use a vector database, call LLM services, run a local LLM dialogue model, or bundle local model files as required assets.
 
 Implemented foundations:
 
@@ -103,12 +103,14 @@ The following areas exist but are not complete enough to count as full phase com
 - Conversational presence: virtual speech, avatar state, virtual skill status, local TTS command integration, and a lightweight local browser UI are implemented. Polished graphical avatar rendering, speaker device routing, and physical skills remain outside the repo-owned implementation.
 - Native local speech and vision: optional wrappers exist and are unit-tested with fake devices/models. Real microphone permissions, faster-whisper model placement, Kokoro compatibility, camera permissions, MediaPipe model quality, and end-to-end latency are manual/local validation tasks rather than CI-verified behavior.
 - Local model management: the registry and verification CLI exist, but default entries intentionally do not auto-download model files until exact sources/licenses/checksums are documented.
+- Cognitive capability roadmap: `docs/architecture/COGNITIVE_CAPABILITY_ROADMAP.md` now defines the planned local model integration path, animal-reference capability ladder, benchmark harness, and physical embodiment readiness gate. This is a planning document only; no model-backed cognition is currently wired into runtime behavior.
 
 ## Documented But Not Implemented
 
 The design documents describe these future capabilities, but the repository does not yet implement them:
 
 - Bundled native model files for face detection, VAD, ASR, or TTS. Stage 6 provides optional wrappers and a model registry, but real files live outside git under `.local/models/`.
+- Local LLM-backed dialogue or reasoning. The current planner is deterministic; the cognitive roadmap defines future adapters and model realization, but no local chat model is connected yet.
 - Polished graphical avatar rendering. Stage 6 provides a local browser dashboard; it is not an expressive avatar renderer.
 - Physical skill controllers, actuator bridge, and safety supervisor (virtual skills and safety-state reactions are implemented; physical command paths are not).
 - Physical actuator control or dry-run hardware backend.
@@ -206,12 +208,13 @@ There is no configured lint, typecheck, formatter, or build command beyond packa
 
 The safest next tasks should stay inside the Local Living Lab and avoid physical hardware, ROS runtime, required heavyweight dependencies, and broad refactors:
 
-1. Manually validate `local-speech` on the current Mac: microphone permissions, faster-whisper model placement, local TTS playback, barge-in, and no duplicate spoken responses.
-2. Manually validate `local-vision`: camera permissions, OpenCV frame capture, MediaPipe face/person observations, and anonymous-session person continuity.
-3. Improve the local browser UI from dashboard to expressive virtual head while keeping cognition outside the UI.
-4. Add redacted daily-driver logs and soak replay fixtures from real local runs.
-5. Add review/debug tools for conflicted facts and person-scoped continuity.
-6. Keep physical embodiment work deferred until explicit hardware safety planning resumes.
+1. Implement the first slice of `docs/architecture/COGNITIVE_CAPABILITY_ROADMAP.md`: a local model runtime adapter protocol, fake adapter tests, an Ollama/local HTTP adapter, and `mneme cognition check`.
+2. Manually validate `local-speech` on the current Mac: microphone permissions, faster-whisper model placement, local TTS playback, barge-in, and no duplicate spoken responses.
+3. Manually validate `local-vision`: camera permissions, OpenCV frame capture, MediaPipe face/person observations, and anonymous-session person continuity.
+4. Improve the local browser UI from dashboard to expressive virtual head while keeping cognition outside the UI.
+5. Add redacted daily-driver logs and soak replay fixtures from real local runs.
+6. Add review/debug tools for conflicted facts and person-scoped continuity.
+7. Keep physical embodiment work deferred until explicit hardware safety planning resumes.
 
 ## Current Risk
 
