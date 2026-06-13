@@ -167,8 +167,13 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add deterministic turn understanding before dialogue planning
 - [x] Add memory review and "why did you say that?" explanation path
 - [x] Add non-mutating correction/forget review proposals
+- [x] Add durable memory review records for correction, forget, confirmation, and contradiction proposals
+- [x] Add explicit `mneme review` list/show/apply/reject/conflicts/explain commands
+- [x] Add supervised correction approval, forget suppression, confirmation upgrade, and contradiction report tests
 - [x] Add cognitive benchmark fixture format and capability ladder scoring
+- [x] Expand bundled cognition benchmarks for delayed recall, hallucination guard, correction approval, forget suppression, contradiction review, and self/status questions
 - [x] Add UI cognitive level evidence after benchmark harness exists
+- [x] Add UI memory review status and Apply/Reject controls
 - [ ] Add redacted daily-driver logs and soak replay fixtures
 - [ ] Add richer evaluation metrics for latency, correction rate, contradiction rate, and stuck states
 - [x] Add ROS-style interface drafts

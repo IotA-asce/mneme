@@ -437,6 +437,13 @@ def test_local_ui_renders_avatar_state():
             "current_level": "L2",
             "summary": "Current evidence supports L2 only.",
         },
+        "memory_review": {
+            "last_correction_proposal": {
+                "review_id": "review_123",
+                "proposal_type": "correction",
+                "status": "proposed",
+            },
+        },
     }
 
     html = render_snapshot_html(snapshot)
@@ -457,6 +464,9 @@ def test_local_ui_renders_avatar_state():
     assert "Capability Evidence" in html
     assert "recall_question" in html
     assert "Current evidence supports L2 only." in html
+    assert "Memory Review" in html
+    assert "review_123" in html
+    assert "correction from latest review turn." in html
 
 
 def test_local_ui_refresh_action_rescans_devices():

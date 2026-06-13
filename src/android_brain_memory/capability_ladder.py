@@ -121,7 +121,35 @@ def build_capability_report(reports: Sequence[Mapping[str, Any]]) -> CapabilityR
                 if not _passes(category_scores, name)
             ],
         ),
-        CapabilityLevelEvidence("L3", LEVELS["L3"], False, missing=["novelty/threat handling benchmarks"]),
+        CapabilityLevelEvidence(
+            "L3",
+            LEVELS["L3"],
+            all(
+                _passes(category_scores, name)
+                for name in ("delayed_recall", "review_proposal", "hallucinated_memory", "self_status")
+            ),
+            evidence=[
+                "delayed recall passed",
+                "memory review proposal handling passed",
+                "hallucinated memory guard passed",
+                "self/status questions passed",
+            ]
+            if all(
+                _passes(category_scores, name)
+                for name in ("delayed_recall", "review_proposal", "hallucinated_memory", "self_status")
+            )
+            else [],
+            missing=[
+                label
+                for name, label in (
+                    ("delayed_recall", "delayed recall"),
+                    ("review_proposal", "memory review proposal handling"),
+                    ("hallucinated_memory", "hallucinated memory guard"),
+                    ("self_status", "self/status question handling"),
+                )
+                if not _passes(category_scores, name)
+            ],
+        ),
         CapabilityLevelEvidence("L4", LEVELS["L4"], False, missing=["correction acceptance and person continuity benchmarks"]),
         CapabilityLevelEvidence("L5", LEVELS["L5"], False, missing=["social continuity and interruption soak benchmarks"]),
         CapabilityLevelEvidence("L6", LEVELS["L6"], False, missing=["multi-step planning benchmarks"]),

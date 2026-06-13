@@ -47,3 +47,18 @@ def test_mneme_eval_capability_json_cli(tmp_path, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["current_level"] == "L2"
     assert payload["animal_equivalence_claim"] is False
+
+
+def test_mneme_eval_capability_default_suite_reaches_l3(capsys):
+    exit_code = mneme_main([
+        "--migrations",
+        str(MIGRATIONS),
+        "eval",
+        "capability",
+        "--json",
+    ])
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["current_level"] == "L3"
+    assert payload["animal_equivalence_claim"] is False

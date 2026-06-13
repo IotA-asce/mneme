@@ -8,8 +8,13 @@ from pathlib import Path
 from typing import Any
 
 from .capability_ladder import build_capability_report
-from .cognitive_benchmarks import DEFAULT_COGNITION_FIXTURE, run_cognitive_benchmark
-from .engine import DEFAULT_DB, DEFAULT_MIGRATIONS, to_jsonable
+from .cognitive_benchmarks import (
+    DEFAULT_COGNITION_FIXTURE,
+    DEFAULT_COGNITION_FIXTURES_DIR,
+    run_cognitive_benchmark,
+    run_cognitive_benchmark_suite,
+)
+from .engine import DEFAULT_DB, DEFAULT_MIGRATIONS, MnemeMemory, to_jsonable
 from .evaluation import DEFAULT_EVALUATION_LOG, EvaluationLogger
 from .live_perception import (
     CommandFrameCaptureBackend,
@@ -30,6 +35,7 @@ from .model_runtime import (
     OllamaModelRuntime,
 )
 from .model_dialogue import DEFAULT_MAX_RESPONSE_CHARS, DEFAULT_MODEL_DIALOGUE_TIMEOUT_MS, ModelDialogueRealizer
+from .memory_review import apply_memory_review, explain_memory_refs, reject_memory_review
 from .local_ui import serve_ui
 from .local_vision import MediaPipeFaceDetectionBackend, OpenCVCameraCaptureBackend
 from .peripherals import PeripheralDiscoveryService, RealPeripheralBackend, default_virtual_head_devices
@@ -253,13 +259,46 @@ def build_parser() -> argparse.ArgumentParser:
     cognition_check.add_argument("--no-probe", action="store_true")
     cognition_check.add_argument("--json", action="store_true")
 
+    review = subparsers.add_parser("review", help="Inspect and apply supervised memory review records.")
+    review_subparsers = review.add_subparsers(dest="review_command", required=True)
+    review_list = review_subparsers.add_parser("list", help="List memory review records.")
+    review_list.add_argument("--status", choices=["proposed", "applied", "rejected", "failed"])
+    review_list.add_argument(
+        "--proposal-type",
+        choices=["correction", "forget_request", "confirm_memory", "contradiction_challenge"],
+    )
+    review_list.add_argument("--limit", type=int, default=50)
+    review_list.add_argument("--json", action="store_true")
+    review_show = review_subparsers.add_parser("show", help="Show one memory review record.")
+    review_show.add_argument("--review-id", required=True)
+    review_show.add_argument("--json", action="store_true")
+    review_apply = review_subparsers.add_parser("apply", help="Apply one proposed memory review record.")
+    review_apply.add_argument("--review-id", required=True)
+    review_apply.add_argument("--reason", required=True)
+    review_apply.add_argument("--fact-data", help="Optional JSON fact payload for correction reviews.")
+    review_apply.add_argument("--json", action="store_true")
+    review_reject = review_subparsers.add_parser("reject", help="Reject one proposed memory review record.")
+    review_reject.add_argument("--review-id", required=True)
+    review_reject.add_argument("--reason", required=True)
+    review_reject.add_argument("--json", action="store_true")
+    review_conflicts = review_subparsers.add_parser("conflicts", help="List unresolved fact conflict reports.")
+    review_conflicts.add_argument("--subject", default="")
+    review_conflicts.add_argument("--predicate", default="")
+    review_conflicts.add_argument("--limit", type=int, default=50)
+    review_conflicts.add_argument("--json", action="store_true")
+    review_explain = review_subparsers.add_parser("explain", help="Explain one memory reference.")
+    review_explain.add_argument("--memory-kind", required=True, choices=["fact", "episode", "summary"])
+    review_explain.add_argument("--memory-id", required=True)
+    review_explain.add_argument("--json", action="store_true")
+
     evaluation = subparsers.add_parser("eval", help="Inspect local living-lab evaluation logs.")
     eval_subparsers = evaluation.add_subparsers(dest="eval_command", required=True)
     eval_summary = eval_subparsers.add_parser("summarize", help="Summarize a JSONL evaluation log.")
     eval_summary.add_argument("--path", type=Path, default=DEFAULT_EVALUATION_LOG)
     eval_summary.add_argument("--json", action="store_true")
-    eval_cognition = eval_subparsers.add_parser("cognition", help="Run a cognitive benchmark fixture.")
-    eval_cognition.add_argument("--fixture", type=Path, required=True)
+    eval_cognition = eval_subparsers.add_parser("cognition", help="Run cognitive benchmark fixtures.")
+    eval_cognition.add_argument("--fixture", type=Path)
+    eval_cognition.add_argument("--fixtures-dir", type=Path, default=DEFAULT_COGNITION_FIXTURES_DIR)
     eval_cognition.add_argument(
         "--benchmark-db",
         type=Path,
@@ -273,6 +312,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         help="Optional benchmark fixture to run before building capability evidence.",
     )
+    eval_capability.add_argument("--fixtures-dir", type=Path, default=DEFAULT_COGNITION_FIXTURES_DIR)
     eval_capability.add_argument(
         "--benchmark-db",
         type=Path,
@@ -294,6 +334,8 @@ def main(argv: list[str] | None = None) -> int:
         return _models(args)
     if args.command == "cognition":
         return _cognition(args)
+    if args.command == "review":
+        return _review(args)
     if args.command == "eval":
         return _eval(args)
     parser.error(f"unsupported command: {args.command}")
@@ -533,6 +575,67 @@ def _cognition(args: argparse.Namespace) -> int:
     return 2
 
 
+def _review(args: argparse.Namespace) -> int:
+    try:
+        with MnemeMemory(args.db, migrations_dir=args.migrations) as memory:
+            memory.init_db()
+            if args.review_command == "list":
+                records = memory.store.list_memory_reviews(
+                    status=args.status,
+                    proposal_type=args.proposal_type,
+                    limit=args.limit,
+                )
+                payload = {"records": [record.to_dict() for record in records]}
+                _print_payload(payload, json_mode=args.json)
+                return 0
+            if args.review_command == "show":
+                record = memory.store.get_memory_review(args.review_id)
+                if record is None:
+                    print(f"memory review not found: {args.review_id}", file=sys.stderr)
+                    return 1
+                _print_payload({"record": record.to_dict()}, json_mode=args.json)
+                return 0
+            if args.review_command == "apply":
+                record = apply_memory_review(
+                    memory.store,
+                    args.review_id,
+                    reason=args.reason,
+                    fact_payload=_optional_json_object(args.fact_data, "fact-data"),
+                )
+                _print_payload({"record": record.to_dict()}, json_mode=args.json)
+                return 0 if record.status == "applied" else 1
+            if args.review_command == "reject":
+                record = reject_memory_review(
+                    memory.store,
+                    args.review_id,
+                    reason=args.reason,
+                )
+                _print_payload({"record": record.to_dict()}, json_mode=args.json)
+                return 0
+            if args.review_command == "conflicts":
+                reports = memory.store.get_fact_conflict_reports(
+                    subject=args.subject,
+                    predicate=args.predicate,
+                    limit=args.limit,
+                )
+                _print_payload({"reports": to_jsonable(reports)}, json_mode=args.json)
+                return 0
+            if args.review_command == "explain":
+                explanations = explain_memory_refs(
+                    memory.store,
+                    [{"memory_kind": args.memory_kind, "memory_id": args.memory_id}],
+                )
+                _print_payload(
+                    {"explanations": [item.to_dict() for item in explanations]},
+                    json_mode=args.json,
+                )
+                return 0
+    except (KeyError, ValueError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    return 2
+
+
 def _model_runtime_adapter(args: argparse.Namespace) -> OllamaModelRuntime:
     if args.backend == "ollama":
         return OllamaModelRuntime(base_url=args.base_url)
@@ -580,32 +683,52 @@ def _eval(args: argparse.Namespace) -> int:
             )
         return 0
     if args.eval_command == "cognition":
-        report = run_cognitive_benchmark(
-            args.fixture,
-            db_path=args.benchmark_db,
-            migrations_dir=args.migrations,
-        )
-        payload = report.to_dict()
+        if args.fixture is not None:
+            report = run_cognitive_benchmark(
+                args.fixture,
+                db_path=args.benchmark_db,
+                migrations_dir=args.migrations,
+            )
+            payload = report.to_dict()
+            exit_ok = report.total_score >= 1.0
+        else:
+            report = run_cognitive_benchmark_suite(
+                fixtures_dir=args.fixtures_dir,
+                db_path=args.benchmark_db,
+                migrations_dir=args.migrations,
+            )
+            payload = report.to_dict()
+            exit_ok = payload["total_score"] >= 1.0
         if args.json:
             print(json.dumps(to_jsonable(payload), indent=2, sort_keys=True))
         else:
-            print(
-                f"{payload['fixture_name']}: score={payload['total_score']} "
-                f"passed={payload['passed_steps']}/{payload['total_steps']}"
-            )
-        return 0 if report.total_score >= 1.0 else 1
+            if payload.get("suite"):
+                print(
+                    f"cognition suite: score={payload['total_score']} "
+                    f"passed={payload['passed_fixtures']}/{payload['total_fixtures']}"
+                )
+            else:
+                print(
+                    f"{payload['fixture_name']}: score={payload['total_score']} "
+                    f"passed={payload['passed_steps']}/{payload['total_steps']}"
+                )
+        return 0 if exit_ok else 1
     if args.eval_command == "capability":
-        fixtures = args.fixture
-        if fixtures is None and DEFAULT_COGNITION_FIXTURE.exists():
-            fixtures = [DEFAULT_COGNITION_FIXTURE]
-        reports = [
-            run_cognitive_benchmark(
-                fixture,
+        if args.fixture:
+            reports = [
+                run_cognitive_benchmark(
+                    fixture,
+                    db_path=args.benchmark_db,
+                    migrations_dir=args.migrations,
+                ).to_dict()
+                for fixture in args.fixture
+            ]
+        else:
+            reports = run_cognitive_benchmark_suite(
+                fixtures_dir=args.fixtures_dir,
                 db_path=args.benchmark_db,
                 migrations_dir=args.migrations,
-            ).to_dict()
-            for fixture in fixtures or []
-        ]
+            ).to_dict()["fixture_reports"]
         report = build_capability_report(reports)
         payload = report.to_dict()
         if args.json:
@@ -636,6 +759,23 @@ def _interactive(
             evaluation_logger.record_turn(input_text=text, result=result_dict)
         runtime.tick()
     return outputs
+
+
+def _print_payload(payload: dict[str, Any], *, json_mode: bool) -> None:
+    if json_mode:
+        print(json.dumps(to_jsonable(payload), indent=2, sort_keys=True))
+        return
+    print(json.dumps(to_jsonable(payload), indent=2, sort_keys=True))
+
+
+def _optional_json_object(raw: str | None, field_name: str) -> dict[str, Any] | None:
+    if raw is None:
+        return None
+    value = json.loads(raw)
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name} must be a JSON object")
+    return value
+
 
 def _print_terminal(outputs: list[dict[str, Any]]) -> None:
     for item in outputs:

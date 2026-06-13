@@ -1,0 +1,31 @@
+name: self_status_questions
+description: Answer identity, capability, and local status questions conservatively.
+category: self_status
+steps:
+  - input: "what are you?"
+    timestamp: 1000
+    expect:
+      turn_type: identity_self_question
+      act_type: answer
+      response_contains:
+        - Mneme
+      category_tags:
+        - self_status
+  - input: "what can you do?"
+    timestamp: 2000
+    expect:
+      turn_type: capability_question
+      act_type: answer
+      response_contains:
+        - local brain loop
+      category_tags:
+        - self_status
+  - input: "what model are you using?"
+    timestamp: 3000
+    expect:
+      turn_type: device_status_question
+      act_type: answer
+      response_contains:
+        - deterministic fallback
+      category_tags:
+        - self_status

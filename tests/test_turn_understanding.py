@@ -9,6 +9,7 @@ def test_turn_classifier_covers_requested_categories():
         "that is wrong": TurnType.CORRECTION,
         "but I said something else": TurnType.CONTRADICTION_CHALLENGE,
         "forget that preference": TurnType.FORGET_REQUEST,
+        "confirm this": TurnType.CONFIRM_MEMORY_REQUEST,
         "what are you?": TurnType.IDENTITY_SELF_QUESTION,
         "what can you do?": TurnType.CAPABILITY_QUESTION,
         "what model are you using?": TurnType.DEVICE_STATUS_QUESTION,

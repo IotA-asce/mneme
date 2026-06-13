@@ -68,7 +68,11 @@ def calibration_fact_payload(supporting_episode_id: str = "ep_calibration_001") 
 def test_mneme_memory_facade_conversation_like_flow(tmp_path):
     with MnemeMemory(tmp_path / "memory.sqlite3", migrations_dir=MIGRATIONS) as memory:
         applied = memory.init_db()
-        assert [record.migration_id for record in applied] == ["001_init", "002_fact_tags"]
+        assert [record.migration_id for record in applied] == [
+            "001_init",
+            "002_fact_tags",
+            "003_memory_review",
+        ]
 
         remembered = memory.remember_candidate(
             memory_candidate_payload(),
@@ -158,6 +162,7 @@ def test_memory_cli_conversation_like_flow_outputs_json(tmp_path):
     assert [record["migration_id"] for record in initialized["applied_migrations"]] == [
         "001_init",
         "002_fact_tags",
+        "003_memory_review",
     ]
 
     remembered = _run_cli(

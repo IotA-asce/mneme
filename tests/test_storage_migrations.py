@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from android_brain_memory.models import Episode, Fact, MemoryStatus, SourceType, Speakability
-from android_brain_memory.storage import MetaMemoryRecord, MemoryStore
+from android_brain_memory.storage import MemoryReviewRecord, MetaMemoryRecord, MemoryStore
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,12 +27,44 @@ def test_migrations_are_tracked_and_idempotent(tmp_path):
     applied_again = store.run_migrations(MIGRATIONS)
     records = store.get_applied_migrations()
 
-    assert [record.migration_id for record in applied] == ["001_init", "002_fact_tags"]
+    assert [record.migration_id for record in applied] == ["001_init", "002_fact_tags", "003_memory_review"]
     assert applied_again == []
-    assert [record.migration_id for record in records] == ["001_init", "002_fact_tags"]
+    assert [record.migration_id for record in records] == ["001_init", "002_fact_tags", "003_memory_review"]
     assert records[0].filename == "001_init.sql"
     assert len(records[0].checksum_sha256) == 64
     assert records[0].applied_ts >= 0
+    store.close()
+
+
+def test_memory_review_write_read_list_and_update(tmp_path):
+    store = open_migrated_store(tmp_path)
+    record = MemoryReviewRecord(
+        review_id="review_001",
+        proposal_type="correction",
+        status="proposed",
+        source_turn_text="actually I like coffee",
+        related_memory_refs=[{"memory_kind": "fact", "memory_id": "fact_tea"}],
+        created_ts=100,
+        provenance={"source_type": "user_confirmed"},
+    )
+
+    stored = store.write_memory_review(record)
+    loaded = store.get_memory_review("review_001")
+    listed = store.list_memory_reviews(status="proposed")
+    updated = store.update_memory_review(
+        "review_001",
+        status="rejected",
+        applied_ts=200,
+        action_result={"action": "reject"},
+        reason="test",
+    )
+
+    assert stored == record
+    assert loaded == record
+    assert [item.review_id for item in listed] == ["review_001"]
+    assert updated.status == "rejected"
+    assert updated.applied_ts == 200
+    assert updated.action_result == {"action": "reject"}
     store.close()
 
 

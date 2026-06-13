@@ -120,6 +120,19 @@ Supported methods:
 
 Snapshots are returned newest first by `created_ts`.
 
+## Memory Review Records
+
+Migration `003_memory_review.sql` adds `memory_review` for supervised correction, forget, confirmation, and contradiction-review records.
+
+Supported methods:
+
+- `write_memory_review(record)`
+- `get_memory_review(review_id)`
+- `list_memory_reviews(status=None, proposal_type=None, limit=50)`
+- `update_memory_review(review_id, ...)`
+
+Review records are audit records. Creating a review does not mutate memory. Applying one records the result and may suppress, confirm, or add a deterministic user-confirmed fact through the normal storage paths.
+
 ## Raw Traces
 
 Supported methods:

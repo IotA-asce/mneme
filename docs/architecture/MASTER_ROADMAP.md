@@ -369,7 +369,7 @@ The comprehensive implementation reference for this stage is `docs/architecture/
 ### M7.5 Continuity and review workflows
 
 - Person-scoped continuity through anonymous session IDs, user-confirmed labels, and speaker/person fusion before face embeddings.
-- Interactive review of conflicted facts and user corrections.
+- Interactive review of conflicted facts and user corrections. Foundation implemented on 2026-06-14 through durable review records, CLI/UI apply/reject actions, and deterministic benchmark coverage; person-scoped continuity remains future work.
 
 Exit criteria: Mneme can be used locally over repeated sessions, explain what it remembers and why it trusts it, recover from interruptions, avoid stuck states, and produce useful evaluation traces.
 

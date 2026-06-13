@@ -65,6 +65,7 @@ HTML_TEMPLATE = """<!doctype html>
     button { border: 1px solid var(--ink); background: var(--ink); color: var(--paper); border-radius: 6px; padding: 10px 14px; font: inherit; font-weight: 620; cursor: pointer; }
     button.secondary { background: transparent; color: var(--ink); }
     .device-actions { display: flex; gap: 8px; }
+    .review-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
     .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 18px; }
     .devices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; }
     .device-status { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
@@ -122,6 +123,26 @@ HTML_TEMPLATE = """<!doctype html>
         <div class="metric"><span>memory refs</span><strong data-bind="cognition_refs">$cognition_refs</strong></div>
       </div>
       <p class="device-status" data-bind="cognition_detail">$cognition_detail</p>
+    </section>
+    <section class="panel">
+      <h2>Memory Review</h2>
+      <div class="state-line">
+        <div class="metric"><span>review id</span><strong data-bind="review_id">$review_id</strong></div>
+        <div class="metric"><span>status</span><strong data-bind="review_status">$review_status</strong></div>
+      </div>
+      <p class="device-status" data-bind="review_detail">$review_detail</p>
+      <form class="review-actions" method="post" action="/input">
+        <button class="secondary" type="submit" name="text" value="why did you say that?">Why?</button>
+        <button class="secondary" type="submit" name="text" value="what do you remember about me?">Remembered</button>
+        <button class="secondary" type="submit" name="text" value="that is wrong">Mark wrong</button>
+        <button class="secondary" type="submit" name="text" value="forget this">Forget</button>
+        <button class="secondary" type="submit" name="text" value="confirm this">Confirm</button>
+      </form>
+      <form class="review-actions" method="post" action="/review">
+        <input type="hidden" name="review_id" value="$review_id_attr">
+        <button class="secondary" type="submit" name="action" value="apply">Apply</button>
+        <button class="secondary" type="submit" name="action" value="reject">Reject</button>
+      </form>
     </section>
     <section class="panel">
       <h2>Capability Evidence</h2>
@@ -221,6 +242,12 @@ HTML_TEMPLATE = """<!doctype html>
       setText("cognition_latency", lastCognition.latency_ms == null ? "none" : String(lastCognition.latency_ms) + " ms");
       setText("cognition_refs", refs.length ? refs.map(function (ref) { return ref.memory_id; }).join(", ") : "none");
       setText("cognition_detail", !cognition.enabled ? "Local model wording is disabled." : (lastCognition.fallback_reason || "Local model wording is available."));
+      var review = value(["memory_review", "last_correction_proposal"], {});
+      var reviewId = review && review.review_id ? String(review.review_id) : "";
+      setText("review_id", reviewId || "none");
+      setText("review_status", review && review.status ? String(review.status) : "none");
+      setText("review_detail", review && review.proposal_type ? String(review.proposal_type) + " from latest review turn." : "No pending review proposal.");
+      document.querySelectorAll('input[name="review_id"]').forEach(function (node) { node.value = reviewId; });
       var turn = value(["turn_understanding"], {});
       var capability = value(["capability"], {});
       setText("turn_type", turn && turn.turn_type ? String(turn.turn_type) : "none");
@@ -287,6 +314,10 @@ def render_snapshot_html(snapshot: dict[str, Any]) -> str:
         cognition_latency=html.escape(_cognition_latency_text(cognition_last)),
         cognition_refs=html.escape(_cognition_refs_text(cognition_last)),
         cognition_detail=html.escape(_cognition_detail_text(cognition, cognition_last)),
+        review_id=html.escape(_review_id_text(snapshot)),
+        review_id_attr=html.escape(_review_id_attr(snapshot), quote=True),
+        review_status=html.escape(_review_status_text(snapshot)),
+        review_detail=html.escape(_review_detail_text(snapshot)),
         turn_type=html.escape(str(turn.get("turn_type") or "none")),
         capability_level=html.escape(str(capability.get("current_level") or "unmeasured")),
         capability_summary=html.escape(str(capability.get("summary") or "Run a cognitive benchmark to show evidence.")),
@@ -311,6 +342,9 @@ def make_ui_handler(runtime: MnemeRuntime) -> type[BaseHTTPRequestHandler]:
                 return
             if self.path == "/devices":
                 self._handle_devices()
+                return
+            if self.path == "/review":
+                self._handle_review()
                 return
             self.send_error(HTTPStatus.NOT_FOUND)
 
@@ -339,6 +373,28 @@ def make_ui_handler(runtime: MnemeRuntime) -> type[BaseHTTPRequestHandler]:
                 microphone_device_id=_form_value(form, "microphone_device_id"),
                 speaker_device_id=_form_value(form, "speaker_device_id"),
             )
+            self._redirect_home()
+
+        def _handle_review(self) -> None:
+            form = self._read_form()
+            review_id = _form_value(form, "review_id")
+            if review_id is None:
+                self._redirect_home()
+                return
+            action = form.get("action", [""])[0]
+            try:
+                if action == "apply":
+                    runtime.apply_review(
+                        review_id,
+                        reason="applied from local UI",
+                    )
+                elif action == "reject":
+                    runtime.reject_review(
+                        review_id,
+                        reason="rejected from local UI",
+                    )
+            except (KeyError, ValueError):
+                pass
             self._redirect_home()
 
         def _read_form(self) -> dict[str, list[str]]:
@@ -490,6 +546,38 @@ def _cognition_detail_text(cognition: dict[str, Any], last_result: dict[str, Any
         return "Local model wording is enabled."
     fallback = last_result.get("fallback_reason")
     return f"Fallback: {fallback}" if fallback else "Local model wording was used for the last response."
+
+
+def _latest_review(snapshot: dict[str, Any]) -> dict[str, Any]:
+    memory_review = snapshot.get("memory_review")
+    if not isinstance(memory_review, dict):
+        return {}
+    latest = memory_review.get("last_correction_proposal")
+    return dict(latest) if isinstance(latest, dict) else {}
+
+
+def _review_id_text(snapshot: dict[str, Any]) -> str:
+    latest = _latest_review(snapshot)
+    return str(latest.get("review_id") or latest.get("proposal_id") or "none")
+
+
+def _review_id_attr(snapshot: dict[str, Any]) -> str:
+    latest = _latest_review(snapshot)
+    value = latest.get("review_id") or latest.get("proposal_id")
+    return str(value) if value else ""
+
+
+def _review_status_text(snapshot: dict[str, Any]) -> str:
+    latest = _latest_review(snapshot)
+    return str(latest.get("status") or "none")
+
+
+def _review_detail_text(snapshot: dict[str, Any]) -> str:
+    latest = _latest_review(snapshot)
+    proposal_type = latest.get("proposal_type")
+    if not proposal_type:
+        return "No pending review proposal."
+    return f"{proposal_type} from latest review turn."
 
 
 def _form_value(form: dict[str, list[str]], key: str) -> str | None:
