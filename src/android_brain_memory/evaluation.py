@@ -52,6 +52,12 @@ class EvaluationLogger:
         presence = snapshot.get("presence") if isinstance(snapshot, Mapping) else {}
         coordinator = presence.get("coordinator") if isinstance(presence, Mapping) else {}
         memory = snapshot.get("memory") if isinstance(snapshot, Mapping) else {}
+        speech_loop = snapshot.get("speech_loop") if isinstance(snapshot, Mapping) else {}
+        speech_counters = (
+            speech_loop.get("counters", {})
+            if isinstance(speech_loop, Mapping)
+            else {}
+        )
         response_text = ""
         if isinstance(utterances, list) and utterances:
             latest = utterances[-1]
@@ -71,6 +77,31 @@ class EvaluationLogger:
             "memory_recall_signal": _memory_recall_signal(utterances),
             "skill_status_count": _count_events(events, "skill_status"),
             "safety_event_count": _count_events(events, "safety_event"),
+            "speech_loop_state": (
+                speech_loop.get("current_state")
+                if isinstance(speech_loop, Mapping)
+                else None
+            ),
+            "asr_latency_ms": (
+                speech_loop.get("latest_asr_latency_ms")
+                if isinstance(speech_loop, Mapping)
+                else None
+            ),
+            "response_latency_ms": (
+                speech_loop.get("latest_response_latency_ms")
+                if isinstance(speech_loop, Mapping)
+                else None
+            ),
+            "tts_latency_ms": (
+                speech_loop.get("latest_tts_latency_ms")
+                if isinstance(speech_loop, Mapping)
+                else None
+            ),
+            "no_speech_total": _counter(speech_counters, "no_speech"),
+            "capture_errors_total": _counter(speech_counters, "capture_errors"),
+            "tts_failures_total": _counter(speech_counters, "tts_failures"),
+            "duplicate_suppressions_total": _counter(speech_counters, "duplicate_suppressions"),
+            "stuck_states_total": _counter(speech_counters, "stuck_states"),
         }
         record = EvaluationRecord(
             timestamp=timestamp,
@@ -99,6 +130,16 @@ class EvaluationLogger:
             "barge_ins_total": max(
                 [int(item.get("metrics", {}).get("barge_ins_total", 0)) for item in turns] or [0]
             ),
+            "speech": {
+                "no_speech_total": _max_metric(turns, "no_speech_total"),
+                "capture_errors_total": _max_metric(turns, "capture_errors_total"),
+                "tts_failures_total": _max_metric(turns, "tts_failures_total"),
+                "duplicate_suppressions_total": _max_metric(turns, "duplicate_suppressions_total"),
+                "stuck_states_total": _max_metric(turns, "stuck_states_total"),
+                "max_asr_latency_ms": _max_metric(turns, "asr_latency_ms"),
+                "max_response_latency_ms": _max_metric(turns, "response_latency_ms"),
+                "max_tts_latency_ms": _max_metric(turns, "tts_latency_ms"),
+            },
         }
 
 
@@ -118,6 +159,25 @@ def _count_events(events: Any, kind: str) -> int:
     if not isinstance(events, list):
         return 0
     return sum(1 for event in events if isinstance(event, Mapping) and event.get("kind") == kind)
+
+
+def _counter(counters: Any, name: str) -> int:
+    if not isinstance(counters, Mapping):
+        return 0
+    value = counters.get(name, 0)
+    return int(value) if isinstance(value, int) and not isinstance(value, bool) else 0
+
+
+def _max_metric(records: list[dict[str, Any]], name: str) -> int:
+    values = []
+    for record in records:
+        metrics = record.get("metrics", {})
+        if not isinstance(metrics, Mapping):
+            continue
+        value = metrics.get(name)
+        if isinstance(value, int) and not isinstance(value, bool):
+            values.append(value)
+    return max(values or [0])
 
 
 def _required_text(value: Any, field_name: str) -> str:

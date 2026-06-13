@@ -1,0 +1,13 @@
+name: no_speech
+description: A no-speech capture stays listening and produces no response.
+speech_inputs:
+  - status: no_speech
+steps:
+  - advance_ms: 1000
+    expect:
+      speech_status: no_speech
+      current_state: listening
+      utterance_count: 0
+      no_speech_total: 1
+      responses_generated_total: 0
+

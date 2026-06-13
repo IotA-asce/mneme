@@ -1,0 +1,15 @@
+name: normal_turn
+description: One live speech transcript produces one response and completed speech output.
+speech_inputs:
+  - speaker: user
+    transcript: hello Mneme
+    confidence: 0.92
+steps:
+  - advance_ms: 1000
+    expect:
+      speech_status: transcribed
+      utterance_count: 1
+      responses_generated_total: 1
+      tts_completed_total: 1
+      duplicate_suppressions_total: 0
+

@@ -733,6 +733,7 @@ class LiveSpeechWorker:
         if device is None:
             self._stats["skipped"] += 1
             return LivePerceptionReport("speech", now, "no_microphone")
+        started = time.perf_counter()
         try:
             transcript = self.backend.transcribe(device=device, timestamp=now)
         except (OSError, subprocess.SubprocessError, ValueError) as exc:
@@ -742,11 +743,22 @@ class LiveSpeechWorker:
                 now,
                 "capture_error",
                 device_id=device.device_id,
-                details={"error": type(exc).__name__},
+                details={
+                    "error": type(exc).__name__,
+                    "message": str(exc),
+                    "latency_ms": int((time.perf_counter() - started) * 1000),
+                },
             )
+        latency_ms = int((time.perf_counter() - started) * 1000)
         if transcript is None:
             self._stats["skipped"] += 1
-            return LivePerceptionReport("speech", now, "no_speech", device_id=device.device_id)
+            return LivePerceptionReport(
+                "speech",
+                now,
+                "no_speech",
+                device_id=device.device_id,
+                details={"latency_ms": latency_ms},
+            )
 
         self._stats["captures"] += 1
         self._stats["transcripts"] += 1
@@ -759,7 +771,7 @@ class LiveSpeechWorker:
             device_id=device.device_id,
             trace_id=trace_id,
             event_ids=event_ids,
-            details={"transcript": transcript.to_dict()},
+            details={"transcript": transcript.to_dict(), "latency_ms": latency_ms},
         )
 
     def _store_transcript(self, transcript: SpeechTranscriptObservation) -> str | None:

@@ -19,6 +19,7 @@ from .runtime import (
     skill_goal,
     skill_status,
 )
+from .speech_loop import turn_id_from_dialogue_turn
 
 
 DEFAULT_SKILL_TTL_MS = 5_000
@@ -504,6 +505,7 @@ class VirtualSkillRunner:
         self._publish_status(goal, VirtualSkillStatus.ACCEPTED, now)
         self._publish_status(goal, VirtualSkillStatus.RUNNING, now)
         output = None
+        tts_started = time.perf_counter()
         try:
             if goal.goal_type == "speech":
                 output = self.speech_backend.speak(
@@ -512,6 +514,10 @@ class VirtualSkillRunner:
                     device_id=_optional_text(goal.payload.get("device_id"), "device_id"),
                     timestamp=now,
                 )
+                output.metadata = {
+                    **dict(output.metadata),
+                    "tts_latency_ms": int((time.perf_counter() - tts_started) * 1000),
+                }
                 self._outputs.append(output)
             duration = _non_negative_int(
                 goal.payload.get(
@@ -538,7 +544,10 @@ class VirtualSkillRunner:
                 goal,
                 VirtualSkillStatus.FAILED,
                 now,
-                {"error": type(exc).__name__},
+                {
+                    "error": type(exc).__name__,
+                    "tts_latency_ms": int((time.perf_counter() - tts_started) * 1000),
+                },
             )
             record = VirtualSkillRecord(
                 goal=goal,
@@ -605,7 +614,14 @@ class VirtualSkillRunner:
         assert self._active is not None
         record = self._active
         record.status = status
-        self._publish_status(record.goal, status, timestamp, extra_payload)
+        payload = dict(extra_payload or {})
+        if record.output is not None:
+            output = record.output.to_dict()
+            payload.setdefault("output", output)
+            latency = output.get("metadata", {}).get("tts_latency_ms")
+            if latency is not None:
+                payload.setdefault("tts_latency_ms", latency)
+        self._publish_status(record.goal, status, timestamp, payload)
         self._completed.append(record)
         self._active = None
         return record
@@ -740,6 +756,15 @@ class ConversationalPresenceCoordinator:
             self._stats["gaze_goals"] += 1
 
         if plan is not None:
+            dialogue_turn = intent.payload.get("dialogue_turn")
+            turn_payload = {}
+            if isinstance(dialogue_turn, Mapping):
+                turn_payload = {
+                    "turn_id": turn_id_from_dialogue_turn(dialogue_turn),
+                    "turn_event_id": dialogue_turn.get("event_id"),
+                    "turn_source": dialogue_turn.get("source"),
+                    "turn_timestamp": dialogue_turn.get("timestamp"),
+                }
             self._publish_goal(
                 skill_id="virtual_speech",
                 goal_type="speech",
@@ -750,6 +775,7 @@ class ConversationalPresenceCoordinator:
                     "intent_id": intent.intent_id,
                     "voice": self.default_voice,
                     "device_id": self.preferred_speaker_device_id,
+                    **turn_payload,
                 },
                 timestamp=now,
             )

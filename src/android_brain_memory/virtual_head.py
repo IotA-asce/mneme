@@ -46,6 +46,11 @@ from .runtime_preferences import (
     RuntimePreferencesStore,
 )
 from .runtime_loop import MnemeRuntime, RuntimeClock
+from .speech_benchmarks import (
+    DEFAULT_SPEECH_FIXTURES_DIR,
+    run_speech_soak,
+    run_speech_soak_suite,
+)
 
 
 LOCAL_PROFILES = {"local-speech", "local-vision", "local-cognition", "local-lab"}
@@ -305,6 +310,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional benchmark database path. Defaults to an isolated temporary database.",
     )
     eval_cognition.add_argument("--json", action="store_true")
+    eval_speech = eval_subparsers.add_parser("speech", help="Run fake-backed live speech soak fixtures.")
+    eval_speech.add_argument("--fixture", type=Path)
+    eval_speech.add_argument("--fixtures-dir", type=Path, default=DEFAULT_SPEECH_FIXTURES_DIR)
+    eval_speech.add_argument(
+        "--benchmark-db",
+        type=Path,
+        help="Optional speech benchmark database path. Defaults to an isolated temporary database.",
+    )
+    eval_speech.add_argument("--json", action="store_true")
     eval_capability = eval_subparsers.add_parser("capability", help="Report conservative capability ladder evidence.")
     eval_capability.add_argument(
         "--fixture",
@@ -705,6 +719,37 @@ def _eval(args: argparse.Namespace) -> int:
             if payload.get("suite"):
                 print(
                     f"cognition suite: score={payload['total_score']} "
+                    f"passed={payload['passed_fixtures']}/{payload['total_fixtures']}"
+                )
+            else:
+                print(
+                    f"{payload['fixture_name']}: score={payload['total_score']} "
+                    f"passed={payload['passed_steps']}/{payload['total_steps']}"
+                )
+        return 0 if exit_ok else 1
+    if args.eval_command == "speech":
+        if args.fixture is not None:
+            report = run_speech_soak(
+                args.fixture,
+                db_path=args.benchmark_db,
+                migrations_dir=args.migrations,
+            )
+            payload = report.to_dict()
+            exit_ok = report.total_score >= 1.0
+        else:
+            report = run_speech_soak_suite(
+                fixtures_dir=args.fixtures_dir,
+                db_path=args.benchmark_db,
+                migrations_dir=args.migrations,
+            )
+            payload = report.to_dict()
+            exit_ok = payload["total_score"] >= 1.0
+        if args.json:
+            print(json.dumps(to_jsonable(payload), indent=2, sort_keys=True))
+        else:
+            if payload.get("suite"):
+                print(
+                    f"speech suite: score={payload['total_score']} "
                     f"passed={payload['passed_fixtures']}/{payload['total_fixtures']}"
                 )
             else:

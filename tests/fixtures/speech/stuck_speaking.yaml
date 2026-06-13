@@ -1,0 +1,20 @@
+name: stuck_speaking
+description: Long-running speech is reported as a stuck state.
+virtual_speech_duration_ms: 60000
+speech_inputs:
+  - speaker: user
+    transcript: tell me something slowly
+    confidence: 0.9
+  - status: no_speech
+steps:
+  - advance_ms: 1000
+    expect:
+      speech_status: transcribed
+      utterance_count: 1
+      responses_generated_total: 1
+  - advance_ms: 31000
+    expect:
+      speech_status: no_speech
+      stuck_states_total: 1
+      current_state: degraded
+      latest_failure_contains: speaking_timeout
