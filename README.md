@@ -78,7 +78,7 @@ Stage 6 starts the brain-first local loop:
 - `mneme models list`, `mneme models verify`, and guarded `mneme models download` support local model hygiene.
 - `mneme run --profile local-speech` opts into native microphone/ASR/TTS backends when optional packages and local models are available.
 - `mneme run --profile local-vision` opts into OpenCV camera capture and optional MediaPipe face/person observations.
-- `mneme ui` serves a lightweight browser UI that visualizes avatar/runtime state, accepts typed input, and saves preferred camera/microphone/speaker selections.
+- `mneme ui` serves a lightweight browser UI that visualizes avatar/runtime state, accepts typed input, refreshes the local device inventory, and saves preferred camera/microphone/speaker selections.
 - `--evaluation-log` and `mneme eval summarize` record local daily-driver metrics for later brain-loop evaluation.
 
 ### Live Perception
@@ -284,7 +284,7 @@ Open the local browser UI:
 mneme ui
 ```
 
-Then visit `http://127.0.0.1:8765`. The UI visualizes runtime/avatar state, can submit typed input, and can save preferred camera, microphone, and speaker devices. Saved device selections are stored in `.local/runtime_preferences.json` and are reused by later `mneme ui` and `mneme run` sessions.
+Then visit `http://127.0.0.1:8765`. The UI visualizes runtime/avatar state, can submit typed input, and can save preferred camera, microphone, and speaker devices. Use **Refresh list** if the dropdowns only show **Auto** after granting permissions or connecting a device. Saved device selections are stored in `.local/runtime_preferences.json` and are reused by later `mneme ui` and `mneme run` sessions.
 
 Terminal runs can also use explicit one-off device IDs:
 

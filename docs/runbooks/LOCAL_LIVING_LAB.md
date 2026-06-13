@@ -106,6 +106,11 @@ The UI also has device selectors for:
 - microphone,
 - speaker.
 
+The UI inventories devices at startup without opening sensors. If a dropdown only
+shows **Auto**, grant the relevant camera/microphone permission if macOS asks,
+connect the device, then press **Refresh list**. Refreshing rescans host devices
+without restarting the UI.
+
 Press **Save devices** after selecting devices. The selection is saved in:
 
 ```text
@@ -123,6 +128,10 @@ mneme run \
 ```
 
 Use the device IDs shown in the UI runtime JSON or `/state` endpoint. If a saved device is unavailable, Mneme falls back to the first available device of that kind.
+
+The UI's default real-device scan timeout is longer than the terminal default so
+macOS `system_profiler` has time to return camera/audio inventory. It still does
+not open the camera, record audio, or play audio during discovery.
 
 ## Evaluation Logs
 

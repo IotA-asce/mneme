@@ -5,7 +5,7 @@ from pathlib import Path
 from android_brain_memory import MnemeMemory, WorkingMemory
 from android_brain_memory.dialogue import DialogueActType, DialoguePlanner, UtterancePlan
 from android_brain_memory.executive import Executive, ExecutiveIntent, ExecutiveMode
-from android_brain_memory.models import Fact, MemoryBundle, SourceType, Speakability
+from android_brain_memory.models import Episode, Fact, MemoryBundle, SourceType, Speakability
 
 
 MIGRATIONS = Path(__file__).resolve().parents[1] / "storage" / "migrations"
@@ -45,6 +45,19 @@ def make_bundle(facts=None, warnings=None) -> MemoryBundle:
     )
 
 
+def make_episode(episode_id="ep_calibration") -> Episode:
+    return Episode(
+        episode_id=episode_id,
+        start_ts=9_000,
+        end_ts=10_000,
+        summary="User discussed calibration timing with Mneme.",
+        context={"topic": "calibration"},
+        salience=0.7,
+        confidence=0.88,
+        participants=["user"],
+    )
+
+
 def respond_intent(payload=None, mode=ExecutiveMode.NORMAL) -> ExecutiveIntent:
     return ExecutiveIntent(
         intent_id="exec_intent_000001",
@@ -77,8 +90,24 @@ def test_answer_plan_uses_top_fact_with_slots_and_refs():
     assert plan.act_type == DialogueActType.ANSWER
     assert plan.content_slots == {"subject": "user", "predicate": "likes", "value": "tea"}
     assert "tea" in plan.text
+    assert "you like tea" in plan.text
     assert plan.memory_refs == [{"memory_kind": "fact", "memory_id": "fact_beverage"}]
     assert plan.intent_id == "exec_intent_000001"
+
+
+def test_answer_plan_can_use_top_episode_when_no_fact_matches():
+    planner = DialoguePlanner(clock=FixedClock(10_000))
+    bundle = MemoryBundle(
+        query_id="query_test",
+        summary="test bundle",
+        episodes=[make_episode()],
+    )
+
+    plan = planner.plan(respond_intent(), bundle=bundle)
+
+    assert plan.act_type == DialogueActType.ANSWER
+    assert "calibration timing" in plan.text
+    assert plan.memory_refs == [{"memory_kind": "episode", "memory_id": "ep_calibration"}]
 
 
 def test_clarify_plan_when_memory_conflicts():
@@ -119,6 +148,7 @@ def test_memory_instruction_yields_acknowledge():
 
     assert plan.act_type == DialogueActType.ACKNOWLEDGE
     assert "remember" in plan.text.lower()
+    assert "you prefer short prompts" in plan.text
 
 
 def test_greeting_without_memory_yields_greet():
@@ -132,6 +162,26 @@ def test_greeting_without_memory_yields_greet():
     plan = planner.plan(intent, bundle=make_bundle())
 
     assert plan.act_type == DialogueActType.GREET
+    assert "I'm here" in plan.text
+
+
+def test_unknown_response_uses_current_user_text():
+    planner = DialoguePlanner(clock=FixedClock(10_000))
+    intent = respond_intent(
+        payload={
+            "dialogue_turn": {
+                "speaker": "user",
+                "text": "I am tuning the attention loop",
+                "timestamp": 10_000,
+            }
+        }
+    )
+
+    plan = planner.plan(intent, bundle=make_bundle())
+
+    assert plan.act_type == DialogueActType.ACKNOWLEDGE
+    assert "I am tuning the attention loop" in plan.text
+    assert "current context" in plan.text
 
 
 def test_no_plan_for_safety_listen_or_idle_intents():

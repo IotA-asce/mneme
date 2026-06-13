@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import threading
+import urllib.parse
+import urllib.request
 from http.server import HTTPServer
 from pathlib import Path
 
@@ -407,6 +410,62 @@ def test_local_ui_renders_avatar_state():
     assert "Mic 1" in html
     assert "Speaker 1" in html
     assert '<option value="cam-1" selected>' in html
+    assert 'data-device-kind="camera"' in html
+    assert "Refresh list" in html
+
+
+def test_local_ui_refresh_action_rescans_devices():
+    class RefreshingRuntime:
+        def __init__(self):
+            self.refreshed = False
+
+        def snapshot(self):
+            devices = []
+            counts = {"camera": 0, "microphone": 0, "speaker": 0}
+            if self.refreshed:
+                devices = [{"device_id": "cam-1", "kind": "camera", "label": "Camera 1"}]
+                counts["camera"] = 1
+            return {
+                "timestamp": 1_000,
+                "devices": {"devices": devices, "available_counts": counts},
+                "device_preferences": {},
+                "presence": {"avatar": {"mode": "idle"}},
+            }
+
+        def process_user_utterance(self, text: str):
+            return None
+
+        def update_device_preferences(self, **kwargs):
+            return None
+
+        def refresh_devices(self):
+            self.refreshed = True
+            return None
+
+    runtime = RefreshingRuntime()
+    server = make_ui_server(runtime, port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    host, port = server.server_address
+    base_url = f"http://{host}:{port}"
+    try:
+        first = urllib.request.urlopen(base_url, timeout=2).read().decode("utf-8")
+        assert "No devices found yet" in first
+        assert "Camera 1" not in first
+
+        body = urllib.parse.urlencode({"action": "refresh"}).encode("utf-8")
+        refreshed = urllib.request.urlopen(
+            urllib.request.Request(base_url + "/devices", data=body, method="POST"),
+            timeout=2,
+        ).read().decode("utf-8")
+
+        assert runtime.refreshed is True
+        assert "Camera 1" in refreshed
+        assert "Found 1 device option" in refreshed
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
 
 
 def test_make_ui_handler_returns_handler_class():

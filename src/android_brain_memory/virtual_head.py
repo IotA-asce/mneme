@@ -190,7 +190,7 @@ def build_parser() -> argparse.ArgumentParser:
     ui.add_argument(
         "--device-scan-timeout-ms",
         type=int,
-        default=1_500,
+        default=5_000,
         help="Timeout for each real device inventory command.",
     )
 
