@@ -5,6 +5,9 @@ from pathlib import Path
 
 from android_brain_memory import (
     FakePeripheralBackend,
+    FakeModelRuntime,
+    ModelDialogueRealizer,
+    ModelResponse,
     MnemeRuntime,
     PeripheralDevice,
     PeripheralDiscoveryService,
@@ -142,3 +145,74 @@ def test_mneme_run_scripted_json_output(tmp_path, capsys):
     output = json.loads(capsys.readouterr().out)
     assert output[0]["type"] == "startup"
     assert any(item["type"] == "turn" for item in output)
+
+
+def test_runtime_can_realize_dialogue_with_injected_local_model(tmp_path):
+    runtime = MnemeRuntime(
+        db_path=tmp_path / "memory.sqlite3",
+        migrations_dir=MIGRATIONS,
+        clock=RuntimeClock(1_000),
+        model_dialogue_realizer=ModelDialogueRealizer(
+            FakeModelRuntime(response_text=json.dumps({
+                "response_text": "Local model wording is active.",
+                "memory_refs_used": [],
+                "uncertainty": "low",
+                "proposed_memory_candidates": [],
+                "safety_notes": [],
+            }))
+        ),
+    )
+    try:
+        runtime.start()
+        result = runtime.process_user_utterance("hello Mneme", timestamp=1_000)
+
+        assert result.utterances[0].text == "Local model wording is active."
+        realization = result.utterances[0].plan.content_slots["model_realization"]
+        assert realization["used_model"] is True
+        assert result.snapshot["cognition"]["last_result"]["used_model"] is True
+    finally:
+        runtime.close()
+
+
+def test_mneme_run_local_cognition_profile_uses_model_realizer(monkeypatch, tmp_path, capsys):
+    class FakeOllama:
+        backend = "ollama"
+
+        def __init__(self, *, base_url: str) -> None:
+            self.base_url = base_url
+
+        def generate(self, request):
+            return ModelResponse(
+                ok=True,
+                backend="ollama",
+                model=request.model,
+                text=json.dumps({
+                    "response_text": "Hello from local cognition.",
+                    "memory_refs_used": [],
+                    "uncertainty": "low",
+                    "proposed_memory_candidates": [],
+                    "safety_notes": [],
+                }),
+                latency_ms=4,
+            )
+
+    monkeypatch.setattr("android_brain_memory.virtual_head.OllamaModelRuntime", FakeOllama)
+
+    exit_code = mneme_main([
+        "--db",
+        str(tmp_path / "memory.sqlite3"),
+        "--migrations",
+        str(MIGRATIONS),
+        "run",
+        "--profile",
+        "local-cognition",
+        "--json",
+        "--input",
+        "hello Mneme",
+    ])
+
+    assert exit_code == 0
+    output = json.loads(capsys.readouterr().out)
+    turn = next(item for item in output if item["type"] == "turn")
+    assert turn["result"]["utterances"][0]["text"] == "Hello from local cognition."
+    assert turn["result"]["snapshot"]["cognition"]["last_result"]["used_model"] is True

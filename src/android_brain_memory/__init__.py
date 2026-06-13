@@ -94,6 +94,17 @@ from .local_audio import (
     write_silent_wav,
 )
 from .local_models import LocalModelRecord, LocalModelRegistry, ModelVerification
+from .cognitive_context import (
+    CognitiveContextPacket,
+    CognitiveMemoryRef,
+    OmittedMemoryRef,
+    build_cognitive_context,
+)
+from .model_dialogue import (
+    ModelDialogueRealizer,
+    ModelDialogueResult,
+    disabled_model_dialogue_status,
+)
 from .model_runtime import (
     DEFAULT_MODEL_TIMEOUT_MS,
     DEFAULT_OLLAMA_BASE_URL,
@@ -256,6 +267,13 @@ __all__ = [
     "LocalModelRecord",
     "LocalModelRegistry",
     "ModelVerification",
+    "CognitiveContextPacket",
+    "CognitiveMemoryRef",
+    "OmittedMemoryRef",
+    "build_cognitive_context",
+    "ModelDialogueRealizer",
+    "ModelDialogueResult",
+    "disabled_model_dialogue_status",
     "DEFAULT_MODEL_TIMEOUT_MS",
     "DEFAULT_OLLAMA_BASE_URL",
     "DEFAULT_OLLAMA_MODEL",

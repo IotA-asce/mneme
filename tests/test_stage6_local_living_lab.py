@@ -421,6 +421,17 @@ def test_local_ui_renders_avatar_state():
             }
         },
         "last_utterance": {"text": "Hello!"},
+        "cognition": {
+            "enabled": True,
+            "backend": "ollama",
+            "model": "qwen2.5:1.5b",
+            "last_result": {
+                "used_model": True,
+                "fallback_reason": None,
+                "latency_ms": 42,
+                "memory_refs_used": [{"memory_kind": "fact", "memory_id": "fact_tea"}],
+            },
+        },
     }
 
     html = render_snapshot_html(snapshot)
@@ -435,6 +446,9 @@ def test_local_ui_renders_avatar_state():
     assert '<option value="cam-1" selected>' in html
     assert 'data-device-kind="camera"' in html
     assert "Refresh list" in html
+    assert "ollama / qwen2.5:1.5b" in html
+    assert "model-realized" in html
+    assert "fact_tea" in html
 
 
 def test_local_ui_refresh_action_rescans_devices():

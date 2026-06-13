@@ -77,6 +77,7 @@ Stage 6 starts the brain-first local loop:
 - `config/models.yaml` tracks local model metadata; model files live under `.local/models/` and are never committed.
 - `mneme models list`, `mneme models verify`, and guarded `mneme models download` support local model hygiene.
 - `mneme cognition check` verifies the local Ollama service, checks whether `qwen2.5:1.5b` is installed, and can run one bounded non-streaming probe.
+- `mneme run --profile local-cognition` can use the checked Ollama model as a bounded wording layer after deterministic memory retrieval and dialogue planning.
 - `mneme run --profile local-speech` opts into native microphone/ASR/TTS backends when optional packages and local models are available.
 - `mneme run --profile local-vision` opts into OpenCV camera capture and optional MediaPipe face/person observations.
 - `mneme ui` serves a lightweight browser UI that visualizes avatar/runtime state, accepts typed input, refreshes the local device inventory, and saves preferred camera/microphone/speaker selections.
@@ -97,7 +98,7 @@ The base package intentionally does not install OpenCV, face models, VAD, ASR, o
 ## What Is Not Implemented Yet
 
 - Real local model files are not bundled. You must place or download compatible file-managed models under `.local/models/`, and pull Ollama-managed models with Ollama.
-- Local LLM-backed dialogue is not implemented yet. `mneme cognition check` only verifies local model readiness; the runtime/UI still use deterministic dialogue.
+- Local LLM-backed wording is implemented as an opt-in layer. It does not own intent, memory selection, safety, or confirmed memory writes.
 - Real-device quality has not been tuned in CI; local mic/camera permissions, model speed, and audio playback must be validated on your machine.
 - The browser UI is a lightweight local dashboard, not a polished graphical avatar renderer.
 - Long-running process supervision and private-log redaction workflows are not implemented yet.
@@ -260,7 +261,30 @@ mneme cognition check --json
 mneme cognition check --no-probe --json
 ```
 
-This confirms local model availability and latency only. It does not yet make the UI or terminal chat use the model for responses.
+Run typed terminal chat with local model wording:
+
+```bash
+mneme run --profile local-cognition --json --input "hello Mneme"
+mneme run --profile local-cognition --json --input "what do I like?"
+```
+
+Run the full local-lab profile with explicit local cognition:
+
+```bash
+mneme run \
+  --profile local-lab \
+  --cognition-backend ollama \
+  --cognition-model qwen2.5:1.5b \
+  --json
+```
+
+Open the UI with local cognition status and model-backed wording:
+
+```bash
+mneme ui --cognition-profile local
+```
+
+Model wording is bounded by deterministic context construction, schema validation, memory-ref checks, speakability filtering, and deterministic fallback.
 
 Run native local speech when optional packages and models are installed:
 

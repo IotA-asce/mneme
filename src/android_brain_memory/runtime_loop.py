@@ -10,6 +10,7 @@ from typing import Any
 from .attention import AttentionManager
 from .consolidation_daemon import ConsolidationDaemon
 from .context_windows import ContextWindowManager
+from .cognitive_context import build_cognitive_context
 from .dialogue import DialoguePlanner, UtterancePlan
 from .engine import DEFAULT_DB, DEFAULT_MIGRATIONS, MnemeMemory, to_jsonable
 from .executive import Executive, ExecutiveIntent
@@ -23,6 +24,7 @@ from .live_perception import (
     SpeechRecognitionBackend,
 )
 from .models import MemoryCandidate, SalienceFeatures, SourceType
+from .model_dialogue import ModelDialogueRealizer, disabled_model_dialogue_status
 from .peripherals import (
     FakePeripheralBackend,
     PeripheralDiscoveryService,
@@ -131,6 +133,8 @@ class MnemeRuntime:
         persist_speech_voice: bool = True,
         enable_virtual_presence: bool = True,
         virtual_speech_duration_ms: int = 0,
+        model_dialogue_realizer: ModelDialogueRealizer | None = None,
+        cognitive_context_char_budget: int = 8_000,
         source: str = "mneme_runtime",
         initialize_db: bool = True,
     ) -> None:
@@ -180,6 +184,8 @@ class MnemeRuntime:
             engine=self.engine,
         )
         self.dialogue = DialoguePlanner(store=self.engine.store, clock=self.clock)
+        self.model_dialogue_realizer = model_dialogue_realizer
+        self.cognitive_context_char_budget = cognitive_context_char_budget
         self.promoter = MemoryPromoter(self.engine, bus=self.bus, clock=self.clock)
         self.extractor = FactExtractor(self.engine, bus=self.bus, clock=self.clock)
         self.consolidation_daemon = ConsolidationDaemon(
@@ -376,6 +382,11 @@ class MnemeRuntime:
                 "skills": self.virtual_skill_runner.stats if self.virtual_skill_runner is not None else None,
                 "coordinator": self.presence.stats if self.presence is not None else None,
             },
+            "cognition": (
+                self.model_dialogue_realizer.status()
+                if self.model_dialogue_realizer is not None
+                else disabled_model_dialogue_status()
+            ),
         }
 
     def update_device_preferences(
@@ -457,6 +468,41 @@ class MnemeRuntime:
             if dialogue_key in self._handled_dialogue_keys:
                 return
             self._handled_dialogue_keys.add(dialogue_key)
+        if self.model_dialogue_realizer is not None:
+            context = build_cognitive_context(
+                user_utterance=_intent_turn_text(intent),
+                intent=intent,
+                bundle=self.executive.last_memory_bundle,
+                working=self.working_memory.to_dict(created_ts=event.timestamp),
+                attention=self.attention.state(now_ms=event.timestamp),
+                safety=self.working_memory.to_dict(created_ts=event.timestamp).get("safety_state", {}),
+                avatar=self.avatar.state.to_dict() if self.avatar is not None else {},
+                store=self.engine.store,
+                char_budget=self.cognitive_context_char_budget,
+            )
+            realized = self.model_dialogue_realizer.realize(plan, context)
+            plan.text = realized.text
+            plan.memory_refs = realized.memory_refs_used
+            plan.content_slots = dict(
+                plan.content_slots,
+                model_realization=realized.to_dict(),
+                cognitive_context={
+                    "memory_refs_available": [
+                        {
+                            "memory_kind": memory.memory_kind,
+                            "memory_id": memory.memory_id,
+                            "source_type": memory.source_type,
+                            "confidence": memory.confidence,
+                        }
+                        for memory in context.memories
+                    ],
+                    "omitted_memories": [
+                        omitted.to_dict() for omitted in context.omitted_memories
+                    ],
+                    "truncated": context.truncated,
+                    "serialized_chars": context.serialized_chars(),
+                },
+            )
         self._utterances.append(
             VirtualHeadOutput(timestamp=event.timestamp, text=plan.text, plan=plan)
         )
@@ -536,6 +582,15 @@ def _dialogue_key(intent: ExecutiveIntent) -> str | None:
     if not isinstance(speaker, str) or not isinstance(text, str):
         return None
     return f"{intent.intent_type.value}:{speaker}:{timestamp}:{_stable_text_id(text)}"
+
+
+def _intent_turn_text(intent: ExecutiveIntent) -> str:
+    turn = intent.payload.get("dialogue_turn")
+    if isinstance(turn, Mapping):
+        text = turn.get("text")
+        if isinstance(text, str):
+            return text
+    return ""
 
 
 def _resolve_speech_voice(

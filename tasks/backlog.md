@@ -157,15 +157,15 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [ ] Validate local-speech with real microphone, ASR model files, TTS playback, and barge-in on the current Mac
 - [ ] Validate local-vision with real camera permission, OpenCV frame capture, and MediaPipe face/person observations
 - [ ] Improve local browser UI from dashboard to expressive virtual head
-- [ ] Add local model-backed response realization behind the dialogue planner contract
+- [x] Add local model-backed response realization behind the dialogue planner contract
 - [x] Add local model runtime adapter protocol and fake adapter tests
 - [x] Add Ollama/local HTTP model adapter behind optional configuration
 - [x] Add `mneme cognition check` for local model availability and latency
-- [ ] Wire checked local model readiness into UI/runtime status displays
-- [ ] Add cognitive context builder from working memory, attention, safety, and retrieval
-- [ ] Add model dialogue realizer with deterministic fallback and schema validation
+- [x] Wire checked local model readiness into UI/runtime status displays
+- [x] Add cognitive context builder from working memory, attention, safety, and retrieval
+- [x] Add model dialogue realizer with deterministic fallback and schema validation
 - [ ] Add cognitive benchmark fixture format and capability ladder scoring
-- [ ] Add UI model status, memory refs used, and cognitive level evidence
+- [ ] Add UI cognitive level evidence after benchmark harness exists
 - [ ] Add redacted daily-driver logs and soak replay fixtures
 - [ ] Add richer evaluation metrics for latency, correction rate, contradiction rate, and stuck states
 - [x] Add ROS-style interface drafts
