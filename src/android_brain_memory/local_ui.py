@@ -124,6 +124,14 @@ HTML_TEMPLATE = """<!doctype html>
       <p class="device-status" data-bind="cognition_detail">$cognition_detail</p>
     </section>
     <section class="panel">
+      <h2>Capability Evidence</h2>
+      <div class="state-line">
+        <div class="metric"><span>turn type</span><strong data-bind="turn_type">$turn_type</strong></div>
+        <div class="metric"><span>level</span><strong data-bind="capability_level">$capability_level</strong></div>
+      </div>
+      <p class="device-status" data-bind="capability_summary">$capability_summary</p>
+    </section>
+    <section class="panel">
       <h2>Runtime</h2>
       <div class="state-line">
         <div class="metric"><span>memory rows</span><strong data-bind="memory_count">$memory_count</strong></div>
@@ -213,6 +221,11 @@ HTML_TEMPLATE = """<!doctype html>
       setText("cognition_latency", lastCognition.latency_ms == null ? "none" : String(lastCognition.latency_ms) + " ms");
       setText("cognition_refs", refs.length ? refs.map(function (ref) { return ref.memory_id; }).join(", ") : "none");
       setText("cognition_detail", !cognition.enabled ? "Local model wording is disabled." : (lastCognition.fallback_reason || "Local model wording is available."));
+      var turn = value(["turn_understanding"], {});
+      var capability = value(["capability"], {});
+      setText("turn_type", turn && turn.turn_type ? String(turn.turn_type) : "none");
+      setText("capability_level", capability && capability.current_level ? String(capability.current_level) : "unmeasured");
+      setText("capability_summary", capability && capability.summary ? String(capability.summary) : "Run a cognitive benchmark to show evidence.");
       setText("snapshot_json", JSON.stringify(state, null, 2));
       renderDevices(state);
     }
@@ -233,6 +246,8 @@ def render_snapshot_html(snapshot: dict[str, Any]) -> str:
     latest = snapshot.get("last_utterance") if isinstance(snapshot.get("last_utterance"), dict) else {}
     cognition = snapshot.get("cognition") if isinstance(snapshot.get("cognition"), dict) else {}
     cognition_last = cognition.get("last_result") if isinstance(cognition.get("last_result"), dict) else {}
+    turn = snapshot.get("turn_understanding") if isinstance(snapshot.get("turn_understanding"), dict) else {}
+    capability = snapshot.get("capability") if isinstance(snapshot.get("capability"), dict) else {}
     preferences = snapshot.get("device_preferences") if isinstance(snapshot.get("device_preferences"), dict) else {}
     devices = _device_list(snapshot)
     mode = str(avatar.get("mode", "idle"))
@@ -272,6 +287,9 @@ def render_snapshot_html(snapshot: dict[str, Any]) -> str:
         cognition_latency=html.escape(_cognition_latency_text(cognition_last)),
         cognition_refs=html.escape(_cognition_refs_text(cognition_last)),
         cognition_detail=html.escape(_cognition_detail_text(cognition, cognition_last)),
+        turn_type=html.escape(str(turn.get("turn_type") or "none")),
+        capability_level=html.escape(str(capability.get("current_level") or "unmeasured")),
+        capability_summary=html.escape(str(capability.get("summary") or "Run a cognitive benchmark to show evidence.")),
         memory_count=str(memory_count),
         timestamp=html.escape(str(snapshot.get("timestamp", 0))),
         snapshot_json=html.escape(snapshot_json),

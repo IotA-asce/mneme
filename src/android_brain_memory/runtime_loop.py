@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .attention import AttentionManager
+from .capability_ladder import current_runtime_capability_evidence
 from .consolidation_daemon import ConsolidationDaemon
 from .context_windows import ContextWindowManager
 from .cognitive_context import build_cognitive_context
@@ -25,6 +26,7 @@ from .live_perception import (
 )
 from .models import MemoryCandidate, SalienceFeatures, SourceType
 from .model_dialogue import ModelDialogueRealizer, disabled_model_dialogue_status
+from .memory_review import create_correction_proposal, explain_last_response
 from .peripherals import (
     FakePeripheralBackend,
     PeripheralDiscoveryService,
@@ -51,6 +53,7 @@ from .runtime import (
 from .runtime_preferences import RuntimeDevicePreferences, RuntimePreferencesStore
 from .self_model import ProceduralMemory
 from .simulation import ScenarioReplayRunner
+from .turn_understanding import TurnClassification, TurnType, classify_turn
 from .working_memory import SensoryEchoBuffer, WorkingMemory
 from .world_model import WorldModel
 
@@ -266,6 +269,9 @@ class MnemeRuntime:
         self._utterance_cursor = 0
         self._utterances: list[VirtualHeadOutput] = []
         self._handled_dialogue_keys: set[str] = set()
+        self._last_turn_classification: TurnClassification | None = None
+        self._last_memory_review: dict[str, Any] | None = None
+        self._last_correction_proposal: dict[str, Any] | None = None
         self._subscriptions: list[Subscription] = []
         self._attach_components()
 
@@ -301,6 +307,8 @@ class MnemeRuntime:
     ) -> RuntimeStepResult:
         clean_text = _required_text(text, "text")
         now = self._set_time(timestamp)
+        turn_classification = classify_turn(clean_text)
+        self._last_turn_classification = turn_classification
         event = perception_observation(
             source="virtual_head.typed_input",
             observation_type="speech_transcript",
@@ -309,6 +317,7 @@ class MnemeRuntime:
                 "transcript": clean_text,
                 "utterance": clean_text,
                 "topic": _topic_for_text(clean_text),
+                "turn_classification": turn_classification.to_dict(),
             },
             confidence=1.0,
             timestamp=now,
@@ -387,6 +396,16 @@ class MnemeRuntime:
                 if self.model_dialogue_realizer is not None
                 else disabled_model_dialogue_status()
             ),
+            "turn_understanding": (
+                self._last_turn_classification.to_dict()
+                if self._last_turn_classification is not None
+                else None
+            ),
+            "memory_review": {
+                "last_explanation": self._last_memory_review,
+                "last_correction_proposal": self._last_correction_proposal,
+            },
+            "capability": current_runtime_capability_evidence().to_dict(),
         }
 
     def update_device_preferences(
@@ -454,6 +473,7 @@ class MnemeRuntime:
             intent = ExecutiveIntent.from_dict(event.payload)
         except ValueError:
             return
+        self._enrich_review_intent(intent, event.timestamp)
         plan = self.dialogue.plan(
             intent,
             bundle=self.executive.last_memory_bundle,
@@ -508,6 +528,57 @@ class MnemeRuntime:
         )
         if self.presence is not None:
             self.presence.handle_intent(intent, plan=plan, timestamp=event.timestamp)
+
+    def _enrich_review_intent(self, intent: ExecutiveIntent, timestamp: int) -> None:
+        turn_classification = _turn_classification_from_intent(intent)
+        if turn_classification is None:
+            return
+        turn_text = _intent_turn_text(intent)
+        if turn_classification.turn_type == TurnType.EXPLANATION_QUESTION:
+            review = explain_last_response(
+                self.engine.store,
+                self._utterances[-1] if self._utterances else None,
+                created_ts=timestamp,
+            )
+            self._last_memory_review = review.to_dict()
+            intent.payload["memory_review"] = review.to_dict()
+        elif turn_classification.turn_type in {
+            TurnType.CORRECTION,
+            TurnType.CONTRADICTION_CHALLENGE,
+            TurnType.FORGET_REQUEST,
+        }:
+            related_refs = (
+                self._utterances[-1].plan.memory_refs
+                if self._utterances
+                else []
+            )
+            proposal = create_correction_proposal(
+                turn_text,
+                turn_type=turn_classification.turn_type,
+                created_ts=timestamp,
+                related_memory_refs=related_refs,
+            )
+            self._last_correction_proposal = proposal.to_dict()
+            intent.payload["correction_proposal"] = proposal.to_dict()
+        elif turn_classification.turn_type in {
+            TurnType.CAPABILITY_QUESTION,
+            TurnType.DEVICE_STATUS_QUESTION,
+            TurnType.IDENTITY_SELF_QUESTION,
+        }:
+            intent.payload["runtime_status"] = {
+                "devices": (
+                    self.discovery.last_snapshot.to_dict()
+                    if self.discovery.last_snapshot is not None
+                    else None
+                ),
+                "cognition": (
+                    self.model_dialogue_realizer.status()
+                    if self.model_dialogue_realizer is not None
+                    else disabled_model_dialogue_status()
+                ),
+                "capability": current_runtime_capability_evidence().to_dict(),
+                "memory_counts": self.engine.inspect_db()["table_counts"],
+            }
 
     def _step_result(self, now: int) -> RuntimeStepResult:
         return RuntimeStepResult(
@@ -591,6 +662,19 @@ def _intent_turn_text(intent: ExecutiveIntent) -> str:
         if isinstance(text, str):
             return text
     return ""
+
+
+def _turn_classification_from_intent(intent: ExecutiveIntent) -> TurnClassification | None:
+    turn = intent.payload.get("dialogue_turn")
+    if not isinstance(turn, Mapping):
+        return None
+    classification = turn.get("turn_classification")
+    if not isinstance(classification, Mapping):
+        return None
+    try:
+        return TurnClassification.from_dict(dict(classification))
+    except (KeyError, ValueError):
+        return None
 
 
 def _resolve_speech_voice(

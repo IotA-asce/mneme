@@ -82,6 +82,9 @@ Stage 6 starts the brain-first local loop:
 - `mneme run --profile local-vision` opts into OpenCV camera capture and optional MediaPipe face/person observations.
 - `mneme ui` serves a lightweight browser UI that visualizes avatar/runtime state, accepts typed input, refreshes the local device inventory, and saves preferred camera/microphone/speaker selections.
 - `--evaluation-log` and `mneme eval summarize` record local daily-driver metrics for later brain-loop evaluation.
+- `mneme eval cognition` runs deterministic cognitive benchmark fixtures, and `mneme eval capability` reports conservative capability ladder evidence.
+- User turns are classified before dialogue planning, so Mneme can distinguish remembering, recall, correction, forget, self/capability/status, and explanation questions.
+- “Why did you say that?” can explain the memory refs used by the previous response when the answer was memory-backed.
 
 ### Live Perception
 
@@ -339,7 +342,23 @@ mneme run --json --input "hello Mneme" --evaluation-log .local/evaluation/daily_
 mneme eval summarize --path .local/evaluation/daily_driver.jsonl --json
 ```
 
-See `docs/runbooks/LOCAL_LIVING_LAB.md`, `docs/runbooks/LOCAL_MODELS.md`, and `docs/runbooks/LOCAL_COGNITIVE_MODELS.md`.
+Run the first local cognitive benchmark and capability evidence report:
+
+```bash
+mneme eval cognition --fixture tests/fixtures/cognition/basic_preference_recall.yaml --json
+mneme eval capability --json
+```
+
+Try memory-backed explanation:
+
+```bash
+mneme run --json \
+  --input "remember that I like green tea" \
+  --input "what do I like?" \
+  --input "why did you say that?"
+```
+
+See `docs/runbooks/LOCAL_LIVING_LAB.md`, `docs/runbooks/LOCAL_MODELS.md`, `docs/runbooks/LOCAL_COGNITIVE_MODELS.md`, and `docs/runbooks/COGNITIVE_BENCHMARKS.md`.
 
 ## Live Perception Adapters
 

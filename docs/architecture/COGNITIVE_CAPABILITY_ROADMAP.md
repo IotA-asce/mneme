@@ -29,11 +29,15 @@ Mneme currently implements a deterministic local virtual-head brain loop:
 - virtual speech/avatar state,
 - local UI,
 - optional local speech/vision/TTS seams,
-- local model registry hygiene.
+- local model registry hygiene,
+- optional local model-backed wording,
+- turn classification,
+- memory-backed explanation,
+- first cognitive benchmark and capability evidence reports.
 
-Mneme does **not** currently use a local LLM or cloud LLM for conversation. The current dialogue planner is deterministic and template-based, though it can ground responses in memory and current-turn context.
+Mneme does **not** let a local or cloud LLM own conversation. The current dialogue planner is deterministic and template-based, while the local Ollama layer can optionally improve final wording after memory retrieval and safety checks.
 
-Behaviorally, the current system sits around **L1 to early L2** on the capability ladder below: more structured than a reflex loop, but not yet a flexible animal-like agent.
+Behaviorally, the current system can produce **L2-style evidence on the first narrow benchmark fixture**, but broader L2/L3 claims still require more fixtures and soak runs.
 
 ## Non-Negotiable Architecture Rule
 
@@ -301,6 +305,8 @@ Exit criteria:
 
 Goal: make cognitive progress measurable and comparable over time.
 
+Implementation status as of 2026-06-13: M8 now has a foundation. Mneme can classify turns, explain memory-backed responses, create non-mutating correction/forget proposals, run a first fixture-based cognitive benchmark, report conservative capability ladder evidence, and surface turn/capability evidence in the local UI. The benchmark suite is still small and should not be treated as broad intelligence evidence.
+
 ### M8.1 Benchmark Fixture Format
 
 Add:
@@ -333,9 +339,11 @@ Example benchmark categories:
 - repeated visitor continuity,
 - multi-turn goal tracking.
 
-Exit criteria:
+Implemented foundation:
 
-- `mneme eval cognition --fixture tests/fixtures/cognition/basic_recall.yaml --json` produces a score report.
+- `mneme eval cognition --fixture tests/fixtures/cognition/basic_preference_recall.yaml --json` produces a score report.
+- Benchmark runs use temporary databases by default.
+- The first fixture covers simple preference recall and memory-backed explanation.
 
 ### M8.2 Capability Ladder Scoring
 
@@ -367,9 +375,11 @@ Map metrics to ladder levels conservatively:
 - L5 requires social continuity and flexible interruption recovery.
 - L6+ requires multi-step planning and self-monitoring benchmarks.
 
-Exit criteria:
+Implemented foundation:
 
-- Mneme can report current ladder evidence without overclaiming.
+- `mneme eval capability --json` reports conservative L0-L8 evidence.
+- Output includes `animal_equivalence_claim: false`.
+- L2 evidence requires passing benchmark categories, and L3+ remain explicitly not proven.
 
 ### M8.3 Evaluation Dashboard
 
@@ -386,9 +396,10 @@ Add:
 - recent regressions,
 - "why this level" explanation.
 
-Exit criteria:
+Implemented foundation:
 
-- UI shows capability evidence, not just runtime state.
+- The local UI shows the latest turn type and conservative capability evidence from the runtime snapshot.
+- The UI still visualizes state only and does not own cognition.
 
 ## M9 — Live Multimodal Daily Driver
 

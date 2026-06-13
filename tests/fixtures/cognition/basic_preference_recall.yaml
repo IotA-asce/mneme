@@ -1,0 +1,32 @@
+name: basic_preference_recall
+description: Remember a simple user preference, recall it, then explain the memory grounding.
+category: preference_recall
+steps:
+  - input: "remember that I like green tea"
+    timestamp: 1000
+    expect:
+      turn_type: explicit_remember_instruction
+      act_type: acknowledge
+      response_contains:
+        - remember
+  - input: "what do I like?"
+    timestamp: 2000
+    expect:
+      turn_type: recall_question
+      act_type: answer
+      memory_ref_required: true
+      response_contains:
+        - green tea
+      category_tags:
+        - preference_recall
+  - input: "why did you say that?"
+    timestamp: 3000
+    expect:
+      turn_type: explanation_question
+      act_type: answer
+      memory_ref_required: true
+      response_contains:
+        - because
+        - fact
+      category_tags:
+        - provenance_correctness

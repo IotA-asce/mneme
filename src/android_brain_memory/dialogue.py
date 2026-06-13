@@ -10,8 +10,10 @@ from enum import StrEnum
 from typing import Any
 
 from .executive import ExecutiveIntent, ExecutiveIntentType, ExecutiveMode
+from .memory_review import explain_memory_refs, user_memory_review
 from .models import Episode, Fact, MemoryBundle, SourceType, Speakability, validate_confidence, validate_timestamp
 from .storage import MemoryStore
+from .turn_understanding import TurnType
 
 GREETING_PATTERN = re.compile(r"\b(hello|hi|hey|good (morning|afternoon|evening))\b")
 QUESTION_PATTERN = re.compile(
@@ -111,9 +113,28 @@ class DialoguePlanner:
         if intent.intent_type != ExecutiveIntentType.RESPOND_TO_USER:
             return None
 
+        turn_type = _turn_type(intent)
         memory_context = intent.payload.get("memory")
         if isinstance(memory_context, Mapping) and memory_context.get("needs_clarification"):
             return self._clarify(intent, memory_context)
+        if turn_type == TurnType.EXPLICIT_REMEMBER_INSTRUCTION:
+            return self._acknowledge_memory(intent)
+        if turn_type == TurnType.EXPLANATION_QUESTION:
+            return self._explain_previous_response(intent)
+        if turn_type == TurnType.MEMORY_REVIEW_QUESTION:
+            return self._review_user_memory(intent)
+        if turn_type in {
+            TurnType.CORRECTION,
+            TurnType.CONTRADICTION_CHALLENGE,
+            TurnType.FORGET_REQUEST,
+        }:
+            return self._acknowledge_review_proposal(intent, turn_type)
+        if turn_type == TurnType.IDENTITY_SELF_QUESTION:
+            return self._identity_response(intent)
+        if turn_type == TurnType.CAPABILITY_QUESTION:
+            return self._capability_response(intent)
+        if turn_type == TurnType.DEVICE_STATUS_QUESTION:
+            return self._status_response(intent)
         if "remember_event" in [
             str(item) for item in intent.payload.get("secondary_intents", [])
         ]:
@@ -205,6 +226,143 @@ class DialoguePlanner:
             content_slots={"remembered_statement": statement} if statement else {},
         )
 
+    def _explain_previous_response(self, intent: ExecutiveIntent) -> UtterancePlan:
+        review = intent.payload.get("memory_review")
+        if not isinstance(review, Mapping):
+            return self._build(
+                intent,
+                act_type=DialogueActType.ANSWER,
+                text="I do not have a previous response to explain yet.",
+                content_slots={"grounding": "memory_review_unavailable"},
+            )
+        refs = [
+            {
+                "memory_kind": str(item.get("memory_kind")),
+                "memory_id": str(item.get("memory_id")),
+            }
+            for item in review.get("memory_refs", [])
+            if isinstance(item, Mapping) and item.get("memory_kind") and item.get("memory_id")
+        ]
+        if not refs:
+            text = "I answered from the current conversation and deterministic dialogue rules, not from a durable memory."
+        else:
+            pieces = []
+            for item in review.get("memory_refs", []):
+                if not isinstance(item, Mapping):
+                    continue
+                source = item.get("source_type") or "unknown source"
+                confidence = item.get("confidence")
+                confidence_text = f" with confidence {confidence:.2f}" if isinstance(confidence, float) else ""
+                pieces.append(f"{item.get('memory_kind')} {item.get('memory_id')} from {source}{confidence_text}")
+            text = "I said that because I used " + "; ".join(pieces) + "."
+        return self._build(
+            intent,
+            act_type=DialogueActType.ANSWER,
+            text=text,
+            content_slots={"memory_review": dict(review)},
+            memory_refs=refs,
+        )
+
+    def _review_user_memory(self, intent: ExecutiveIntent) -> UtterancePlan:
+        if self.store is None:
+            return self._build(
+                intent,
+                act_type=DialogueActType.ANSWER,
+                text="I cannot inspect durable memory in this runtime.",
+                content_slots={"grounding": "store_unavailable"},
+            )
+        facts = user_memory_review(self.store, limit=5)
+        if not facts:
+            return self._build(
+                intent,
+                act_type=DialogueActType.ANSWER,
+                text="I do not have speakable durable facts about you yet.",
+                content_slots={"grounding": "no_user_facts"},
+            )
+        refs = [{"memory_kind": "fact", "memory_id": fact.fact_id} for fact in facts]
+        explanations = [item.to_dict() for item in explain_memory_refs(self.store, refs)]
+        fact_text = "; ".join(_brief_fact_text(fact) for fact in facts)
+        return self._build(
+            intent,
+            act_type=DialogueActType.ANSWER,
+            text=f"I have these speakable memories about you: {fact_text}.",
+            content_slots={"memory_review": {"memory_refs": explanations}},
+            memory_refs=refs,
+            confidence=min(fact.confidence for fact in facts),
+        )
+
+    def _acknowledge_review_proposal(
+        self,
+        intent: ExecutiveIntent,
+        turn_type: TurnType,
+    ) -> UtterancePlan:
+        proposal = intent.payload.get("correction_proposal")
+        proposal_dict = dict(proposal) if isinstance(proposal, Mapping) else {}
+        if turn_type == TurnType.FORGET_REQUEST:
+            text = "I marked that as a forget request for review. I have not purged any memory yet."
+        elif turn_type == TurnType.CONTRADICTION_CHALLENGE:
+            text = "I marked that as a contradiction challenge for review. I have not changed confirmed memory yet."
+        else:
+            text = "I marked that as a correction proposal for review. I have not changed memory yet."
+        return self._build(
+            intent,
+            act_type=DialogueActType.ACKNOWLEDGE,
+            text=text,
+            content_slots={"correction_proposal": proposal_dict},
+            memory_refs=[
+                dict(ref)
+                for ref in proposal_dict.get("related_memory_refs", [])
+                if isinstance(ref, Mapping)
+            ],
+        )
+
+    def _identity_response(self, intent: ExecutiveIntent) -> UtterancePlan:
+        return self._build(
+            intent,
+            act_type=DialogueActType.ANSWER,
+            text="I am Mneme, a local memory-centered cognition prototype for a future lifelike robot head.",
+            content_slots={"grounding": "self_model_static_runtime"},
+        )
+
+    def _capability_response(self, intent: ExecutiveIntent) -> UtterancePlan:
+        status = intent.payload.get("runtime_status")
+        capability = status.get("capability") if isinstance(status, Mapping) else {}
+        level = capability.get("current_level") if isinstance(capability, Mapping) else "L1"
+        text = (
+            "Right now I can run a local brain loop with working memory, durable memory, "
+            "attention, executive intent, virtual speech, local model wording, and reviewable memory refs. "
+            f"My current conservative capability evidence is {level}; that is benchmark evidence, not animal or human equivalence."
+        )
+        return self._build(
+            intent,
+            act_type=DialogueActType.ANSWER,
+            text=text,
+            content_slots={"runtime_status": dict(status) if isinstance(status, Mapping) else {}},
+        )
+
+    def _status_response(self, intent: ExecutiveIntent) -> UtterancePlan:
+        status = intent.payload.get("runtime_status")
+        status_dict = dict(status) if isinstance(status, Mapping) else {}
+        cognition = status_dict.get("cognition") if isinstance(status_dict.get("cognition"), Mapping) else {}
+        devices = status_dict.get("devices") if isinstance(status_dict.get("devices"), Mapping) else {}
+        counts = devices.get("available_counts") if isinstance(devices.get("available_counts"), Mapping) else {}
+        model = (
+            f"{cognition.get('backend')} / {cognition.get('model')}"
+            if cognition.get("enabled")
+            else "deterministic fallback"
+        )
+        text = (
+            f"I am using {model}. "
+            f"Device inventory currently shows {counts.get('camera', 0)} camera, "
+            f"{counts.get('microphone', 0)} microphone, and {counts.get('speaker', 0)} speaker option(s)."
+        )
+        return self._build(
+            intent,
+            act_type=DialogueActType.ANSWER,
+            text=text,
+            content_slots={"runtime_status": status_dict},
+        )
+
     def _speakable_facts(self, bundle: MemoryBundle | None) -> list[Fact]:
         if bundle is None:
             return []
@@ -259,6 +417,22 @@ def _turn_text(intent: ExecutiveIntent) -> str:
         if isinstance(text, str):
             return text
     return ""
+
+
+def _turn_type(intent: ExecutiveIntent) -> TurnType | None:
+    turn = intent.payload.get("dialogue_turn")
+    if not isinstance(turn, Mapping):
+        return None
+    classification = turn.get("turn_classification")
+    if not isinstance(classification, Mapping):
+        return None
+    raw = classification.get("turn_type")
+    if not isinstance(raw, str):
+        return None
+    try:
+        return TurnType(raw)
+    except ValueError:
+        return None
 
 
 def _fact_response_text(fact: Fact, value_text: str) -> str:
@@ -388,6 +562,12 @@ def _fact_relation(fact: Fact, value_text: str) -> str:
             verb = verb[:-1]
         return f"you {verb} {value_text}"
     return f"{subject} {_humanize_predicate(predicate)} {value_text}"
+
+
+def _brief_fact_text(fact: Fact) -> str:
+    value = fact.object_value.get("value")
+    value_text = value if isinstance(value, str) else json.dumps(value, sort_keys=True, ensure_ascii=True)
+    return _fact_relation(fact, value_text)
 
 
 def _clean_sentence(text: str) -> str:

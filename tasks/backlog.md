@@ -164,8 +164,11 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Wire checked local model readiness into UI/runtime status displays
 - [x] Add cognitive context builder from working memory, attention, safety, and retrieval
 - [x] Add model dialogue realizer with deterministic fallback and schema validation
-- [ ] Add cognitive benchmark fixture format and capability ladder scoring
-- [ ] Add UI cognitive level evidence after benchmark harness exists
+- [x] Add deterministic turn understanding before dialogue planning
+- [x] Add memory review and "why did you say that?" explanation path
+- [x] Add non-mutating correction/forget review proposals
+- [x] Add cognitive benchmark fixture format and capability ladder scoring
+- [x] Add UI cognitive level evidence after benchmark harness exists
 - [ ] Add redacted daily-driver logs and soak replay fixtures
 - [ ] Add richer evaluation metrics for latency, correction rate, contradiction rate, and stuck states
 - [x] Add ROS-style interface drafts

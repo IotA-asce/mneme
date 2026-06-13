@@ -64,6 +64,30 @@ from .context_windows import ContextWindow, ContextWindowManager
 from .decay import DecayOptions, DecayReport, purge_memory, run_decay_once
 from .dialogue import DialogueActType, DialoguePlanner, UtterancePlan
 from .evaluation import EvaluationLogger, EvaluationRecord
+from .turn_understanding import TurnClassification, TurnType, classify_turn
+from .memory_review import (
+    CorrectionProposal,
+    MemoryRefExplanation,
+    MemoryReviewReport,
+    create_correction_proposal,
+    explain_last_response,
+    explain_memory_refs,
+    user_memory_review,
+)
+from .cognitive_benchmarks import (
+    BenchmarkFixture,
+    BenchmarkStep,
+    BenchmarkStepResult,
+    CognitiveBenchmarkReport,
+    load_benchmark_fixture,
+    run_cognitive_benchmark,
+)
+from .capability_ladder import (
+    CapabilityLevelEvidence,
+    CapabilityReport,
+    build_capability_report,
+    current_runtime_capability_evidence,
+)
 from .extraction import FactExtractionReport, FactExtractor, statement_fact_id
 from .promotion import MemoryPromoter, PromotionOutcome
 from .live_perception import (
@@ -332,6 +356,26 @@ __all__ = [
     "UtterancePlan",
     "EvaluationLogger",
     "EvaluationRecord",
+    "TurnClassification",
+    "TurnType",
+    "classify_turn",
+    "CorrectionProposal",
+    "MemoryRefExplanation",
+    "MemoryReviewReport",
+    "create_correction_proposal",
+    "explain_last_response",
+    "explain_memory_refs",
+    "user_memory_review",
+    "BenchmarkFixture",
+    "BenchmarkStep",
+    "BenchmarkStepResult",
+    "CognitiveBenchmarkReport",
+    "load_benchmark_fixture",
+    "run_cognitive_benchmark",
+    "CapabilityLevelEvidence",
+    "CapabilityReport",
+    "build_capability_report",
+    "current_runtime_capability_evidence",
     "SelfModel",
     "ProceduralMemory",
     "PersonPresence",
