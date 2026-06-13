@@ -48,6 +48,13 @@ Run the native speech profile after installing optional dependencies and placing
 mneme run --profile local-speech --json
 ```
 
+For continuous microphone polling, add `--live` or use a bounded smoke run:
+
+```bash
+mneme run --profile local-speech --live --json
+mneme run --profile local-speech --live-ticks 5 --json
+```
+
 Useful flags:
 
 ```bash
@@ -56,6 +63,7 @@ mneme run \
   --asr-model .local/models/faster-whisper-base \
   --asr-device cpu \
   --asr-compute-type int8 \
+  --live \
   --record-ms 3000 \
   --json
 ```

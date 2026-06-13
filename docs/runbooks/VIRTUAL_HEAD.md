@@ -42,7 +42,24 @@ Run without `--input` to read from standard input:
 mneme run
 ```
 
+Type a message and press Enter. Mneme prints a response after each line.
 Type `/quit` or `/exit` to stop.
+
+Plain `mneme run` is a typed terminal loop. It does not open the microphone or
+camera. Use live ticking when configured perception workers should run without
+waiting for keyboard input:
+
+```bash
+mneme run --live
+mneme run --live --live-ticks 5 --json
+```
+
+For native speech/vision, combine live ticking with a local profile after the
+optional dependencies and model files are configured:
+
+```bash
+mneme run --profile local-lab --live --json
+```
 
 ## What Gets Wired
 

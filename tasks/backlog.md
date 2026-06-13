@@ -136,6 +136,8 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add optional built-in face/person detector after model choice
 - [x] Add optional built-in VAD/ASR backend after dependency choice
 - [x] Add terminal virtual head command `mneme run`
+- [x] Make interactive `mneme run` print responses immediately
+- [x] Add explicit `mneme run --live` ticking mode for configured live perception workers
 - [x] Add scripted JSON mode for deterministic virtual-head demos
 - [x] Add virtual conversational presence coordinator
 - [x] Add simulated speech output backend
