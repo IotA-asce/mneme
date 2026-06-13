@@ -7,6 +7,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from .capability_ladder import build_capability_report
+from .cognitive_benchmarks import DEFAULT_COGNITION_FIXTURE, run_cognitive_benchmark
 from .engine import DEFAULT_DB, DEFAULT_MIGRATIONS, to_jsonable
 from .evaluation import DEFAULT_EVALUATION_LOG, EvaluationLogger
 from .live_perception import (
@@ -256,6 +258,27 @@ def build_parser() -> argparse.ArgumentParser:
     eval_summary = eval_subparsers.add_parser("summarize", help="Summarize a JSONL evaluation log.")
     eval_summary.add_argument("--path", type=Path, default=DEFAULT_EVALUATION_LOG)
     eval_summary.add_argument("--json", action="store_true")
+    eval_cognition = eval_subparsers.add_parser("cognition", help="Run a cognitive benchmark fixture.")
+    eval_cognition.add_argument("--fixture", type=Path, required=True)
+    eval_cognition.add_argument(
+        "--benchmark-db",
+        type=Path,
+        help="Optional benchmark database path. Defaults to an isolated temporary database.",
+    )
+    eval_cognition.add_argument("--json", action="store_true")
+    eval_capability = eval_subparsers.add_parser("capability", help="Report conservative capability ladder evidence.")
+    eval_capability.add_argument(
+        "--fixture",
+        type=Path,
+        action="append",
+        help="Optional benchmark fixture to run before building capability evidence.",
+    )
+    eval_capability.add_argument(
+        "--benchmark-db",
+        type=Path,
+        help="Optional benchmark database path. Defaults to an isolated temporary database.",
+    )
+    eval_capability.add_argument("--json", action="store_true")
 
     return parser
 
@@ -555,6 +578,40 @@ def _eval(args: argparse.Namespace) -> int:
                 f"records={summary['records']} turns={summary.get('conversation_turns', 0)} "
                 f"responses={summary.get('responses_generated', 0)}"
             )
+        return 0
+    if args.eval_command == "cognition":
+        report = run_cognitive_benchmark(
+            args.fixture,
+            db_path=args.benchmark_db,
+            migrations_dir=args.migrations,
+        )
+        payload = report.to_dict()
+        if args.json:
+            print(json.dumps(to_jsonable(payload), indent=2, sort_keys=True))
+        else:
+            print(
+                f"{payload['fixture_name']}: score={payload['total_score']} "
+                f"passed={payload['passed_steps']}/{payload['total_steps']}"
+            )
+        return 0 if report.total_score >= 1.0 else 1
+    if args.eval_command == "capability":
+        fixtures = args.fixture
+        if fixtures is None and DEFAULT_COGNITION_FIXTURE.exists():
+            fixtures = [DEFAULT_COGNITION_FIXTURE]
+        reports = [
+            run_cognitive_benchmark(
+                fixture,
+                db_path=args.benchmark_db,
+                migrations_dir=args.migrations,
+            ).to_dict()
+            for fixture in fixtures or []
+        ]
+        report = build_capability_report(reports)
+        payload = report.to_dict()
+        if args.json:
+            print(json.dumps(to_jsonable(payload), indent=2, sort_keys=True))
+        else:
+            print(f"{payload['current_level']}: {payload['summary']}")
         return 0
     return 2
 

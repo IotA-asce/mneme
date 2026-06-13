@@ -432,6 +432,11 @@ def test_local_ui_renders_avatar_state():
                 "memory_refs_used": [{"memory_kind": "fact", "memory_id": "fact_tea"}],
             },
         },
+        "turn_understanding": {"turn_type": "recall_question"},
+        "capability": {
+            "current_level": "L2",
+            "summary": "Current evidence supports L2 only.",
+        },
     }
 
     html = render_snapshot_html(snapshot)
@@ -449,6 +454,9 @@ def test_local_ui_renders_avatar_state():
     assert "ollama / qwen2.5:1.5b" in html
     assert "model-realized" in html
     assert "fact_tea" in html
+    assert "Capability Evidence" in html
+    assert "recall_question" in html
+    assert "Current evidence supports L2 only." in html
 
 
 def test_local_ui_refresh_action_rescans_devices():

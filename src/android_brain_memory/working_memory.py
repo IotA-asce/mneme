@@ -308,6 +308,7 @@ class WorkingMemory:
         timestamp: int | None = None,
         source: str = "working_memory",
         event_id: str | None = None,
+        turn_classification: Mapping[str, Any] | None = None,
     ) -> None:
         turn = {
             "speaker": _required_text(speaker, "speaker"),
@@ -317,6 +318,11 @@ class WorkingMemory:
         }
         if event_id is not None:
             turn["event_id"] = _required_text(event_id, "event_id")
+        if turn_classification is not None:
+            turn["turn_classification"] = _json_mapping(
+                turn_classification,
+                "turn_classification",
+            )
         turn["timestamp"] = validate_timestamp(turn["timestamp"], "timestamp")
         self.recent_dialogue_turns.append(turn)
         self.recent_dialogue_turns = self.recent_dialogue_turns[-self.max_dialogue_turns :]
@@ -377,6 +383,11 @@ class WorkingMemory:
                 timestamp=event.timestamp,
                 source=event.source,
                 event_id=event.event_id,
+                turn_classification=(
+                    payload.get("turn_classification")
+                    if isinstance(payload.get("turn_classification"), Mapping)
+                    else None
+                ),
             )
 
     def _apply_world_state(self, payload: Mapping[str, Any], event: RuntimeEvent) -> None:

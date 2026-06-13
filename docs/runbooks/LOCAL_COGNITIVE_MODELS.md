@@ -108,7 +108,7 @@ Rules enforced before model output is spoken:
 - It does not send model output to skills or hardware.
 - It does not add multi-step reasoning, planning, embeddings, or cloud models.
 
-The next cognition milestone is a benchmark harness and capability ladder to measure whether model-backed wording improves real behavior without increasing hallucinated memory claims.
+The next cognition layer now has a foundation in `docs/runbooks/COGNITIVE_BENCHMARKS.md`: fixture-based cognitive benchmarks, conservative capability ladder evidence, turn classification, and memory-backed explanation. The benchmark suite is still small and should be expanded before making broader capability claims.
 
 ## Failure Modes
 
