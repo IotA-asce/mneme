@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from http.server import HTTPServer
 
 from android_brain_memory import (
     AudioCapture,
@@ -20,6 +21,7 @@ from android_brain_memory import (
     VirtualSkillRunner,
     VirtualSkillStatus,
     WebRtcVadEndpointDetector,
+    make_ui_server,
     pcm16_frames,
     render_snapshot_html,
     write_silent_wav,
@@ -336,6 +338,22 @@ def test_make_ui_handler_returns_handler_class():
 
     handler = make_ui_handler(FakeRuntime())
     assert handler.__name__ == "MnemeUiHandler"
+
+
+def test_local_ui_server_is_single_threaded_for_sqlite_runtime_safety():
+    class FakeRuntime:
+        def snapshot(self):
+            return {"presence": {"avatar": {"mode": "idle"}}}
+
+        def process_user_utterance(self, text: str):
+            return None
+
+    server = make_ui_server(FakeRuntime(), port=0)
+    try:
+        assert isinstance(server, HTTPServer)
+        assert type(server) is HTTPServer
+    finally:
+        server.server_close()
 
 
 def test_evaluation_logger_records_and_summarizes_turn(tmp_path):

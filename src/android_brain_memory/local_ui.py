@@ -4,7 +4,7 @@ import html
 import json
 from string import Template
 from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 from urllib.parse import parse_qs
 
@@ -127,8 +127,14 @@ def make_ui_handler(runtime: MnemeRuntime) -> type[BaseHTTPRequestHandler]:
     return MnemeUiHandler
 
 
+def make_ui_server(runtime: MnemeRuntime, *, host: str = "127.0.0.1", port: int = 8765) -> HTTPServer:
+    # MnemeRuntime owns a SQLite connection created on the CLI thread. Keep the
+    # local UI single-threaded so request handlers use that connection safely.
+    return HTTPServer((host, port), make_ui_handler(runtime))
+
+
 def serve_ui(runtime: MnemeRuntime, *, host: str = "127.0.0.1", port: int = 8765) -> None:
-    server = ThreadingHTTPServer((host, port), make_ui_handler(runtime))
+    server = make_ui_server(runtime, host=host, port=port)
     try:
         server.serve_forever()
     finally:
