@@ -16,7 +16,7 @@ As of 2026-06-13, Stages 0-5 of the master roadmap are complete and Stage 6 has 
 - **Stage 3:** cross-platform runtime and terminal virtual head.
 - **Stage 4:** real device discovery and live-perception worker contracts.
 - **Stage 5:** conversational presence with virtual speech, avatar state, virtual skills, and interruption handling.
-- **Stage 6:** Local Living Lab foundation with optional native local speech, model registry, native camera/person-presence backends, a local browser UI, and evaluation logs.
+- **Stage 6:** Local Living Lab foundation with optional native local speech, model registry, Ollama local-cognition health checks, native camera/person-presence backends, a local browser UI, and evaluation logs.
 
 Physical embodiment is now deferred behind the Local Living Lab. ROS, GPIO, serial, PWM, servo control, microcontroller flashing, and physical actuator work are not part of the current runtime.
 
@@ -76,6 +76,7 @@ Stage 6 starts the brain-first local loop:
 - Native local backends sit behind the existing worker/output contracts, so `speech_transcript`, virtual `speech` goals, skill statuses, memory, attention, executive, and dialogue flow stay unchanged.
 - `config/models.yaml` tracks local model metadata; model files live under `.local/models/` and are never committed.
 - `mneme models list`, `mneme models verify`, and guarded `mneme models download` support local model hygiene.
+- `mneme cognition check` verifies the local Ollama service, checks whether `qwen2.5:1.5b` is installed, and can run one bounded non-streaming probe.
 - `mneme run --profile local-speech` opts into native microphone/ASR/TTS backends when optional packages and local models are available.
 - `mneme run --profile local-vision` opts into OpenCV camera capture and optional MediaPipe face/person observations.
 - `mneme ui` serves a lightweight browser UI that visualizes avatar/runtime state, accepts typed input, refreshes the local device inventory, and saves preferred camera/microphone/speaker selections.
@@ -95,7 +96,8 @@ The base package intentionally does not install OpenCV, face models, VAD, ASR, o
 
 ## What Is Not Implemented Yet
 
-- Real local model files are not bundled. You must place or download compatible models under `.local/models/`.
+- Real local model files are not bundled. You must place or download compatible file-managed models under `.local/models/`, and pull Ollama-managed models with Ollama.
+- Local LLM-backed dialogue is not implemented yet. `mneme cognition check` only verifies local model readiness; the runtime/UI still use deterministic dialogue.
 - Real-device quality has not been tuned in CI; local mic/camera permissions, model speed, and audio playback must be validated on your machine.
 - The browser UI is a lightweight local dashboard, not a polished graphical avatar renderer.
 - Long-running process supervision and private-log redaction workflows are not implemented yet.
@@ -248,7 +250,17 @@ mneme models list --json
 mneme models verify --json
 ```
 
-Model files belong under `.local/models/`. The default registry documents expected paths, license notes, and profiles, but does not download model files unless a registry entry explicitly includes a `download_url`.
+Model files belong under `.local/models/`. The default registry documents expected paths, license notes, service-managed models, and profiles, but does not download model files unless a registry entry explicitly includes a `download_url`.
+
+Check the default local cognitive model through Ollama:
+
+```bash
+ollama pull qwen2.5:1.5b
+mneme cognition check --json
+mneme cognition check --no-probe --json
+```
+
+This confirms local model availability and latency only. It does not yet make the UI or terminal chat use the model for responses.
 
 Run native local speech when optional packages and models are installed:
 
@@ -303,7 +315,7 @@ mneme run --json --input "hello Mneme" --evaluation-log .local/evaluation/daily_
 mneme eval summarize --path .local/evaluation/daily_driver.jsonl --json
 ```
 
-See `docs/runbooks/LOCAL_LIVING_LAB.md` and `docs/runbooks/LOCAL_MODELS.md`.
+See `docs/runbooks/LOCAL_LIVING_LAB.md`, `docs/runbooks/LOCAL_MODELS.md`, and `docs/runbooks/LOCAL_COGNITIVE_MODELS.md`.
 
 ## Live Perception Adapters
 
@@ -354,7 +366,7 @@ See `docs/runbooks/SCENARIO_REPLAY.md`.
 - `tests/` - unit, integration, storage, runtime, and replay tests.
 - `docs/architecture/` - roadmap, status, runtime boundaries, serialization, and ROS plan.
 - `docs/memory/` - memory model, storage, retrieval, salience, provenance, conflicts, consolidation, decay, and self model.
-- `docs/runbooks/` - local development, CLI, virtual head, conversational presence, device discovery, live perception, and scenario replay.
+- `docs/runbooks/` - local development, CLI, virtual head, conversational presence, device discovery, live perception, local cognitive models, and scenario replay.
 - `memory/` - durable project memory for completed features, decisions, investigations, and risks.
 - `implement/` - implementation plans and architectural rules for non-trivial changes.
 

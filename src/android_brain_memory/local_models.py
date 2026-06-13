@@ -22,6 +22,8 @@ class LocalModelRecord:
     backend: str
     path: Path | str
     license: str
+    managed_by: str = "filesystem"
+    model_name: str | None = None
     profiles: list[str] = field(default_factory=list)
     description: str = ""
     source_url: str | None = None
@@ -32,8 +34,13 @@ class LocalModelRecord:
     def __post_init__(self) -> None:
         self.model_id = _required_text(self.model_id, "model_id")
         self.backend = _required_text(self.backend, "backend")
-        self.path = Path(_required_text(str(self.path), "path"))
+        self.managed_by = _required_text(self.managed_by, "managed_by")
+        if self.managed_by not in {"filesystem", "service"}:
+            raise ValueError("managed_by must be filesystem or service")
+        raw_path = _required_text(str(self.path), "path")
+        self.path = Path(raw_path) if self.managed_by == "filesystem" else raw_path
         self.license = _required_text(self.license, "license")
+        self.model_name = _optional_text(self.model_name, "model_name")
         self.profiles = _string_list(self.profiles, "profiles")
         self.description = str(self.description or "")
         self.source_url = _optional_text(self.source_url, "source_url")
@@ -45,15 +52,20 @@ class LocalModelRecord:
     @classmethod
     def from_dict(cls, data: Mapping[str, Any], *, base_dir: Path = ROOT) -> "LocalModelRecord":
         item = dict(data)
+        managed_by = str(item.get("managed_by", "filesystem"))
         raw_path = _required_text(str(item.get("path", "")), "path")
-        path = Path(raw_path)
-        if not path.is_absolute():
+        path: Path | str = raw_path
+        if managed_by == "filesystem":
+            path = Path(raw_path)
+        if isinstance(path, Path) and not path.is_absolute():
             path = base_dir / path
         return cls(
             model_id=item.get("model_id", item.get("id")),
             backend=item.get("backend"),
             path=path,
             license=item.get("license"),
+            managed_by=managed_by,
+            model_name=item.get("model_name"),
             profiles=list(item.get("profiles", [])),
             description=str(item.get("description", "")),
             source_url=item.get("source_url"),
@@ -68,6 +80,8 @@ class LocalModelRecord:
             "backend": self.backend,
             "path": str(self.path),
             "license": self.license,
+            "managed_by": self.managed_by,
+            "model_name": self.model_name,
             "profiles": list(self.profiles),
             "description": self.description,
             "source_url": self.source_url,
@@ -82,6 +96,7 @@ class ModelVerification:
     model_id: str
     path: str
     exists: bool
+    managed_by: str = "filesystem"
     checksum_ok: bool | None = None
     actual_sha256: str | None = None
     error: str | None = None
@@ -91,6 +106,7 @@ class ModelVerification:
             "model_id": self.model_id,
             "path": self.path,
             "exists": self.exists,
+            "managed_by": self.managed_by,
             "checksum_ok": self.checksum_ok,
             "actual_sha256": self.actual_sha256,
             "error": self.error,
@@ -162,11 +178,21 @@ class LocalModelRegistry:
         return [LocalModelRecord.from_dict(item) for item in raw_models]
 
     def _verify_record(self, record: LocalModelRecord) -> ModelVerification:
+        if record.managed_by == "service":
+            return ModelVerification(
+                model_id=record.model_id,
+                path=str(record.path),
+                exists=True,
+                managed_by=record.managed_by,
+                checksum_ok=None,
+                error="service_managed_use_backend_check",
+            )
         if not record.path.exists():
             return ModelVerification(
                 model_id=record.model_id,
                 path=str(record.path),
                 exists=False,
+                managed_by=record.managed_by,
                 error="missing",
             )
         if record.path.is_dir():
@@ -174,6 +200,7 @@ class LocalModelRegistry:
                 model_id=record.model_id,
                 path=str(record.path),
                 exists=True,
+                managed_by=record.managed_by,
                 checksum_ok=None,
             )
         actual = _sha256(record.path)
@@ -182,6 +209,7 @@ class LocalModelRegistry:
             model_id=record.model_id,
             path=str(record.path),
             exists=True,
+            managed_by=record.managed_by,
             checksum_ok=(actual == expected) if expected else None,
             actual_sha256=actual,
         )

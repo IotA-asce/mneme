@@ -13,7 +13,7 @@ Each record describes:
 
 - model ID,
 - backend,
-- local path,
+- local path or service-managed model name,
 - license/source notes,
 - optional checksum,
 - profiles that use the model,
@@ -43,6 +43,12 @@ mneme models verify --json
 mneme models verify faster_whisper_base --json
 ```
 
+Service-managed entries such as Ollama models are listed here for hygiene, but their installed status is checked through their backend:
+
+```bash
+mneme cognition check --model qwen2.5:1.5b --json
+```
+
 Download only when a registry entry explicitly supports it:
 
 ```bash
@@ -58,6 +64,7 @@ The default registry currently describes:
 - `faster_whisper_base` for local ASR,
 - `kokoro_default` for local TTS,
 - `mediapipe_face_detector` for local vision/person presence.
+- `qwen2_5_1_5b_ollama` for the first Ollama local-cognition readiness check.
 
 These records are hygiene metadata, not bundled models. Tests use fake model backends and temporary files.
 

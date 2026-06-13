@@ -35,3 +35,18 @@ models:
     download_url:
     sha256:
     required: false
+
+  - id: qwen2_5_1_5b_ollama
+    backend: ollama
+    managed_by: service
+    path: ollama:qwen2.5:1.5b
+    model_name: qwen2.5:1.5b
+    license: Apache-2.0
+    profiles:
+      - local-cognition
+      - local-lab
+    description: Default first local cognitive model checked through the Ollama service.
+    source_url: https://ollama.com/library/qwen2.5:1.5b
+    download_url:
+    sha256:
+    required: false
