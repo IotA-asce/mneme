@@ -94,6 +94,19 @@ from .local_audio import (
     write_silent_wav,
 )
 from .local_models import LocalModelRecord, LocalModelRegistry, ModelVerification
+from .model_runtime import (
+    DEFAULT_MODEL_TIMEOUT_MS,
+    DEFAULT_OLLAMA_BASE_URL,
+    DEFAULT_OLLAMA_MODEL,
+    FakeModelRuntime,
+    ModelListResult,
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    ModelRuntimeCheck,
+    OllamaModelRuntime,
+    check_model_runtime,
+)
 from .local_ui import make_ui_handler, make_ui_server, render_snapshot_html, serve_ui
 from .local_vision import (
     FaceDetectionBackend,
@@ -243,6 +256,17 @@ __all__ = [
     "LocalModelRecord",
     "LocalModelRegistry",
     "ModelVerification",
+    "DEFAULT_MODEL_TIMEOUT_MS",
+    "DEFAULT_OLLAMA_BASE_URL",
+    "DEFAULT_OLLAMA_MODEL",
+    "FakeModelRuntime",
+    "ModelListResult",
+    "ModelMessage",
+    "ModelRequest",
+    "ModelResponse",
+    "ModelRuntimeCheck",
+    "OllamaModelRuntime",
+    "check_model_runtime",
     "render_snapshot_html",
     "make_ui_handler",
     "make_ui_server",

@@ -107,6 +107,29 @@ def test_model_registry_download_requires_configured_url(tmp_path):
         raise AssertionError("download should require a configured URL")
 
 
+def test_model_registry_supports_service_managed_ollama_records():
+    registry = LocalModelRegistry([
+        LocalModelRecord(
+            model_id="qwen2_5_1_5b_ollama",
+            backend="ollama",
+            managed_by="service",
+            path="ollama:qwen2.5:1.5b",
+            model_name="qwen2.5:1.5b",
+            license="Apache-2.0",
+            profiles=["local-cognition", "local-lab"],
+        )
+    ])
+
+    record = registry.get("qwen2_5_1_5b_ollama")
+    verification = registry.verify("qwen2_5_1_5b_ollama")[0]
+
+    assert record.managed_by == "service"
+    assert record.model_name == "qwen2.5:1.5b"
+    assert verification.exists is True
+    assert verification.managed_by == "service"
+    assert verification.error == "service_managed_use_backend_check"
+
+
 def test_runtime_preferences_store_round_trips_and_clears_device_ids(tmp_path):
     store = RuntimePreferencesStore(tmp_path / "prefs.json")
 

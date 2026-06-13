@@ -21,6 +21,12 @@ from .local_audio import (
     SoundDeviceMicrophoneRecorder,
 )
 from .local_models import DEFAULT_MODEL_REGISTRY, LocalModelRegistry
+from .model_runtime import (
+    DEFAULT_MODEL_TIMEOUT_MS,
+    DEFAULT_OLLAMA_BASE_URL,
+    DEFAULT_OLLAMA_MODEL,
+    OllamaModelRuntime,
+)
 from .local_ui import serve_ui
 from .local_vision import MediaPipeFaceDetectionBackend, OpenCVCameraCaptureBackend
 from .peripherals import PeripheralDiscoveryService, RealPeripheralBackend, default_virtual_head_devices
@@ -207,6 +213,16 @@ def build_parser() -> argparse.ArgumentParser:
     models_download.add_argument("model_id")
     models_download.add_argument("--overwrite", action="store_true")
 
+    cognition = subparsers.add_parser("cognition", help="Check local cognitive model backends.")
+    cognition_subparsers = cognition.add_subparsers(dest="cognition_command", required=True)
+    cognition_check = cognition_subparsers.add_parser("check", help="Check local model availability and latency.")
+    cognition_check.add_argument("--backend", choices=["ollama"], default="ollama")
+    cognition_check.add_argument("--base-url", default=DEFAULT_OLLAMA_BASE_URL)
+    cognition_check.add_argument("--model", default=DEFAULT_OLLAMA_MODEL)
+    cognition_check.add_argument("--timeout-ms", type=int, default=DEFAULT_MODEL_TIMEOUT_MS)
+    cognition_check.add_argument("--no-probe", action="store_true")
+    cognition_check.add_argument("--json", action="store_true")
+
     evaluation = subparsers.add_parser("eval", help="Inspect local living-lab evaluation logs.")
     eval_subparsers = evaluation.add_subparsers(dest="eval_command", required=True)
     eval_summary = eval_subparsers.add_parser("summarize", help="Summarize a JSONL evaluation log.")
@@ -225,6 +241,8 @@ def main(argv: list[str] | None = None) -> int:
         return _ui(args)
     if args.command == "models":
         return _models(args)
+    if args.command == "cognition":
+        return _cognition(args)
     if args.command == "eval":
         return _eval(args)
     parser.error(f"unsupported command: {args.command}")
@@ -415,7 +433,10 @@ def _models(args: argparse.Namespace) -> int:
             print(json.dumps(to_jsonable(payload), indent=2, sort_keys=True))
         else:
             for item in payload:
-                status = "ok" if item["exists"] and item["checksum_ok"] is not False else "missing"
+                if item["error"] == "service_managed_use_backend_check":
+                    status = "service-managed"
+                else:
+                    status = "ok" if item["exists"] and item["checksum_ok"] is not False else "missing"
                 print(f"{item['model_id']}\t{status}\t{item['path']}")
         return 0
     if args.models_command == "download":
@@ -427,6 +448,41 @@ def _models(args: argparse.Namespace) -> int:
         print(json.dumps(to_jsonable(record.to_dict()), indent=2, sort_keys=True))
         return 0
     return 2
+
+
+def _cognition(args: argparse.Namespace) -> int:
+    if args.cognition_command == "check":
+        try:
+            adapter = _model_runtime_adapter(args)
+            result = adapter.check_model(
+                args.model,
+                probe=not args.no_probe,
+                timeout_ms=args.timeout_ms,
+            )
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        payload = result.to_dict()
+        if args.json:
+            print(json.dumps(to_jsonable(payload), indent=2, sort_keys=True))
+        else:
+            if result.ok:
+                probe = "probe skipped" if not result.probe_ran else "probe ok"
+                print(f"{result.backend} {result.model}: ok ({probe}, {result.latency_ms} ms)")
+            else:
+                print(f"{result.backend} {result.model}: {result.error_code or 'failed'}")
+                if result.error:
+                    print(result.error)
+                if result.suggestion:
+                    print(result.suggestion)
+        return 0 if result.ok else 1
+    return 2
+
+
+def _model_runtime_adapter(args: argparse.Namespace) -> OllamaModelRuntime:
+    if args.backend == "ollama":
+        return OllamaModelRuntime(base_url=args.base_url)
+    raise ValueError(f"unsupported cognition backend: {args.backend}")
 
 
 def _eval(args: argparse.Namespace) -> int:

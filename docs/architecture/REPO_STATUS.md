@@ -7,7 +7,7 @@ This audit records what the repository actually implements today versus what the
 
 ## Current Implementation
 
-The repository currently implements a local Python virtual-head prototype with deterministic memory, cognition, live-perception adapter contracts, virtual conversational presence, and the Stage 6 Local Living Lab foundation. It does not control physical hardware, run ROS 2 nodes, use a vector database, call LLM services, run a local LLM dialogue model, or bundle local model files as required assets.
+The repository currently implements a local Python virtual-head prototype with deterministic memory, cognition, live-perception adapter contracts, virtual conversational presence, and the Stage 6 Local Living Lab foundation. It does not control physical hardware, run ROS 2 nodes, use a vector database, call cloud LLM services, run a local LLM dialogue model, or bundle local model files as required assets.
 
 Implemented foundations:
 
@@ -82,6 +82,7 @@ Implemented memory code:
 - Stage 5 conversational presence: dialogue plans become virtual speech skill goals; simulated speech output is recorded in JSON; optional local TTS command adapters can play speech through host tools; selected speech voice labels persist as procedural memory; `VirtualAvatarController` exposes listening/thinking/speaking/idle/safety avatar state; `VirtualSkillRunner` publishes accepted/running/completed/failed/preempted/canceled status events; barge-in preempts active virtual speech on user speech.
 - Stage 6 optional local backends: `SoundDeviceMicrophoneRecorder`, `WebRtcVadEndpointDetector`, `FasterWhisperSpeechRecognitionBackend`, `KokoroSpeechOutputBackend`, `OpenCVCameraCaptureBackend`, and `MediaPipeFaceDetectionBackend` sit behind the existing speech/vision/output contracts and are dependency-isolated behind optional extras.
 - Stage 6 model hygiene: `config/models.yaml` describes local model IDs, backend, path, license/source notes, checksum if known, and enabled profiles. `mneme models list`, `mneme models verify`, and guarded `mneme models download` inspect those records. Model files belong under `.local/models/` and are ignored by git.
+- Stage 6 local cognition check: `model_runtime.py` provides a fake model runtime and a stdlib HTTP Ollama adapter. `mneme cognition check` verifies the Ollama service, installed model list, and optional bounded non-streaming `/api/chat` probe for the default `qwen2.5:1.5b` model. This is a readiness check only; it does not drive dialogue responses.
 - Stage 6 Local Living Lab CLI: `mneme run --profile local-speech`, `mneme run --profile local-vision`, and `mneme run --profile local-lab` opt into native local backends when optional dependencies and local models are present, while command adapters, fake devices, terminal mode, and JSON mode remain supported.
 - Stage 6 browser UI: `mneme ui` serves a stdlib local dashboard that reads runtime/avatar snapshots, renders state, submits typed user input, refreshes the local device inventory, and saves preferred camera/microphone/speaker selections without owning cognition.
 - Stage 6 device preferences: `.local/runtime_preferences.json` stores selected camera, microphone, and speaker IDs. `mneme ui` saves the file; `mneme run` and `mneme ui` load it on future runs, while terminal `--camera-device-id`, `--microphone-device-id`, and `--speaker-device-id` flags can override selections for one run.
@@ -102,7 +103,7 @@ The following areas exist but are not complete enough to count as full phase com
 - Config: `config/memory.yaml` records salience defaults that can be loaded when requested.
 - Conversational presence: virtual speech, avatar state, virtual skill status, local TTS command integration, and a lightweight local browser UI are implemented. Polished graphical avatar rendering, speaker device routing, and physical skills remain outside the repo-owned implementation.
 - Native local speech and vision: optional wrappers exist and are unit-tested with fake devices/models. Real microphone permissions, faster-whisper model placement, Kokoro compatibility, camera permissions, MediaPipe model quality, and end-to-end latency are manual/local validation tasks rather than CI-verified behavior.
-- Local model management: the registry and verification CLI exist, but default entries intentionally do not auto-download model files until exact sources/licenses/checksums are documented.
+- Local model management: the registry and verification CLI exist. File-managed model entries intentionally do not auto-download model files until exact sources/licenses/checksums are documented. Ollama-managed model entries are listed in the registry but verified through `mneme cognition check`.
 - Cognitive capability roadmap: `docs/architecture/COGNITIVE_CAPABILITY_ROADMAP.md` now defines the planned local model integration path, animal-reference capability ladder, benchmark harness, and physical embodiment readiness gate. This is a planning document only; no model-backed cognition is currently wired into runtime behavior.
 
 ## Documented But Not Implemented
@@ -110,7 +111,7 @@ The following areas exist but are not complete enough to count as full phase com
 The design documents describe these future capabilities, but the repository does not yet implement them:
 
 - Bundled native model files for face detection, VAD, ASR, or TTS. Stage 6 provides optional wrappers and a model registry, but real files live outside git under `.local/models/`.
-- Local LLM-backed dialogue or reasoning. The current planner is deterministic; the cognitive roadmap defines future adapters and model realization, but no local chat model is connected yet.
+- Local LLM-backed dialogue or reasoning. The current planner is deterministic; Mneme can check an Ollama model with `mneme cognition check`, but no local chat model is connected to runtime responses yet.
 - Polished graphical avatar rendering. Stage 6 provides a local browser dashboard; it is not an expressive avatar renderer.
 - Physical skill controllers, actuator bridge, and safety supervisor (virtual skills and safety-state reactions are implemented; physical command paths are not).
 - Physical actuator control or dry-run hardware backend.
@@ -173,6 +174,10 @@ The test suite currently contains focused model, salience, storage, and retrieva
 - `tests/test_conversational_presence.py::test_virtual_avatar_tracks_attention_and_safety`
 - `tests/test_conversational_presence.py::test_mneme_run_tts_command_json_output`
 - `tests/test_stage6_local_living_lab.py::test_model_registry_verifies_existing_and_missing_models`
+- `tests/test_stage6_local_living_lab.py::test_model_registry_supports_service_managed_ollama_records`
+- `tests/test_model_runtime.py::test_ollama_chat_sends_non_streaming_request_and_parses_response`
+- `tests/test_model_runtime.py::test_ollama_check_reports_missing_model_with_pull_suggestion`
+- `tests/test_model_runtime.py::test_cognition_check_json_cli_failure_returns_nonzero`
 - `tests/test_stage6_local_living_lab.py::test_faster_whisper_backend_uses_injected_recorder_and_model`
 - `tests/test_stage6_local_living_lab.py::test_opencv_camera_backend_uses_injected_cv2_and_face_detector`
 - `tests/test_stage6_local_living_lab.py::test_evaluation_logger_records_and_summarizes_turn`
