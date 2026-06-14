@@ -62,6 +62,7 @@ Example live status:
 
 ```text
 vision: frame from Brio 100; person detection is off (add --face-backend mediapipe)
+vision: frame from Brio 100; face detection unavailable: ValueError:MediaPipe task face detection requires a local model asset (run `mneme models verify mediapipe_face_detector --json`)
 speech: ASR/capture failed: capture_error:HFValidationError (check --asr-model path; run `mneme models verify --profile local-speech --json`)
 attention: curiosity:scan_center (curiosity_idle)
 presence: idle; gaze=curiosity:scan_center

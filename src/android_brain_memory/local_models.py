@@ -140,8 +140,13 @@ class LocalModelRegistry:
                 return record
         raise KeyError(f"unknown model id: {clean_id}")
 
-    def verify(self, model_id: str | None = None) -> list[ModelVerification]:
-        records = [self.get(model_id)] if model_id else self.list_models()
+    def verify(
+        self,
+        model_id: str | None = None,
+        *,
+        profile: str | None = None,
+    ) -> list[ModelVerification]:
+        records = [self.get(model_id)] if model_id else self.list_models(profile=profile)
         return [self._verify_record(record) for record in records]
 
     def download(self, model_id: str, *, overwrite: bool = False) -> LocalModelRecord:

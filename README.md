@@ -335,6 +335,7 @@ Live mode prints human-readable status as it runs:
 
 ```text
 vision: frame from Brio 100; person detection is off (add --face-backend mediapipe)
+vision: frame from Brio 100; face detection unavailable: ValueError:MediaPipe task face detection requires a local model asset (run `mneme models verify mediapipe_face_detector --json`)
 speech: ASR/capture failed: capture_error:HFValidationError (check --asr-model path; run `mneme models verify --profile local-speech --json`)
 attention: curiosity:scan_center (curiosity_idle)
 presence: idle; gaze=curiosity:scan_center
@@ -429,7 +430,7 @@ Run native local speech when optional packages and models are installed:
 ```bash
 python -m pip install -e '.[local-speech]'
 mneme models list --profile local-speech --json
-mneme models verify --json
+mneme models verify --profile local-speech --json
 mneme run --profile local-speech --json
 ```
 
@@ -450,10 +451,13 @@ Run native local vision when optional packages and a camera are available:
 
 ```bash
 python -m pip install -e '.[vision-local]'
+mneme models verify mediapipe_face_detector --json
 mneme run --profile local-vision --face-backend mediapipe --json
 ```
 
 Without `--face-backend mediapipe`, local vision captures camera frames but does not publish `person_seen` events, so Mneme may only show curiosity/scan attention rather than person tracking.
+
+With current MediaPipe task-based installs, face detection also needs an approved model file at `.local/models/mediapipe/face_detector.task` or a custom path passed with `--face-model-path`.
 
 Open the local browser UI:
 

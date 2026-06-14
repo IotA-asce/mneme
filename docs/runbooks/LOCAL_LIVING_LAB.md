@@ -110,12 +110,18 @@ The soak suite uses fake speech/TTS backends and does not require real devices, 
 Run native vision after installing optional dependencies and granting camera permission:
 
 ```bash
+mneme models verify mediapipe_face_detector --json
 mneme run --profile local-vision --face-backend mediapipe --json
 ```
 
 If `--face-backend mediapipe` is omitted, OpenCV can still capture
 `camera_frame` events, but no `person_seen` events are generated. In that case
 Mneme may continue curiosity scanning instead of tracking a person.
+
+With current MediaPipe task-based installs, face detection requires an approved
+model file at `.local/models/mediapipe/face_detector.task`, or a custom path via
+`--face-model-path`. If that file is missing, Mneme keeps camera frames flowing
+and reports face detection as unavailable instead of crashing.
 
 The first native vision target is reliable observation, not identity recognition:
 

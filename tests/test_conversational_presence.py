@@ -315,3 +315,34 @@ def test_mneme_run_live_json_streams_vision_status_to_stderr(tmp_path, capsys):
     assert live_tick["result"]["snapshot"]["perception"]["vision"]["frames"] == 1
     assert "vision: frame" in captured.err
     assert "person detection is off" in captured.err
+
+
+def test_mneme_run_live_json_streams_vision_capture_errors_to_stderr(tmp_path, capsys):
+    failing_script = tmp_path / "capture_fail.py"
+    failing_script.write_text(
+        "import sys\n"
+        "print('camera permission denied', file=sys.stderr)\n"
+        "raise SystemExit(2)\n",
+        encoding="utf-8",
+    )
+
+    exit_code = mneme_main([
+        "--db",
+        str(tmp_path / "memory.sqlite3"),
+        "--migrations",
+        str(MIGRATIONS),
+        "run",
+        "--json",
+        "--live-ticks",
+        "1",
+        "--camera-command",
+        f"{sys.executable} {failing_script} {{output}}",
+    ])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    output = json.loads(captured.out)
+    live_tick = next(item for item in output if item["type"] == "live_tick")
+    vision = live_tick["result"]["snapshot"]["perception"]["vision"]
+    assert vision["latest_report"]["status"] == "capture_error"
+    assert "vision: capture failed" in captured.err

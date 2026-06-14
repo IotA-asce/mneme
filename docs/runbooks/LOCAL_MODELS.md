@@ -63,10 +63,17 @@ The default registry currently describes:
 
 - `faster_whisper_base` for local ASR,
 - `kokoro_default` for local TTS,
-- `mediapipe_face_detector` for local vision/person presence.
+- `mediapipe_face_detector` for local vision/person presence,
 - `qwen2_5_1_5b_ollama` for the first Ollama local-cognition readiness check.
 
 These records are hygiene metadata, not bundled models. Tests use fake model backends and temporary files.
+
+`mediapipe_face_detector` is expected at `.local/models/mediapipe/face_detector.task`
+for MediaPipe task-based installs. Verify it with:
+
+```bash
+mneme models verify mediapipe_face_detector --json
+```
 
 ## Rules
 
