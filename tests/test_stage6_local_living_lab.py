@@ -32,6 +32,7 @@ from android_brain_memory import (
     render_snapshot_html,
     write_silent_wav,
 )
+from android_brain_memory.local_vision import MediaPipeFaceDetectionBackend
 from android_brain_memory.local_ui import make_ui_handler
 from android_brain_memory.virtual_head import main as mneme_main
 
@@ -359,6 +360,157 @@ def test_opencv_camera_backend_uses_injected_cv2_and_face_detector(tmp_path):
     assert frame.detections[0]["attention_facing_signal"] is True
 
 
+def test_opencv_camera_backend_preserves_frame_when_face_detector_fails(tmp_path):
+    class Capture:
+        def isOpened(self) -> bool:
+            return True
+
+        def read(self):
+            return True, b"frame"
+
+        def release(self) -> None:
+            pass
+
+    class FakeCv2:
+        def VideoCapture(self, camera_ref):
+            return Capture()
+
+        def imwrite(self, path: str, frame) -> bool:
+            Path(path).write_bytes(b"jpeg")
+            return True
+
+    def failing_detector(path):
+        raise ValueError("MediaPipe task face detection requires a local model asset")
+
+    backend = OpenCVCameraCaptureBackend(
+        cv2_module=FakeCv2(),
+        face_detector=failing_detector,
+    )
+
+    frame = backend.capture(
+        device=_camera(),
+        output_path=tmp_path / "frame.jpg",
+        timestamp=1_000,
+    )
+
+    assert frame is not None
+    assert frame.detections == []
+    assert frame.metadata["face_detector_error"]["error"] == "ValueError"
+    assert "requires a local model asset" in frame.metadata["face_detector_error"]["message"]
+
+
+def test_mediapipe_tasks_backend_uses_model_asset_path(tmp_path):
+    image_path = tmp_path / "frame.jpg"
+    image_path.write_bytes(b"jpeg")
+    model_path = tmp_path / "face_detector.task"
+    model_path.write_bytes(b"model")
+
+    class Category:
+        score = 0.91
+
+    class BoundingBox:
+        origin_x = 10
+        origin_y = 20
+        width = 30
+        height = 40
+
+    class Keypoint:
+        x = 0.4
+        y = 0.5
+
+    class Detection:
+        categories = [Category()]
+        bounding_box = BoundingBox()
+        keypoints = [Keypoint()]
+
+    class Result:
+        detections = [Detection()]
+
+    class FakeImage:
+        @classmethod
+        def create_from_file(cls, path: str):
+            assert Path(path) == image_path
+            return "image"
+
+    class FakeDetector:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+        def detect(self, image):
+            assert image == "image"
+            return Result()
+
+    class FakeFaceDetector:
+        @staticmethod
+        def create_from_options(options):
+            assert str(options.base_options.model_asset_path) == str(model_path)
+            return FakeDetector()
+
+    class FakeVision:
+        class FaceDetectorOptions:
+            def __init__(self, *, base_options, min_detection_confidence):
+                self.base_options = base_options
+                self.min_detection_confidence = min_detection_confidence
+
+        FaceDetector = FakeFaceDetector
+
+    class FakeTasks:
+        class BaseOptions:
+            def __init__(self, *, model_asset_path: str):
+                self.model_asset_path = model_asset_path
+
+        vision = FakeVision
+
+    class FakeMediaPipe:
+        Image = FakeImage
+        tasks = FakeTasks
+
+    detector = MediaPipeFaceDetectionBackend(
+        mediapipe_module=FakeMediaPipe,
+        model_asset_path=model_path,
+    )
+
+    detections = detector.detect(image_path)
+
+    assert detections[0]["source"] == "mediapipe_face_detector_task"
+    assert detections[0]["confidence"] == 0.91
+    assert detections[0]["attention_facing_signal"] is True
+
+
+def test_mediapipe_tasks_backend_reports_missing_model_asset(tmp_path):
+    class FakeTasks:
+        class BaseOptions:
+            pass
+
+        class Vision:
+            class FaceDetector:
+                pass
+
+            class FaceDetectorOptions:
+                pass
+
+        vision = Vision
+
+    class FakeMediaPipe:
+        tasks = FakeTasks
+
+    detector = MediaPipeFaceDetectionBackend(
+        mediapipe_module=FakeMediaPipe,
+        model_asset_path=tmp_path / "missing.task",
+    )
+
+    try:
+        detector.detect(tmp_path / "frame.jpg")
+    except ValueError as exc:
+        assert "requires a local model asset" in str(exc)
+        assert "mneme models verify mediapipe_face_detector --json" in str(exc)
+    else:
+        raise AssertionError("missing task model should be reported clearly")
+
+
 def test_runtime_uses_preferred_microphone_and_speaker_devices(tmp_path):
     seen_microphones: list[str] = []
 
@@ -594,6 +746,18 @@ models:
     assert mneme_main(["models", "--registry", str(registry), "verify", "--json"]) == 0
     verified = json.loads(capsys.readouterr().out)
     assert verified[0]["exists"] is False
+
+    assert mneme_main([
+        "models",
+        "--registry",
+        str(registry),
+        "verify",
+        "--profile",
+        "local-speech",
+        "--json",
+    ]) == 0
+    profile_verified = json.loads(capsys.readouterr().out)
+    assert [item["model_id"] for item in profile_verified] == ["fake_model"]
 
 
 def test_mneme_eval_summarize_cli(tmp_path, capsys):

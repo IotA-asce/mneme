@@ -134,6 +134,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add perception-scale raw frame/transcript retention controls
 - [x] Add optional built-in native camera backend after dependency choice
 - [x] Add optional built-in face/person detector after model choice
+- [x] Keep live vision running when optional face detection is unavailable
 - [x] Add optional built-in VAD/ASR backend after dependency choice
 - [x] Add terminal virtual head command `mneme run`
 - [x] Make interactive `mneme run` print responses immediately
@@ -149,6 +150,7 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add virtual skill runner with accepted/running/completed/failed/preempted/canceled statuses
 - [x] Add deterministic barge-in preemption for active virtual speech
 - [x] Add local model registry and `mneme models` CLI
+- [x] Add profile-filtered `mneme models verify --profile ...`
 - [x] Add Stage 6 runtime profiles for local-speech, local-vision, and local-lab
 - [x] Add stdlib local browser UI command `mneme ui`
 - [x] Add clean minimal local UI state surface

@@ -512,10 +512,17 @@ class LiveVisionWorker:
             "person_detections": 0,
             "skipped": 0,
         }
+        self._latest_report: LivePerceptionReport | None = None
 
     @property
     def stats(self) -> dict[str, Any]:
-        return dict(self._stats)
+        stats = dict(self._stats)
+        stats["latest_report"] = (
+            self._latest_report.to_dict()
+            if self._latest_report is not None
+            else None
+        )
+        return stats
 
     def tick(self, *, now_ms: int | None = None) -> LivePerceptionReport | None:
         now = self._clock() if now_ms is None else validate_timestamp(now_ms, "now_ms")
@@ -534,23 +541,25 @@ class LiveVisionWorker:
         )
         if device is None:
             self._stats["skipped"] += 1
-            return LivePerceptionReport("vision", now, "no_camera")
+            return self._record_report(LivePerceptionReport("vision", now, "no_camera"))
         frame_id = f"frame_{uuid.uuid4().hex[:12]}"
         frame_path = self.retention.frame_path(frame_id=frame_id, timestamp=now)
         try:
             frame = self.backend.capture(device=device, output_path=frame_path, timestamp=now)
-        except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        except (OSError, subprocess.SubprocessError, ValueError, RuntimeError, AttributeError) as exc:
             self._stats["skipped"] += 1
-            return LivePerceptionReport(
+            return self._record_report(LivePerceptionReport(
                 "vision",
                 now,
                 "capture_error",
                 device_id=device.device_id,
-                details={"error": type(exc).__name__},
-            )
+                details={"error": type(exc).__name__, "message": str(exc)},
+            ))
         if frame is None:
             self._stats["skipped"] += 1
-            return LivePerceptionReport("vision", now, "no_frame", device_id=device.device_id)
+            return self._record_report(
+                LivePerceptionReport("vision", now, "no_frame", device_id=device.device_id)
+            )
 
         self._stats["captures"] += 1
         self._stats["frames"] += 1
@@ -569,7 +578,7 @@ class LiveVisionWorker:
                     )
                 ).event_id
             )
-        return LivePerceptionReport(
+        return self._record_report(LivePerceptionReport(
             worker="vision",
             timestamp=now,
             status="captured",
@@ -577,7 +586,11 @@ class LiveVisionWorker:
             trace_id=trace_id,
             event_ids=event_ids,
             details={"frame": frame.to_dict(), "retention": retention_stats},
-        )
+        ))
+
+    def _record_report(self, report: LivePerceptionReport) -> LivePerceptionReport:
+        self._latest_report = report
+        return report
 
     def _store_frame(self, frame: CapturedFrame) -> str | None:
         if self.store is None:

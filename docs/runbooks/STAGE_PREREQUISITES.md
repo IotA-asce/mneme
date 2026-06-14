@@ -80,6 +80,8 @@ Check configured local models:
 ```bash
 mneme models list --json
 mneme models verify --json
+mneme models verify --profile local-speech --json
+mneme models verify mediapipe_face_detector --json
 ```
 
 Run the local speech profile after placing compatible ASR/TTS model files:
@@ -93,6 +95,9 @@ Run the local vision profile after granting camera permission:
 ```bash
 mneme run --profile local-vision --face-backend mediapipe --json
 ```
+
+Current MediaPipe task-based installs require `.local/models/mediapipe/face_detector.task`
+or a custom `--face-model-path` before `person_seen` events are expected.
 
 Open the local browser dashboard:
 

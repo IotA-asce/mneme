@@ -38,7 +38,11 @@ from .model_runtime import (
 from .model_dialogue import DEFAULT_MAX_RESPONSE_CHARS, DEFAULT_MODEL_DIALOGUE_TIMEOUT_MS, ModelDialogueRealizer
 from .memory_review import apply_memory_review, explain_memory_refs, reject_memory_review
 from .local_ui import serve_ui
-from .local_vision import MediaPipeFaceDetectionBackend, OpenCVCameraCaptureBackend
+from .local_vision import (
+    DEFAULT_MEDIAPIPE_FACE_MODEL,
+    MediaPipeFaceDetectionBackend,
+    OpenCVCameraCaptureBackend,
+)
 from .peripherals import PeripheralDiscoveryService, RealPeripheralBackend, default_virtual_head_devices
 from .presence import CommandSpeechOutputBackend
 from .runtime_preferences import (
@@ -160,6 +164,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional face detector for OpenCV frames.",
     )
     run.add_argument(
+        "--face-model-path",
+        type=Path,
+        default=DEFAULT_MEDIAPIPE_FACE_MODEL,
+        help="MediaPipe task face-detector model path used by --face-backend mediapipe.",
+    )
+    run.add_argument(
         "--speech-command",
         help="Local command template that prints transcript text or JSON. Enables live speech.",
     )
@@ -273,6 +283,7 @@ def build_parser() -> argparse.ArgumentParser:
     models_list.add_argument("--json", action="store_true")
     models_verify = model_subparsers.add_parser("verify", help="Verify local model files/checksums.")
     models_verify.add_argument("model_id", nargs="?")
+    models_verify.add_argument("--profile")
     models_verify.add_argument("--json", action="store_true")
     models_download = model_subparsers.add_parser("download", help="Download a configured model when allowed.")
     models_download.add_argument("model_id")
@@ -508,7 +519,11 @@ def _camera_backend(args: argparse.Namespace) -> Any:
     )
     if not wants_opencv:
         return None
-    face_detector = MediaPipeFaceDetectionBackend() if args.face_backend == "mediapipe" else None
+    face_detector = (
+        MediaPipeFaceDetectionBackend(model_asset_path=args.face_model_path)
+        if args.face_backend == "mediapipe"
+        else None
+    )
     return OpenCVCameraCaptureBackend(camera_index=args.camera_index, face_detector=face_detector)
 
 
@@ -579,7 +594,7 @@ def _models(args: argparse.Namespace) -> int:
                 print(f"{record.model_id}\t{record.backend}\t{record.license}\t{record.path}")
         return 0
     if args.models_command == "verify":
-        payload = [item.to_dict() for item in registry.verify(args.model_id)]
+        payload = [item.to_dict() for item in registry.verify(args.model_id, profile=args.profile)]
         if args.json:
             print(json.dumps(to_jsonable(payload), indent=2, sort_keys=True))
         else:
@@ -980,6 +995,7 @@ def _live_status_lines(result: dict[str, Any]) -> list[str]:
     snapshot = result.get("snapshot", {})
     if not isinstance(snapshot, dict):
         return lines
+    lines.extend(_vision_report_status_lines(snapshot))
     lines.extend(_speech_loop_status_lines(snapshot))
     attention_line = _attention_status_line(snapshot)
     if attention_line is not None:
@@ -1007,6 +1023,21 @@ def _vision_status_lines(events: list[Any]) -> list[str]:
             label = payload.get("device_label") or payload.get("device_id") or "camera"
             metadata = payload.get("metadata", {})
             detector = metadata.get("face_detector") if isinstance(metadata, dict) else None
+            detector_error = metadata.get("face_detector_error") if isinstance(metadata, dict) else None
+            if isinstance(detector_error, dict):
+                reason = ":".join(
+                    str(item)
+                    for item in (
+                        detector_error.get("error"),
+                        detector_error.get("message"),
+                    )
+                    if item
+                )
+                lines.append(
+                    f"vision: frame from {label}; face detection unavailable: "
+                    f"{reason or 'detector_error'}{_vision_failure_hint(reason)}"
+                )
+                continue
             if count:
                 lines.append(f"vision: frame from {label}; detected {count} person candidate(s)")
             elif detector:
@@ -1039,6 +1070,30 @@ def _speech_event_lines(events: list[Any]) -> list[str]:
         if text:
             lines.append(f"speech: heard {speaker}: {_short_console_text(text)}")
     return lines
+
+
+def _vision_report_status_lines(snapshot: dict[str, Any]) -> list[str]:
+    perception = snapshot.get("perception", {})
+    vision = perception.get("vision") if isinstance(perception, dict) else None
+    if not isinstance(vision, dict):
+        return []
+    report = vision.get("latest_report")
+    if not isinstance(report, dict):
+        return []
+    status = report.get("status")
+    if status == "captured":
+        return []
+    if status == "no_camera":
+        return ["vision: no camera available"]
+    if status == "no_frame":
+        return ["vision: camera returned no frame"]
+    if status == "capture_error":
+        details = report.get("details", {})
+        error = details.get("error") if isinstance(details, dict) else None
+        message = details.get("message") if isinstance(details, dict) else None
+        reason = ":".join(str(item) for item in (error, message) if item)
+        return [f"vision: capture failed: {reason or 'capture_error'}{_vision_failure_hint(reason)}"]
+    return []
 
 
 def _speech_loop_status_lines(snapshot: dict[str, Any]) -> list[str]:
@@ -1098,6 +1153,17 @@ def _speech_failure_hint(reason: str) -> str:
         return " (install the local speech optional extras)"
     if "permission" in lowered:
         return " (check microphone permission)"
+    return ""
+
+
+def _vision_failure_hint(reason: str) -> str:
+    lowered = reason.lower()
+    if "face detection requires a local model asset" in lowered or "face_detector.task" in lowered:
+        return " (run `mneme models verify mediapipe_face_detector --json`)"
+    if "mediapipe" in lowered:
+        return " (check MediaPipe install and --face-model-path)"
+    if "permission" in lowered:
+        return " (check camera permission)"
     return ""
 
 
