@@ -5,6 +5,8 @@ Status: Current repository capability audit
 
 This audit records what the repository actually implements today versus what the design documents describe for the broader Mneme architecture.
 
+Related current-state report: `docs/architecture/LIVE_LAB_STATUS_REPORT.md` captures the first successful local camera/mic/speaker run and the behavior feedback that should drive the next live-conversation work.
+
 ## Current Implementation
 
 The repository currently implements a local Python virtual-head prototype with deterministic memory, cognition, live-perception adapter contracts, virtual conversational presence, and the Stage 6 Local Living Lab foundation. It does not control physical hardware, run ROS 2 nodes, use a vector database, call cloud LLM services, let a local LLM own planning/memory/safety, or bundle local model files as required assets.

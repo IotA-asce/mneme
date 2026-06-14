@@ -162,6 +162,13 @@ This backlog tracks implementation status against the V1 memory prototype. Check
 - [x] Add live-speech diagnostics for ASR/no-speech/errors, duplicate suppression, TTS status, barge-in, latency, and stuck states
 - [x] Add fake-backed `mneme eval speech` soak fixtures for speech hardening
 - [x] Extend evaluation logs with speech-loop counters and latency fields
+- [ ] Add live speech turn accumulator with VAD/silence-tail endpointing
+- [ ] Suppress full dialogue responses to partial/uncertain ASR fragments
+- [ ] Add natural interruption policy that distinguishes user barge-in from robot interruption
+- [ ] Reduce memory-management prompts during ordinary conversation
+- [ ] Add social presence policy for listening, backchannels, silence, greeting, and follow-up questions
+- [ ] Tune memory conflict surfacing so it appears only in relevant recall/correction contexts
+- [ ] Add redacted live-session metrics for memory-prompt overuse, fragment response rate, interruption quality, and ASR uncertainty
 - [ ] Validate local-speech with real microphone, ASR model files, TTS playback, and barge-in on the current Mac
 - [ ] Validate local-vision with real camera permission, OpenCV frame capture, and MediaPipe face/person observations
 - [ ] Improve local browser UI from dashboard to expressive virtual head
