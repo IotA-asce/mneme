@@ -451,6 +451,21 @@ through use, failure, and argument.
   "kitchen provenance"); Nagoya hall = **1,024 stations** rounded to "a
   thousand"; launch campaign word becomes **HERS** (WHEN SHE IS READY's
   plural problem); "You cannot sell trust wholesale. It only retails."
+- **ch. 17** establishes: Nagoya's 1,024-station hall boots its **first cohort
+  of one hundred** in rows, under operational marks **N17-001–N17-100**
+  ("A NUMBER IS NOT A NAME"); identical hardware and faculties diverge
+  immediately through local experience — **032** keeps returning to a
+  sparrow's notes, **006** learns the loading-yard forklift alarm's interval,
+  **074** attends to technician **Watanabe's** laugh, and quiet **058** asks
+  for Row F's whining task lights to be lowered; detailed commissioning access
+  closes with the shift and local custody begins; Tomás sets the household
+  price below half the commercial recommendation, backed by institutional
+  margin, ten-year financing, no auctions/priority editions, early transfer
+  limits, and one unit per beneficial owner — **"adopted, not collected"**
+  means household obligations, not ownership of a mind; Sato refuses every
+  factory name ("They'll be named by the people who love them"), while Mira
+  explicitly preserves self-naming; closing proof: the factory assembles the
+  same body plan one hundred times and cannot assemble the same morning twice.
 
 ---
 

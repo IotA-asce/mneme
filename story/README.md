@@ -25,7 +25,7 @@ interior) · bittersweet, open-ended arc.
 |---|---|---|
 | I — Bench (2026–2031) | 1–8 | **complete** |
 | II — Body (2032–2036) | 9–16 | **complete** |
-| III — Launch (2037–2041) | 17–24 | outlined |
+| III — Launch (2037–2041) | 17–24 | **in progress (1/8)** |
 | IV — The Question (2042–2049) | 25–32 | outlined |
 | V — Tide (2050–2062) | 33–40 | outlined |
 
