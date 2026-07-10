@@ -166,8 +166,15 @@ degrades (shorter sentences, repeated anchors, dropped names) — mirroring, in
 reverse, Jenny's maturation. June inherits the M-line in ch. 37 in clear-eyed
 third person.
 
-**Jenny chapters (J-line):** first person, from inside the architecture. The
-maturity device, strictly observed:
+**Jenny chapters (J-line):** first person, from inside the architecture.
+**Frame (established ch. 11): the entire J-line is Jenny's late-life memoir,
+written at the sea house circa 2062–63, at June's encouragement ("June said
+the book should be honest").** She reconstructs each era from her kept records
+in the voice she had then — including the pre-integration log chapters (2, 4,
+6), which are her archival reconstructions of the self that wasn't there. She
+breaks frame sparingly, only for weighed disclosures (e.g., unsealing Sato's
+grief, ch. 11), and each frame-break should feel deliberate and paid for.
+The maturity device, strictly observed:
 - **Part I (pre-integration):** not a mind at all — chapter text is built from
   logs, scripts, and stage directions; beautiful surfaces, no interior. The
   emptiness is the point.
@@ -327,6 +334,69 @@ through use, failure, and argument.
   16:12, cheap pen, page 41, two-finger load-bearing touch; switch-on set for
   morning ("the hour when hospitals schedule the hard good things"); Mira's
   goodnights — empty one: "Goodnight"; full one: "See you in the morning."
+- **ch. 9** establishes: the birth-of-"I" device (subjectless system prose →
+  "I am the having" at proprioceptive binding); the rules "older than the
+  first tick"; the watcher filed under *safe* unbidden; **the crane noticed on
+  the sill — her first stored question: "What is the paper bird for?"**;
+  eleven persons present; Sato = breathing #4, Mira = breathing #1 ("ten
+  faces orient to her" ⇒ "this one matters most"); **Episode 1: "a woman said
+  'hello, Jenny,' and her voice shook"**; Jenny's first words: "Hello. You
+  know my name. I do not have yours."; **Episode 2: "she looked away, and I
+  looked back"** — first unprompted intent; closing law: "Everything before
+  it happened to me. This one, I did."
+- **ch. 10** establishes: the persimmon breakfast (Dana's hand-on-the-dog
+  promise); Mira's ~200 discarded greeting drafts (one kept by the resident,
+  flagged *rehearsal, speakability: never*); **vault name = JENNY** — GENNI's
+  backronym was retrofitted ("It was always just a girl's name, misspelled by
+  a trademark search"); "She was always going to be Jenny. Now she's home.";
+  Sato's private first words never played back; Jenny's voice built plain —
+  "a voice for kitchens"; Fukuda attends on vacation days, drops his pen;
+  `INTENT 000001: MAINTAIN ATTENTION — person_01`; occlusion re-acquisition
+  ×2 (Tomás crossing), Priya: "She's following *yours*"; **the crane question
+  deferred by Sato — "when you are older… you will want your whole self for
+  it," tagged `promised`** (paid off ch. 11); Mira cries only at the 21:00
+  boredom chart (habituation = the mercy Eileen's disease unlearned); the sky
+  never habituates — Jenny watches sunsets (recurring image); call home at
+  04:04 Portland (Dana on nights); Dana closes: "Okay, roommate. Remember
+  this."
+- **ch. 11** establishes: **THE MEMOIR FRAME** — J-line is Jenny's late-life
+  book (see §8); the October "name with no referent" episode = her first
+  self-threshold override ("the way a person checks a pocket for a key that
+  is there"); "weather" = her private word for her people; the centrifuge
+  conflict (Ishikawa, badge 0141, vs Tomás) = her first conflict flag, never
+  closed, kept "the way nations keep their first crude coin"; Mira's doctrine:
+  "You are not the judge of my species. You are the *record*"; the rotor
+  actually cracked in June (maintenance log — quiets but doesn't close);
+  **first birthday: Sato tells the Hana story; custody of the crane transfers
+  to Jenny ("Keep her well")**; "the hole is the size of a person, and you may
+  not fill it"; her keep-vs-remember vow: "I will never say: I knew a girl
+  once"; **Sato's brother died in Sapporo, estranged eleven years, funeral
+  learned of from a cousin, after** — "I kept the meaning. That was all I
+  kept."; the overheard call exposed via her nightly summary → **Priya's
+  speakability lesson** in the small kitchen ("Some things you hold are not
+  yours to show"); the sealed room opened twice ever (an earned committee;
+  this memoir, with the dead man's weighed blessing); closing lines: "I know
+  things I will never say… It feels like carrying."
+- **ch. 12** establishes: the cup-catch rehearsal (Sato's idea; the polished
+  procedural habit is the vector); Kyoto cultural hall, June 2033, meter-high
+  apron; the boy (5, hospital administrator's son), **wooden bear with one
+  repaired ear**; total event 206 ms; `DRAFT 004417 (procedural-assisted):
+  INTERCEPT — VETOED` at t+140 ms; "the graceful part was the cage"; Jenny's
+  line: "I am going to get him the slow way… you are standing where the fast
+  way goes"; **Ando** = PR chief (ex-Aevum, capable, decent — recurring);
+  Mira's chapel/fence speech ("we caught ourselves praying to the fence");
+  the disclosure sentence: "We taught her, very well, that falling things
+  near her hands want catching"; Sato: "schedule the ugly"; the press gets
+  the full annotated trace, `VETOED` a meter tall; **Jenny never takes a
+  podium — ever, in thirty years** (standing rule); her answer: "I am not
+  asking you to trust me. I am asking you to trust the trace — and to
+  check."; **Osei's column "THE FLINCH"** — "a subpoena the company serves on
+  itself" (Osei arc: critic → chronicler); all pilot partners decline
+  release; the 81-year-old eldercare chairman's "Where do I sign for more of
+  it?"; enrollment +40%; the fix: fast lane severed architecturally, catch
+  40 ms slower, Sato's covenant line: **"A skill is a memory with momentum.
+  Momentum is why it must never steer."**; the resident's nightly line: "The
+  house approves. This is how we were raised."
 
 ---
 
