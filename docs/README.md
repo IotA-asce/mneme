@@ -109,6 +109,7 @@ doc is **added, moved, or retired**, update the matching line here (see
 
 ## Related, outside `docs/`
 
+- [`../story/`](../story/README.md) — *The Long Memory*, a novel set in the Mneme universe (fiction, not documentation).
 - [`../AGENTS.md`](../AGENTS.md) — authoritative contributor/agent ruleset and doc conventions.
 - [`../PROJECT_CONTEXT.md`](../PROJECT_CONTEXT.md) — concise project orientation brief.
 - [`../memory/MEMORY_INDEX.md`](../memory/MEMORY_INDEX.md) — index of durable project-memory entries (completed work, decisions, investigations).
