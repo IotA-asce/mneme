@@ -1,6 +1,6 @@
-# Android Brain — Comprehensive Design Document
+# Mneme — Comprehensive Design Document
 
-Status: **Starter design**  
+Status: **Living design reference** (originated as the V1 starter design)  
 Primary subsystem: **Memory architecture**  
 Target implementation phase: **V1 local prototype**
 
@@ -702,9 +702,9 @@ The current repo includes interface drafts but does not require a ROS 2 installa
 
 ---
 
-## 19. Design constraints for Codex
+## 19. Design constraints for contributors
 
-Codex should follow these constraints:
+Contributors (human or AI coding agent) should follow these constraints:
 
 - Do not expand scope without explicit permission.
 - Keep V1 lightweight and local.
@@ -751,4 +751,4 @@ The memory system should operate by this law:
 
 > Experience broadly, store narrowly, summarize aggressively, preserve the rare, and retrieve by context.
 
-That is the foundation of the android brain.
+That is the foundation of Mneme's brain.

@@ -3,6 +3,8 @@
 Date: 2026-06-13
 Status: Planning reference for local model integration and long-term cognitive evaluation
 
+> **Roadmap set (read together):** [`MASTER_ROADMAP.md`](MASTER_ROADMAP.md) — canonical long-term plan (Stages 0–9) · [`ROADMAP.md`](ROADMAP.md) — completed V1 memory-prototype phase record · [`COGNITIVE_CAPABILITY_ROADMAP.md`](COGNITIVE_CAPABILITY_ROADMAP.md) — Stage 7+ local-model & capability-ladder detail (this file). Current implemented state: [`../status/REPO_STATUS.md`](../status/REPO_STATUS.md).
+
 This document refines the post-Stage 6 roadmap for Mneme's brain-first path. It answers two questions:
 
 1. How should local AI models be connected without turning the model into the whole brain?
@@ -758,7 +760,7 @@ Each milestone must update:
 
 - this file,
 - `docs/architecture/MASTER_ROADMAP.md`,
-- `docs/architecture/REPO_STATUS.md`,
+- `docs/status/REPO_STATUS.md`,
 - relevant runbook under `docs/runbooks/`,
 - `tasks/backlog.md`,
 - project memory under `memory/`,

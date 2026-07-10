@@ -11,6 +11,6 @@ Memory defines continuity and context. It can be implemented and tested locally 
 ## Consequences
 
 - Faster development start.
-- Easier Codex-driven implementation.
+- Easier coding-agent-driven implementation.
 - Clear boundary between memory and future robotics runtime.
 - Real-time and motor safety are deferred to later integration phases.

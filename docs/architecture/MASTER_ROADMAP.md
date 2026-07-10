@@ -3,6 +3,8 @@
 Date: 2026-06-13 (revision 5)
 Status: Long-term implementation roadmap from the V1 memory core to the complete android head brain
 
+> **Roadmap set (read together):** [`MASTER_ROADMAP.md`](MASTER_ROADMAP.md) — canonical long-term plan (Stages 0–9, this file) · [`ROADMAP.md`](ROADMAP.md) — completed V1 memory-prototype phase record · [`COGNITIVE_CAPABILITY_ROADMAP.md`](COGNITIVE_CAPABILITY_ROADMAP.md) — Stage 7+ local-model & capability-ladder detail. Current implemented state: [`../status/REPO_STATUS.md`](../status/REPO_STATUS.md).
+
 This roadmap covers every implementation milestone between the current bench-only memory prototype and the end goal: a safe, debuggable, expressive, memory-centered robot head with lifelike attention, timing, memory continuity, and transparent reasoning.
 
 **Revision 2 (2026-06-12), by owner decision:** motor/actuator work is deferred. The near-term embodiment is a *virtual head* — a cross-platform app that perceives through the host machine's camera/microphone and talks back on screen/speakers. Mneme targets **Windows, macOS, and Linux** equally (primary dev machine is an Apple Silicon Mac), so the ROS 2 bridge moved into the deferred physical-embodiment track and a cross-platform runtime replaced it. Perception must **discover attached peripherals at startup/runtime** rather than assuming configured devices. Recorded privacy decisions live in `docs/safety/MEMORY_PRIVACY.md`.

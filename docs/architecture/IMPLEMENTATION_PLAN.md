@@ -1,5 +1,12 @@
 # Implementation Plan
 
+> **Status: historical.** This is the original V1 (Phase 0–6) build plan and is
+> preserved as a record. The living roadmaps are
+> [`MASTER_ROADMAP.md`](MASTER_ROADMAP.md) (canonical long-term plan),
+> [`ROADMAP.md`](ROADMAP.md) (V1 phase record), and
+> [`COGNITIVE_CAPABILITY_ROADMAP.md`](COGNITIVE_CAPABILITY_ROADMAP.md) (Stage 7+).
+> Current implemented state lives in [`../status/REPO_STATUS.md`](../status/REPO_STATUS.md).
+
 ## Phase 0 — Project bootstrapping
 
 Deliverables:
