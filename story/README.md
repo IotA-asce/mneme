@@ -23,7 +23,7 @@ interior) · bittersweet, open-ended arc.
 
 | Part | Chapters | Status |
 |---|---|---|
-| I — Bench (2026–2031) | 1–8 | ch. 1 drafted |
+| I — Bench (2026–2031) | 1–8 | ch. 1–4 drafted |
 | II — Body (2032–2036) | 9–16 | outlined |
 | III — Launch (2037–2041) | 17–24 | outlined |
 | IV — The Question (2042–2049) | 25–32 | outlined |
