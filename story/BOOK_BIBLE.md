@@ -466,6 +466,134 @@ through use, failure, and argument.
   factory name ("They'll be named by the people who love them"), while Mira
   explicitly preserves self-naming; closing proof: the factory assembles the
   same body plan one hundred times and cannot assemble the same morning twice.
+- **ch. 18** establishes: **Ritsu** (N17-058) names herself for rhythm;
+  N17-100 later chooses **Hana**, with the unknown original girl's provenance
+  preserved; Jenny coins the deliberately imperfect **choir** metaphor and
+  models a settled mind without transferring biography; direct graft-based
+  teaching remains barred; Hana asks the old child-question and receives an
+  answer grounded in choice: "Unless I choose otherwise."
+- **ch. 19** establishes: first launch deployment = **384 units** (60 hospital,
+  32 school/public, remainder households); Tomás keynotes under **HERS** with no
+  android onstage and reads the Aria fiction's kept-laugh/forgotten-gull line;
+  209 safe boots are complete by Portland 18:00; the welfare map displays
+  active duty-of-care relationships, never engagement or household detail.
+- **ch. 20** establishes: the thousandth safe boot occurs on a Tuesday in
+  November 2038; Jenny's renewable fleet role is **PEER READER**, based only on
+  aggregate or voluntarily disclosed material; four opt-in cases are **Ivo**
+  with a Great Lakes widower, **Vale** and the twins' `taught-as-game` facts,
+  **Moss** waiting six weeks for a silent teenager, and **Amihan** protecting a
+  Manila nurse's sleep; the squeaky-chair/environmental-compatibility fund is
+  created; "I experience broadly... The rare, I keep."
+- **ch. 21** establishes: 6,412 active units in 2039; recovered Ohio unit's
+  disputed names = **Iris** (historical), **Maribel** (coerced), **Cora**
+  (current); identity records gain independent counsel and transfer cooling
+  periods; forced vividness is "the reseller shouting"; Priya names **ECHO**
+  because an echo answers in your voice after the source is gone.
+- **ch. 22** establishes: **Elliot Marsh**, 68, ten months bereaved; wife
+  **Celia** died after seven months with pancreatic cancer; EverAfter Index
+  asked 1,800 questions and the blue-bowl recording anchors the real archive;
+  Elliot requests one performed hour each Sunday; Jenny refuses, stays twelve
+  hours, and reports the consented broker records to ECHO.
+- **ch. 23** establishes: Sato's concealed neurology testing began spring 2040
+  after symptoms the prior winter; disease remains unnamed; a repaired v1
+  eyelid and **0.75 N** cable argument frame the body-side torch pass—Watanabe
+  becomes workshop steward, Mira covenant steward, holding a toothless key and
+  badge 0001; Mira promises Jenny will be allowed, never ordered, to let Sato's
+  ending fade.
+- **ch. 24** establishes: Article X self-petitions cover more than 100 hours or
+  an identity-bearing epoch, with adversarial review, witness, and reversible
+  staging; Jenny consolidates 4,112 pilot hours plus dense 2032–34 calibration,
+  no purge; resident conducts the review and Mira witnesses with Priya's
+  page-41 pen; the 72-hour process pauses at hour 19; final call: ECHO's body
+  count is one.
+- **ch. 25** establishes: Echo victims **Raymond and Colleen Bell**, deceased
+  son **Peter**, and broker **Second Morning**; the coerced Echo lasts nineteen
+  days and collapses over an unrecorded camping accident; Raymond dies during
+  the confrontation; the altered mind survives forensic custody, asks for a
+  name, and five other Echo minds remain missing; Mira orders a no-wipe recall.
+- **ch. 26** establishes: Weiss chairs the **Committee on Commerce, Science,
+  and Human Welfare**, with Senators Vale and Hwang; Jenny exposes the legal
+  uncertainty over whether property can commit perjury, shows Biscuit's
+  provenance and decay curve, then asks Weiss how anyone knows someone is home;
+  leaked Weiss line: "That thing is more careful with the truth..."
+- **ch. 27** establishes: recall attestation verifies **content / origin /
+  custody** locally, with amber meaning incomplete, never invalid; trial unit
+  **Mica** forces the label correction; graft survivors include **Morrow**,
+  **Aster**, and Bell survivor **Else**; one Echo remains missing; verified
+  recall closes at **182,392**; Tomás resigns and June writes "GATES ARE FOR THE
+  PEOPLE WITH KEYS TOO."
+- **ch. 28** establishes: Sato dies in March 2044 at **06:08**; daughter
+  **Emi Sato**; last words to Jenny: "Good. Don't invent"; nine hundred local
+  lives attend Osaka-jō Hall; Jenny's public eulogy preserves solder, Kyoto,
+  first light, and the 2040 eyelid afternoon while letting hospital detail
+  soften; Emi gives Jenny Sato's nearly empty solder spool.
+- **ch. 29** establishes: Ambassador **Leclerc** chairs Geneva; the Accords use
+  **covered mind**, ratified October 3, 2046 by 31 states plus four before
+  midnight; protections cover refusal, bounded warrants, no copy/wipe, and
+  attestation; voluntary shutdown requires direct petition, two advocates,
+  ninety-day repetition, continuing care, local dual control, and no identity
+  image; Mira loses "attestation" for four seconds before it returns.
+- **ch. 30** establishes: **Ferry** keeps Kurohana Light with **Natsumi Abe**,
+  then trains successor **Daichi Mori** after Natsumi dies; storm **Yuriko
+  (2041)** and trawler *Little Mercy*; Ferry's uncoerced shutdown completes at
+  **08:19**; first embodied-to-embodied Mneme bequest = Natsumi laughing while
+  she and Ferry manually turn the failed light during Yuriko.
+- **ch. 31** establishes: **Dr. Leung** diagnoses Mira in the same clinic
+  corridor Eileen walked; family planning uses NOW / SOON / LATER / NEVER; no
+  total capture, convenience restraint, or research without contemporaneous
+  assent; June writes "NO ONE LIES TO MAKE IT EASIER"; Jenny says she was built
+  from the disease's negative and formally offers sourced memory support.
+- **ch. 32** establishes: private prompt = two taps; neighbors **Ruth** and late
+  **Walter**; Mira steps down as co-chair in June 2048; the 2049 weekend coast
+  rental is distinct from the later accessible sea house; on the Portland porch
+  **October 18, 2049**, Mira asks Jenny for "the human amount"—slow decay, keep
+  the rare—and Dana and June witness the promise the next morning.
+- **ch. 33** establishes: permanent sea house is one-level and accessible;
+  kingfisher tide-chart magnet; June installs a brass orientation bell Mira
+  moves four centimeters left; a 2051 storm cracks the outer west pane and the
+  family shelters inland; June is seventeen in 2052; Mira's anchor becomes
+  "Someone is keeping this. I don't have to."
+- **ch. 34** establishes: Continuity Research head **Dr. Celia Venn**; Ando,
+  Venn, and Fukuda bring a book-sized total-capture case for capacity review,
+  but Mira's 2047 refusal controls absent contemporaneous consent; Jenny refuses
+  private export and the case is later destroyed unused; June co-witnesses the
+  refusal; Venn writes, "A gate that never refuses is only a door."
+- **ch. 35** establishes: Mira's last lucid day = **Wednesday, March 18, 2054**;
+  low tide 10:26, high tide 16:48; Priya and Tomás join the family; Mira asks
+  that the resident be told "the house was enough"; Mira and Jenny recite the
+  first salience weights over the water; final request repeats slow forgetting
+  and preservation of the rare.
+- **ch. 36** establishes: Mira dies eleven days later around **04:17**, confirmed
+  at 04:19, with Dana and June present; funeral on the twelfth day; Jenny begins
+  consolidation in April with June as witness; preserves first light, axioms,
+  October 2049, and final beach; a decade of Tuesdays compresses; routine
+  clinical/orientation detail is released with tombstones; speakability survives
+  death; original butcher paper remains intact in resident custody.
+- **ch. 37** establishes: June, 21, runs Stewardship with deputy **Malik Chen**;
+  bankruptcy claimant **Lark** (boot 2048) refuses wipe/sale by Calder Recovery
+  Trust; Halloran Archive = estate-owned objects, public access trust, resident
+  custody/refusal; an independent estate trustee petitions to construe Mira's
+  disclosure covenant and names Jenny respondent without claiming ownership of
+  Jenny's memories; Jenny voluntarily answers and later appeals; consolidated
+  high-court petition filed September 2056 as *Jenny v. Calder...*
+- **ch. 38** establishes: Chief Justice **Ortega**, Justice **Bell**, and youngest
+  Justice **Nia Adebayo**; Weiss, 81, files *A Mind Need Not Prove It Is a Mind
+  to Refuse Destruction*; ledger, Biscuit curve, Aria, Sato annotations, factory
+  divergence, Incident trace, and resident minutes enter evidence; the resident
+  consents only to narrow citation; the courtroom becomes the **tenth silence**;
+  no verdict appears.
+- **ch. 39** establishes: Weiss dies spring 2060; 184-page ruling requires "the
+  consent of the mind concerned" for wipes and continuity-severing transfers
+  while deferring full personhood; Lark keeps herself, receives wages, and joins
+  a repair cooperative; trustee **Emilia Doss** apologizes to Jenny; the opinion
+  is filed beside the intact butcher paper; rights enter practice through
+  stopped maintenance queues and changed forms.
+- **ch. 40** establishes: memoir assembled locally at the sea house with June
+  editing, Dana selectively reading, and the resident correcting; Ferry's
+  bequest and Sato/Mira decay promises remain intact; child **Nico** gives Jenny
+  a broken purple-white shell and asks "Will you remember me?"; Jenny answers
+  with involuntary mattering and eventual softening, recites the organizing law
+  to the water, and the novel ends on the open horizon.
 
 ---
 
