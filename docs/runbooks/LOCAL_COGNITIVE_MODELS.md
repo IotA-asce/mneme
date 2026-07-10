@@ -3,6 +3,11 @@
 Status: M7.2-M7.4 local model-backed wording
 Date: 2026-06-13
 
+> **Scope:** *using* a local Ollama chat model as an optional wording layer
+> after deterministic retrieval/intent/planning (`mneme cognition check`,
+> `--profile local-cognition`, the model safety boundary). For managing model
+> *files/assets* and the registry, see [`LOCAL_MODELS.md`](LOCAL_MODELS.md).
+
 Mneme can now check a local Ollama chat model and use it as an optional wording layer after deterministic memory retrieval, executive intent, and dialogue planning. The model does not own memory selection, safety, intent, or durable writes.
 
 The default first model is `qwen2.5:1.5b`.

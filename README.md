@@ -20,7 +20,7 @@ As of 2026-06-13, Stages 0-5 of the master roadmap are complete and Stage 6 has 
 
 Physical embodiment is now deferred behind the Local Living Lab. ROS, GPIO, serial, PWM, servo control, microcontroller flashing, and physical actuator work are not part of the current runtime.
 
-See `docs/architecture/MASTER_ROADMAP.md` and `docs/architecture/REPO_STATUS.md` for the detailed status record.
+See `docs/architecture/MASTER_ROADMAP.md` and `docs/status/REPO_STATUS.md` for the detailed status record, and `docs/README.md` for a full map of the documentation.
 
 ## What Works Now
 

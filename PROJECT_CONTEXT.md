@@ -1,8 +1,11 @@
-# Codex Context: Android Brain Project
+# Project Context: Mneme
+
+> Concise project brief for humans and AI coding agents. `AGENTS.md` is the
+> authoritative ruleset; this file is the orientation summary.
 
 ## Project identity
 
-Project name: **Android Brain**
+Project name: **Mneme** (formerly "Android Brain")
 
 Goal: build the software brain for a small-scale android robot head. The first major subsystem is a **human-inspired memory architecture** that later integrates with perception, attention, executive reasoning, and motor skills.
 
@@ -54,7 +57,7 @@ V1 should build:
 8. Memory must preserve provenance, confidence, and source type.
 9. Raw observation, inference, and confirmed fact are never treated as the same thing.
 
-## How Codex should work in this repo
+## How coding agents should work in this repo
 
 - Read `AGENTS.md` before making changes.
 - Prefer small, reviewable commits/patches.

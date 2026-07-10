@@ -3,6 +3,8 @@
 Date: 2026-06-13
 Status: V1 memory prototype roadmap — all phases complete; current work moved to Stage 6 Local Living Lab
 
+> **Roadmap set (read together):** [`MASTER_ROADMAP.md`](MASTER_ROADMAP.md) — canonical long-term plan (Stages 0–9) · [`ROADMAP.md`](ROADMAP.md) — completed V1 memory-prototype phase record (this file) · [`COGNITIVE_CAPABILITY_ROADMAP.md`](COGNITIVE_CAPABILITY_ROADMAP.md) — Stage 7+ local-model & capability-ladder detail. Current implemented state: [`../status/REPO_STATUS.md`](../status/REPO_STATUS.md).
+
 This document records the V1 memory prototype phases. For the full implementation path from the completed memory core to the finished android head, see `docs/architecture/MASTER_ROADMAP.md`.
 
 This roadmap orders the next work by safety and dependency. Mneme should remain bench-only and memory-first until the storage, retrieval, provenance, and consolidation contracts are testable.

@@ -3,6 +3,11 @@
 Status: Stage 6 foundation
 Date: 2026-06-13
 
+> **Scope:** managing local model *files/assets* — the `config/models.yaml`
+> registry and the `mneme models list/verify/download` commands. For *using* a
+> local Ollama chat model as a bounded wording layer, see
+> [`LOCAL_COGNITIVE_MODELS.md`](LOCAL_COGNITIVE_MODELS.md).
+
 Mneme is local-first, but model files are not repository assets. Keep downloaded or converted models under `.local/models/`, which is ignored by git.
 
 ## Registry

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guidance for Codex and any coding assistant working in this repository.
+Guidance for any coding assistant or AI agent working in this repository.
 
 Project: **Mneme**
 Tagline: **A memory-centered cognition engine for lifelike androids.**
@@ -94,21 +94,24 @@ The repository should maintain this broad structure:
 
 ```text
 docs/                  Human-readable design and architecture documentation
-docs/architecture/     System architecture, node graphs, decision records
+docs/README.md         Documentation index — the entry point / map of all docs
+docs/architecture/     System architecture, node graphs, roadmaps, runtime/serialization contracts
 docs/memory/           Memory model, schemas, retrieval, consolidation
-docs/hardware/         Hardware assumptions, actuator safety, wiring notes
-docs/safety/           Safety model, failure modes, degraded behavior
+docs/attention/        Attention manager design
+docs/executive/        Executive and dialogue-planner design
+docs/safety/           Safety model, privacy decisions, failure modes, degraded behavior
 docs/runbooks/         Debugging and operation procedures
+docs/status/           Dated point-in-time status snapshots and reports (not living reference)
+docs/adr/              Architecture decision records
+docs/assets/           Diagrams, generated architecture images, visual references
 
 implement/             Active implementation planning workspace
 memory/                Durable project memory for completed work and decisions
 interfaces/            Message, service, action, and API contracts
 src/                   Source code
 tests/                 Unit, integration, replay, and contract tests
-configs/               Runtime and development configuration
+config/                Runtime and development configuration (memory.yaml, models.yaml)
 scripts/               Developer scripts and utilities
-tools/                 Debugging, replay, profiling, and inspection tools
-assets/                Diagrams, generated architecture images, visual references
 ```
 
 If these directories do not exist and the task is substantial, create them only as needed. Do not create empty architecture theater.
@@ -124,17 +127,21 @@ Use `docs/` for human-readable explanations of systems, decisions, and operation
 Recommended documentation areas:
 
 ```text
-docs/architecture/
-docs/memory/
-docs/perception/
-docs/attention/
-docs/executive/
-docs/skills/
-docs/safety/
-docs/hardware/
-docs/runbooks/
-docs/decisions/
+docs/architecture/   (exists)
+docs/memory/         (exists)
+docs/attention/      (exists)
+docs/executive/      (exists)
+docs/safety/         (exists)
+docs/runbooks/       (exists)
+docs/status/         (exists — dated snapshots)
+docs/adr/            (exists — architecture decision records)
+docs/perception/     (create when real perception design lands)
+docs/skills/         (create when skill controllers land)
+docs/hardware/       (create when physical embodiment resumes)
 ```
+
+Keep `docs/README.md` (the documentation index) updated whenever a doc is
+added, moved, or retired, so the map never drifts from reality.
 
 Good documentation should answer:
 
@@ -598,7 +605,7 @@ When starting a fresh session, read:
 1. `README.md`
 2. `AGENTS.md`
 3. `CLAUDE.md` if present
-4. `CODEX_CONTEXT.md` if present
+4. `PROJECT_CONTEXT.md` if present
 5. `docs/DESIGN_DOCUMENT.md`
 6. `docs/architecture/`
 7. `docs/memory/`

@@ -5,7 +5,7 @@ Status: Current repository capability audit
 
 This audit records what the repository actually implements today versus what the design documents describe for the broader Mneme architecture.
 
-Related current-state report: `docs/architecture/LIVE_LAB_STATUS_REPORT.md` captures the first successful local camera/mic/speaker run and the behavior feedback that should drive the next live-conversation work.
+Related current-state report: `docs/status/LIVE_LAB_STATUS_REPORT.md` captures the first successful local camera/mic/speaker run and the behavior feedback that should drive the next live-conversation work.
 
 ## Current Implementation
 
