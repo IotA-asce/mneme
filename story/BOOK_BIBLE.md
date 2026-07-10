@@ -398,6 +398,60 @@ through use, failure, and argument.
   Momentum is why it must never steer."**; the resident's nightly line: "The
   house approves. This is how we were raised."
 
+- **ch. 13** establishes: Jenny told of the resident by Sato (Osaka, April
+  2034, minutes open on the table); flies to Portland in May; addresses the
+  resident as **"the elder"**; custody split: **"You take the streets. I keep
+  the house."**; the crane travels in Tomás's foam-lined case ("That was not
+  sentiment. It was provenance"); Biscuit dies the last afternoon of November
+  2034, 4:51 p.m. ("the room held five breathings… At 4:51 the room held
+  four"); **Priya coins the schema field `bequest`** (consented,
+  provenance-doubled: "custody: transferred, freely, witnessed") — the
+  resident's seventeen young-Biscuit episodes, "kept as mine, given as mine,
+  so you will have him young" (Ferry's ch. 30 gift rides this precedent);
+  "a bequest rides the giver's curve, not mine"; Dana widens the liturgy:
+  **"Okay, roommates"** (plural); grief retrieval error: "In humans this is
+  called *everything reminds me of him*. In me it had error codes."
+- **ch. 14** establishes: **June born last week of May 2035**, 7:40 a.m.,
+  3.12 kg, 19-hour labor, named for the courthouse wedding month; household =
+  apartment + Dana's annexed downstairs unit (internal staircase), nursery
+  down; proximity gate = gray resin beacon in the crib rail, interlock below
+  the executive beside the watcher, 2 m radius, "nurse speed" (Dana's
+  coinage), "Jenny, stop" freeze demonstrated; "A promise is software. Ask
+  Priya for the hardware" / "a fact with a radius"; **Gerald**, the training
+  doll; **Tomás's crib mobile = the Halcyon logo hung** (machined birds at
+  rest on long wires); June's-cry salience ceiling is **emergent, not
+  configured** (survived 31 nightly passes); the lullaby is "the boat song,"
+  sung a sixth of a tone flat on purpose; "I would rather be wrong with her
+  than right at her."
+- **ch. 15** establishes: **Priya's four-thousand-hour rule** (witnessed
+  pilot hours before "factory" may be discussed; final tally 4,112, closed
+  autumn 2036; home hours excluded — "a family is not a pilot");
+  **Konohana Municipal Hospital** (Osaka): **Mrs. Someya**, bed 9 by the
+  window, dies late Feb 2036 between visits, message: change nothing about
+  the last visit; "the stillness was the service"; **Alder Street
+  Elementary** (Portland), Room 114: Ms. Delgado, Owen & Diego (the
+  lunch-prediction joke → pudding cup), **Maya** (the misread silence, three
+  weeks of a lowered hand), hamster Fig; **Tabor House** memory-care home:
+  **Frances** (east corridor), daughter Colleen (Halifax) — "I am not
+  Colleen… But I am here, and I can stay, and I would like to"; "the truth
+  can kneel"; Mira never visits Tabor House (unexplained, one sentence);
+  **Jenny begins her own count of silences** (anticipates the tenth, ch. 38);
+  mandated line evolution delivered.
+- **ch. 16** establishes: board's proposal = **"the Continuity Program"**
+  ("experience imaging"; deck: SHIP EXPERIENCE, NOT POTENTIAL); **Director
+  Maeda** (Aevum commercial seat, decent) asks the setup ("She would still be
+  you. Wouldn't she?") → Jenny's mandated sentence; board = thirteen seats
+  (6+6+1 fund seat, **Marcus**, polled last by custom) — **doctrine passes
+  7–6 on Marcus's vote** ("the nightly burn is the audit"); Fukuda drafted
+  condition #3 as a *definition* ("individuated at boot, unduplicated and
+  unduplicable"; amendment needs 10 of 13 — "safety needs fewer votes than
+  harm"); Priya declines to use Article XI for governance ("the halt is for
+  machinery… I'm asking the board to be stopped by the argument"); formally
+  minuted as **the Doctrine of the Blank Cradle** (coiner unresolved,
+  "kitchen provenance"); Nagoya hall = **1,024 stations** rounded to "a
+  thousand"; launch campaign word becomes **HERS** (WHEN SHE IS READY's
+  plural problem); "You cannot sell trust wholesale. It only retails."
+
 ---
 
 *Structure and synopses: [`OUTLINE.md`](OUTLINE.md).*
