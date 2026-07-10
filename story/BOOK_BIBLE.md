@@ -205,6 +205,48 @@ through use, failure, and argument.
   surgery is on the twelfth"* (fictional fixture); closing covenant: Mira says
   "Remember this" to the empty room. Motif available for reuse: checking stored
   rows "the way you check a sleeping child."
+- **ch. 2** establishes: the child is **Hana** (age ~7, Osaka Children's Medical
+  Center, 2027-11-09, surgery next day), gives GENNI-8 a **paper crane**; spec
+  3.3 "GENNI-8 carries no memory between engagements — every audience meets her
+  new"; the filler cascade; Sato keeps the crane in the wings-left equipment
+  case ("Kept the crane in the wings. — K.S."); Sato refuses to script the lie
+  "Yes" ("We are not going to teach her to lie about the one thing she cannot
+  do"); **agenda item 4(c): "make the answer true"** — logged 2027, "so it has
+  a date"; recurring log line `SESSION END. NOTHING RETAINED.`
+- **ch. 3** establishes: Tomás arrives April 2028 after nine unsolicited
+  bug-report emails (hedge-fund data team; two-day mole sauce); Priya arrives
+  after publicly torching her employer's safety theater on a San Jose panel
+  (June 2028); **"PRIYA CAN STOP ANYTHING"** written and dated on the butcher
+  paper (this IS her contract until ch. 7); the bench brain is called **the
+  resident**; hardware **HIPPOCAMPUS II / "THE HIPPOCAMPENING"**; Priya's
+  hardware mute switch ("software mute is a mood, hardware mute is a fact") +
+  Biscuit-exemption toggle; **"Nothing merges red"** and **"Weight for the
+  friendship failures"** (Priya) both on record; the dentist correction (Nov
+  2028) = the resident's first *volunteered* memory, with provenance; Biscuit
+  from the Powell shelter, "a mop with opinions," coins **"dog-then-door"**,
+  title CHIEF DISTRACTION OFFICER (whiteboard, never butcher paper, "Biscuit is
+  mortal"); the **Aria design fiction written Dec 2028** — old man named Elias,
+  machine named Aria, filename is the bird → **halcyon** (source of the JV name
+  in ch. 7); **Dana** first appears as the downstairs nurse (note under the
+  door, Oct 2028: "type louder if you want," soup for the unmet dog).
+- **ch. 4** establishes: 411 shows in 2029, four field units; the review is
+  **"The Loneliest Machine in the World" by Naomi Osei, The Atlantic, Sept
+  2029** — source of "beautiful, but nobody's home" (via a Seoul lighthouse
+  metaphor from a man in row 40); São Paulo infant clip (SUPPORT_CRADLE_1,
+  "SHE KNEW HOW TO HOLD HIM") — 340M plays; **Oslo incident** (Nov 2029): a
+  widower shows GENNI a photo of his dead husband who met her in Copenhagen
+  2027, "Do you remember him?", held photo 14 seconds — early Remembrance-theme
+  precursor; v15.3 "callback within session" = biggest survey gain ever, flushed
+  nightly (Sato: "we flush it at midnight and call the flush a feature");
+  **Sato's annotated copy of Halloran's 2028 provenance paper is later entered
+  into a court record** (use in ch. 38) — key margin notes: "decorating the
+  door of an empty house," "a flush is not forgetting, a flush is
+  never-having-had," "She has built the part I was too afraid to admit was
+  missing"; Sato's first contact is an email **to Tomás** (Dec 14, 2029, via
+  commit log), asking "Does it really remember? … a keeping that costs
+  something, that chooses, that could in principle be grieved?" and disclosing
+  the crane; unsent draft to Mira exists. Video calls follow in 2030 (ch. 5's
+  "smell of solder" remark happens on one of these).
 
 ---
 
