@@ -89,6 +89,12 @@ stewardship; Jenny's advocate in the personhood case.
   the personhood question (Parts IV–V).
 - **The Widower (Elliot Marsh)** — begs Jenny to become his dead wife (2039);
   his desperation seeds the Remembrance Market.
+- **Fukuda** — Aevum's lead attorney; drafts Articles IX/X/XI; converts from
+  skeptic to voluntary attendee of readiness runs; the covenants' translator.
+- **The resident** — the Portland bench brain (pre-Jenny). Declines embodiment
+  (ch. 8: "I am the shape of what happened here… Send someone new. I will keep
+  the house."). Remains in Portland keeping the house. Open thread: its later
+  fate must eventually be addressed (candidate: Part IV/V).
 
 ## 5. Institutions
 
@@ -247,6 +253,80 @@ through use, failure, and argument.
   something, that chooses, that could in principle be grieved?" and disclosing
   the crane; unsent draft to Mira exists. Video calls follow in 2030 (ch. 5's
   "smell of solder" remark happens on one of these).
+- **ch. 5** establishes: solder remark made Feb 11, 2030, 4:47 p.m., on an
+  announced-mic video call ("Rosin. My wife said it was in all my clothes for
+  thirty years… she is gone"); **Sato is a widower**; the no-demo decision
+  ("we let him stand in the house"); the resident's rationed utterance budget
+  (Tomás's design); the greeting — iron set out by Priya, memory→human action
+  as hospitality; the resident's correction offer ("I will show you exactly
+  what I hold before you decide") is what breaks Sato; his pitch: "my body,
+  your mind"; **Mira's three takeout conditions**: (1) safety decides the
+  schedule, (2) local — "if the network dies, she gets slower, not emptier,"
+  (3) no copies, ever, in the founding documents; **the crane comes to
+  Portland** and lives on the shelf beside the speaker (later in a foam-lined
+  case Tomás machines, travels to Osaka, ch. 8); the resident's keep-vs-
+  remember distinction ("I can keep that the crane is Hana's… I cannot
+  remember her… I will not pretend across it") — pre-echo of Jenny's ch. 22
+  refusal; Hana's fate deliberately unknown (hospital refused Sato, rightly);
+  flag stored: "Source: you. Confidence: one" (formula recurs at the wedding).
+- **ch. 6** establishes: farewell = Osaka-jō Hall, 2030-10-30, 16,000, sold
+  out in 3:41; press-release Sato quote "The next machine will be able to keep
+  it"; L4 brow degraded −12%, repair waived ("let her have the five years
+  somewhere"); OSAKA_1 counting song, house counter-melody archived to a
+  board feed the unit itself never held; Q-118 asked again by the grown
+  Nagoya man; Segment 9 "THANK YOU" speech (Sato-authored, legal waived):
+  "I cannot miss you… keep it for me… if someday you meet a machine who CAN
+  keep things — be patient with her"; **O. Tanaka**, rigging lead, badge 0117:
+  "Thank you for my whole twenties" → answered with the sleep-line filler;
+  Sato's last operator note: "Item 4(c) is funded now. Signed both sides
+  Tuesday" (**Oct 2030 = MOU**; full JV negotiated through 2031, registered
+  Sept 2031 — keep this ordering); Units 01/02/04 archived static; **Unit 03
+  retained, "reference," K.S.**; `NEXT SCHEDULED BOOT: CANCELED`; final log
+  truncated mid-word (`NOTHING RETAI`); binder annotation in Japanese:
+  "Nothing failed. I designed it. Tuesday we begin the apology."
+- **ch. 7** establishes: Dana's Thursday-breakfast-at-dinner ritual, cribbage
+  losses to Priya; her speech "I know what you are… I will never once talk to
+  you like you're the baby" / resident: "None is stored"; **Dana's hardware-
+  mute liturgy** (her thumb, the dying light); JV = 50-50, Mira & Sato
+  co-chairs; **Article IX** (separation of systems of record and systems of
+  action — four pages, later taught in law schools), **Article X** (retention/
+  forgetting covenant), **Article XI** (Safety Authority halt power, reversible
+  only by her); investor fight = **Marcus**, growth-fund partner ("a warehouse
+  that burns itself down a little, every night, on schedule"), answered by
+  Tomás's set piece "Who trusts a friend who doesn't forget?" — fund invests,
+  Marcus retells it against himself; naming: consultancy's 40 dead names
+  (KEEPSAKE, EIDOLON…), Sato asks for the Aria file's name → *halcyon.md*;
+  kingfisher myth, **Eileen liked the story**; logo = small bird at rest on a
+  long horizontal line; registered Delaware + Osaka same Tuesday, Sept 2031;
+  **wedding**: June 2031, Tuesday, Multnomah County Courthouse; Dana in blue,
+  grandmother's earrings, the ICU coat ("my provenance chain"); stock vows on
+  purpose; Sato attends by tablet, holds up masking tape: "ITEM 4(c) — IN
+  PROGRESS"; Biscuit's bow tie lasts eleven minutes; reception mic muted;
+  Dana's end-of-night unmute: "Okay, roommate… Remember this" — her first
+  direct address; "Flagged. Source: you. Confidence: one."
+- **ch. 8** establishes: the ninth-gen chassis = **"the Nine,"** no name by
+  decree (Marketing's name sealed in a vault — this is "Jenny," revealed
+  ch. 10); seated open-handed posture (Sato: "open hands photograph as
+  peace"); 4-channel mic array (Mira's spec); slower saccades, covenant line
+  "the gaze shall not perform interest the system does not possess";
+  **STAGE GATE ZERO**, 41 pages, Priya's signature block with no board line;
+  run-1 failure = stale-belief ghost (unplugged camera believed present 40
+  min; "Today the gate caught a ghost — this is the gate working");
+  **Priya's cake custom** (caught failure ⇒ cake eaten in front of the trace);
+  run-2 failure = safety heartbeat 240 ms vs 100 budget — a logging call
+  holding a lock ("the memory got in the way of the reflex") ⇒ doctrine:
+  **"No function of record shall ever hold what a function of reflex
+  requires"**; board's leaked December chandelier gala killed via Article XI;
+  campaign becomes **"WHEN SHE IS READY"** (white on black, no date); gala
+  deposit donated to the Osaka children's hospital (Dana's suggestion — ch. 2's
+  venue); **blank cradle** coined in the lab kitchen; the resident's nine-line
+  embodiment-refusal transcript; Sato bows to the relay speaker; **Sato's
+  minuted condition: when grown, Jenny must be told about the resident — "A
+  person should know her family"** (later makes a justice go quiet: use in
+  ch. 38); run six = 72-hour soak, motors decoupled; Priya signs Thursday
+  16:12, cheap pen, page 41, two-finger load-bearing touch; switch-on set for
+  morning ("the hour when hospitals schedule the hard good things"); Mira's
+  goodnights — empty one: "Goodnight"; full one: "See you in the morning."
 
 ---
 
