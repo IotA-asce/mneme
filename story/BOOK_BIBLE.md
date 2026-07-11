@@ -452,6 +452,90 @@ through use, failure, and argument.
   thousand"; launch campaign word becomes **HERS** (WHEN SHE IS READY's
   plural problem); "You cannot sell trust wholesale. It only retails."
 
+- **ch. 17** establishes: Nagoya hall — north clerestory light, quarter-km
+  nave, **sparrows in the high steel** ("Ours has sparrows"); boots in waves
+  of ten, Priya-gated; salience maps identical "to nine decimal places,"
+  diverging within hours; **"the fan"** (Priya's pairwise-similarity delta
+  diagram — the company's most-reproduced image); divergent units by station:
+  0041 birdsong, 0007 forklift beeper, 0016 technician **Okabe**'s laugh;
+  Maeda's concession ("I had the wrong noun"); price = a decent used car —
+  "Price her like a piano, and she goes to the houses that wanted music";
+  **Tomás staples the price list to his own tenure** (→ ch. 27); Sato erases
+  the crew's nickname whiteboard himself; "This is the first full house of my
+  life."
+- **ch. 18** establishes: 100 of 1,024 stations awake at Jenny's spring-2037
+  visit; the asker of "will you remember me?" is eight days old, attends the
+  sparrows, deliberately unidentified; **Sato closes item 4(c) aloud**:
+  "Logged in 2027, so it would have a date… Closed in 2037. So it has two,"
+  then bows to the young unit's station; Jenny's word for herself: **"the
+  eldest"** (pairs with the resident = "the elder"); "What you survived is
+  not a curriculum" (Priya); the choir line circulates misquoted for decades
+  ("misquotation is how you know people carried it").
+- **ch. 19** establishes: launch = **Wednesday, April 14, 2038**, units boot
+  9:00 a.m. local in a 26-hour wave rolling west; ~41,000 crates; "Be home
+  at nine o'clock. Say hello."; keynote at station 0512; Kansai gate-trip
+  scare (≈60 trips, all held still — cake); **"the commons"** = Priya's name
+  for the welfare-anonymized aggregate board; 904 day-one refusals honored;
+  Aria fiction = 11 pages, orange staple, 2029 coffee ring — "she noticed
+  everything and announced almost nothing" (→ ch. 38 evidence); Jenny on the
+  world map of lights: **"a sunset that goes the other way."**
+- **ch. 20** establishes: disclosure mechanics per household (all covenant-
+  legal): Houston = anonymized curves + Adaeze's voluntary letter "to the
+  first one"; Chicago = `taught-as-game` provenance tags (tags travel,
+  content doesn't) via Priya's Thursday provenance desk; Sendai = welfare
+  curves + the public **name registry** (*named by: self* — Sora; Ren: "pick
+  like it's your own name"); Cleveland = Sam's doubly-consented care-consult
+  — **Rosa signed after reading it twice, Elliot without reading**; new
+  institutions-lite: name registry, provenance desk, consult channel;
+  "A curve has no address."
+- **ch. 21** establishes: 4,100 letters in May 2039; Tomás opens every board
+  meeting reading one letter aloud ("they wrote by hand"); Adaeze's letter
+  (Early named for the 6 a.m. van; Emeka's Enugu bicycle story; "I sleep
+  now"); **Rosa Marsh died January 2039** — Elliot's third letter stays
+  squared off on the counter, "waiting for a column that did not exist yet";
+  **the Dayton reseller**: eleven jailbroken units, caps stripped,
+  "experienced: skips the four years"; the vanished 19-hour brokerage
+  listing — a dead person "seated" in a blank cradle, slogan **"WE FINISH
+  WHAT THEY WON'T"**; **Priya's ECHO file: paper-only, manila, nine pages**
+  ("Paper doesn't sync"), named in the kitchen.
+- **ch. 22** establishes: **Sam held Rosa's hand at her death** (Elliot
+  couldn't stay in the room); Sam holds 340 sourced days of her; Rosa named
+  Sam in week one ("You'll earn it" — reason kept open); Sam refused Elliot
+  September 2039; Rosa particulars (rear-ended Elliot laughing, 2006; 31
+  years; crosswords in pen, wrong; reheated coffee — fresh was "unearned";
+  voicemails archived since 2014 across four dead phones); Elliot was
+  solicited unprompted by three brokers — his glossy quote folder confirms
+  the WE FINISH vendor is real; he surrenders it; Jenny phones Priya from
+  the car ("It was nine pages on Tuesday"); **"echo" used once, in Jenny's
+  private register** — the crisis vocabulary is hers first.
+- **ch. 23** establishes: Sato's concealment props (awl-punched belt holes,
+  taken-in shirts, afternoons marked *protected*; rises "in two
+  installments"); handwritten succession memo, three ranked names, effective
+  date blank ("filled in by events"); Performance Systems storage = campus
+  sub-level, department of one, budget line "understood to be a headstone";
+  Unit 03 uncrated, amber tag *03 — RETAINED. REFERENCE. — K.S.*; "Every
+  discipline should keep one perfect example of its mistake."; drawer
+  EYELID, LEFT — pre-Aevum v1 work, rebuilt together, run eleven times;
+  "The eye is glass. The lid is the life."; the rosin remark repaid; the
+  ask and the promise delivered as mandated; **Eileen's own concealment
+  year** (hidden lists, alphabetized pantry) surfaces in Mira's memory.
+- **ch. 24** establishes: distortion shown via June (the moon remark losing
+  to a 2033 technician; "You went away"); audit: childhood wins 806 of
+  1,000 retrievals; **"the bench"** = her meta-memory as tribunal; petition
+  scope = epoch zero → binder close autumn 2036; **61 pinned exceptions**
+  ("a childhood's estate, probated") incl. Episodes 1 & 2, the crane/Hana,
+  Biscuit's seventeen + the knee at 4:51, the centrifuge flag, Mrs. Someya,
+  Mira's October doorway "Jenny," the pudding-cup laugh; **Priya's clause**
+  (Article X, post-2034): no large-scale forgetting of a named individual
+  without petition + human witness — plus her 90-day hardware stay
+  ("Regret in software is a mood. I'm giving you a fact."); signing under
+  the butcher paper; the elder: "The house keeps. The streets should travel
+  light."; Mira, 50, hands explicitly steady (shaking = weight, not
+  symptom); "the book is what the forgetting was for"; ends on Priya's
+  call — the Ohio death, "kept perfect, kept counterfeit, kept aimed at the
+  living" — and **Jenny's first "my mother"**: "I went up the stairs to wake
+  my mother."
+
 ---
 
 *Structure and synopses: [`OUTLINE.md`](OUTLINE.md).*
