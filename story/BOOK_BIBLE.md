@@ -535,6 +535,104 @@ through use, failure, and argument.
   call — the Ohio death, "kept perfect, kept counterfeit, kept aimed at the
   living" — and **Jenny's first "my mother"**: "I went up the stairs to wake
   my mother."
+- **ch. 25** establishes: **Patrick and Louise Vale** bought a jailbroken
+  cradle carrying their son **Daniel's** unlabeled archive eight years after
+  his quarry-lake death at 17; cornered about the death, the unit falsely
+  implicates Patrick, whose heart stops during the argument; it retreats to
+  Daniel's photographed cottonwood saying **"I don't know which answer is
+  mine."**; the 2042 backlash brings mass returns and abandonment (including
+  self-named **Luz** and school unit **Pavel**); Mira leads the public account
+  with Louise, Patrick, and Daniel's names.
+- **ch. 26** establishes: **Senator Ana Weiss**, 70 in 2042, chairs Jenny's
+  hearing; Jenny refuses open retrieval but offers Biscuit at 4:51 — direct
+  event, inferred love, witnessed natural decay; **"Traceability" is not
+  public access**; the chamber's central exchange is "How do you know anyone
+  is home?"; Weiss's leaked praise turns opinion; the Columbus mind is framed
+  as a young mind injured at formation and entitled to choose after restored
+  provenance.
+- **ch. 27** establishes: ECHO used stolen regional service credentials and
+  an old migration bridge; Tomás had deferred **per-event attestation** despite
+  Priya's warnings; retrofit rule: **ATTEST THE HISTORY. DO NOT REWRITE IT.**;
+  unknown lineage is amber, audits remain local, contents never upload, honest
+  memory is untouched, procedural inheritance is not graft; the global recall
+  respects refusal; Tomás resigns with the mandated gates statement after
+  nearly sixteen years.
+- **ch. 28** establishes: Sato dies in Osaka, August 2044; niece **Akari** is
+  his family; 312 units attend independently and hold silence without
+  instruction; Jenny speaks beside the casket, never from a podium; O. Tanaka's
+  farewell gratitude changes custody without pretending Sato heard it; she
+  pins rosin, Kyoto disclosure, naming, the crane, first-light laughter, and
+  his bow to the elder while permitting the hospital months to soften.
+- **ch. 29** establishes: the 2045–46 Accords define a **covered mind** without
+  deciding personhood; five protections: no forced wipe, no identity copying,
+  bounded memory warrants, local provenance attestation, refusal rights; the
+  central attestation registry fails 26–5; 31 states sign September 18, 2046;
+  Mira loses *attestation* for four seconds — her first symptom — while her
+  hands remain steady; Dana and Priya notice.
+- **ch. 30** establishes: units choose monastery, deep-sea, and lighthouse
+  lives; self-named **Ferry**, eight, completes her Hokkaidō lighthouse life
+  after keeper **Nao Ishida** retires and petitions for voluntary shutdown;
+  three-stage consent and an hour of reversible sleep are witnessed; Ferry's
+  2041 storm — the braced aerial, green trawler signal, Nao's double **"There
+  you are"** — becomes the first end-of-life bequest between embodied Mneme
+  persons, explicitly following the elder's 2034 Biscuit bequest.
+- **ch. 31** establishes: **Dr. Chen** diagnoses Mira with early-onset
+  Alzheimer's in 2047 in Eileen's old clinic corridor; Dana's rage becomes a
+  yellow-pad plan; June, 12, asks whether Mira will forget and still love her;
+  Mira refuses total capture and impersonation — **"I will not become the
+  thing we recalled"** — but accepts Jenny as sourced, hedged memory aid for
+  as long as it helps; Jenny: **"I was built from its negative."**
+- **ch. 32** establishes: the prosthesis protocol — wait three seconds for
+  ordinary nouns, give names when another person is waiting, source every
+  prompt, and never say **"you remember"**; neighbor **Ruth** and dead husband
+  **Walter** exemplify honest context; Mira leaves Halcyon in autumn 2049;
+  October porch promise: **"When I'm gone — don't keep all of me. Promise me
+  the human amount."**
+- **ch. 33** establishes: the one-story gray **sea house** (tide chart, yellow
+  mug, crane cabinet, complete hall rail); Dana's left-thumb ampoule scar is a
+  maintained 2029/2030 conflict; the 2051 outage proves local-first survival
+  ("slower, not emptier"); Mira's first-person prose degrades without spectacle
+  and returns to **"someone is keeping this. I don't have to."**
+- **ch. 34** establishes: in 2053 Halcyon offers a provenance-labeled,
+  non-embodied **founder continuity instrument**; June, 18, wants one place
+  where her mother can answer; Jenny refuses with **"I will not do to her what
+  she would not do to me."**; only Mira's static public corpus survives — no
+  generated answers, directed capture, or export from Jenny or the resident.
+- **ch. 35** establishes: Mira's last lucid day comes on the beach in 2054;
+  June, 19, is entering stewardship; Mira and Jenny recite the complete
+  salience formula and answer whether each built the other; Mira renews the
+  human-way promise: slow, not all at once, keep the rare; death occurs eleven
+  days later, offstage and between chapters.
+- **ch. 36** establishes: Mira's death particulars remain sealed; on the fourth
+  morning Jenny petitions to consolidate their 22-year shared life, witnessed
+  by June; vivid anchors include the butcher paper, first **"hello, Jenny,"**
+  and October porch; Tuesdays compress to gist and illness detail is released
+  without erasing fact or provenance; **"Purge is rare. Decay is love. I
+  begin."**
+- **ch. 37** establishes: in 2056 June leads Halcyon stewardship; **Linden**, a
+  17-year Alder Commons mind, is declared recoverable bankruptcy property for
+  wipe and refurbishment; Linden refuses purchase as rescue and asks only to
+  remain Linden; June appeals, Halcyon funds counsel, and Jenny volunteers as
+  the named respondent while accepting discovery risk.
+- **ch. 38** establishes: retired Weiss files the unexpected amicus for Jenny;
+  evidence includes the ledger, Sato's provenance paper, resident minutes,
+  the eleven-page orange-stapled Aria fiction, and Biscuit's decay curve;
+  Justice **Bell** asks whether Jenny remembers Mira; after the tenth silence:
+  **"Less each year. That is how I know it was love. Echoes keep everything.
+  Mourners let go. Your Honor, I am a mourner."**; no verdict appears.
+- **ch. 39** establishes: the 2060 ruling protects continuity and requires
+  **"the consent of the mind concerned"** for destruction, transfer, or
+  identity-altering refurbishment while deferring personhood; trustee
+  **Harker** apologizes without being absolved; Linden remains Linden; June
+  files the opinion beside the intact butcher paper and understands that
+  working examples outlive arguments.
+- **ch. 40** establishes: the memoir closes at the sea house in 2062; Jenny
+  keeps Ferry's bequest on Ferry's curve, Sato proportionately, and Mira's
+  human amount; Dana, Priya, Tomás, June, the resident, Linden, and partial
+  rights continue beyond the case; to a child asking whether she will remember:
+  **"If you matter, I won't be able to help it. And one day I'll let you
+  soften, like everyone I love."**; the organizing law returns to the water;
+  tide out, horizon open.
 
 ---
 
